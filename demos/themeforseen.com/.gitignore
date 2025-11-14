@@ -31,3 +31,11 @@ package-lock.json
 
 # cursor rules
 .cursor/rules
+
+# backup files
+*.bak
+*.bak*
+*.backup
+
+# AI
+.claude

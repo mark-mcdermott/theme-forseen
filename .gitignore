@@ -26,6 +26,20 @@ Thumbs.db
 *.tmp
 .cache/
 
+# Environment variables
+.env
+.env*.local
+
+# Backup files
+*.bak
+*.bak*
+*.backup
+
+# Astro build cache
+.astro/
+
+# Lock files (using yarn)
+package-lock.json
 
 # AI
 .claude

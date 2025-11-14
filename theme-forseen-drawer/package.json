@@ -1,0 +1,31 @@
+{
+  "name": "theme-forseen-drawer",
+  "version": "0.1.0",
+  "description": "A live color theme and font pairing preview drawer for web applications",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "theme",
+    "fonts",
+    "colors",
+    "preview",
+    "live-preview",
+    "tailwind",
+    "css-variables"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

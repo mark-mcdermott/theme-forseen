@@ -1,0 +1,213 @@
+---
+import DefaultLayout from '@layouts/DefaultLayout.astro'
+import { Heading, Link } from 'accessible-astro-components'
+import { Icon } from 'astro-icon/components'
+---
+
+<DefaultLayout title="Sign Up - Coming Soon">
+  <section class="my-24">
+    <div class="container">
+      <Heading level="h1">Sign Up</Heading>
+    </div>
+  </section>
+
+  <section class="my-12">
+    <div class="narrow container space-content text-center">
+      <div class="coming-soon-icon">
+        <Icon aria-hidden="true" name="lucide:user-plus" size="4rem" />
+      </div>
+
+      <Heading level="h2">Coming Soon!</Heading>
+
+      <p class="lead">
+        User registration is currently in development. Soon you'll be able to create an account and:
+      </p>
+
+      <div class="features-list">
+        <div class="feature-item">
+          <Icon aria-hidden="true" name="lucide:save" size="1.5rem" />
+          <span>Save your favorite themes and font pairings</span>
+        </div>
+        <div class="feature-item">
+          <Icon aria-hidden="true" name="lucide:share-2" size="1.5rem" />
+          <span>Share your custom configurations with others</span>
+        </div>
+        <div class="feature-item">
+          <Icon aria-hidden="true" name="lucide:palette" size="1.5rem" />
+          <span>Create and manage your own theme collections</span>
+        </div>
+        <div class="feature-item">
+          <Icon aria-hidden="true" name="lucide:cloud" size="1.5rem" />
+          <span>Sync your preferences across devices</span>
+        </div>
+      </div>
+
+      <div class="cta-section">
+        <p>
+          Want to be notified when you can create an account?
+        </p>
+        <Link href="/contact" isButton type="primary" animateOnHover animationType="boop">
+          <Icon aria-hidden="true" name="lucide:bell" size="1.25rem" />
+          Get Notified
+        </Link>
+      </div>
+
+      <div class="signup-note">
+        <p>
+          <strong>No account needed right now!</strong> You can use ThemeForseen without signing up.
+          All your preferences are saved locally in your browser.
+        </p>
+      </div>
+
+      <div class="back-link">
+        <Link href="/">
+          <Icon aria-hidden="true" name="lucide:arrow-left" size="1rem" />
+          Back to Home
+        </Link>
+      </div>
+    </div>
+  </section>
+</DefaultLayout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .coming-soon-icon {
+    margin: 2rem auto;
+    color: var(--color-primary);
+    opacity: 0.8;
+  }
+
+  .lead {
+    font-size: 1.125rem;
+    color: #666;
+    margin: 2rem 0;
+  }
+
+  .features-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 3rem 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (min-width: 640px) {
+    .features-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+  }
+
+  .feature-item svg {
+    color: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .feature-item span {
+    font-size: 0.95rem;
+    color: #333;
+  }
+
+  .cta-section {
+    margin: 3rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 12px;
+    border: 2px solid #bae6fd;
+  }
+
+  .cta-section p {
+    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #0c4a6e;
+  }
+
+  .signup-note {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #fefce8;
+    border-radius: 8px;
+    border: 2px solid #fde047;
+  }
+
+  .signup-note p {
+    margin: 0;
+    color: #713f12;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .signup-note strong {
+    color: #854d0e;
+  }
+
+  .back-link {
+    margin-top: 3rem;
+  }
+
+  .back-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .back-link a:hover {
+    text-decoration: underline;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .lead {
+      color: #aaa;
+    }
+
+    .feature-item {
+      background: #1a1a1a;
+      border-color: #333;
+    }
+
+    .feature-item span {
+      color: #e0e0e0;
+    }
+
+    .cta-section {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2942 100%);
+      border-color: #1e3a5f;
+    }
+
+    .cta-section p {
+      color: #bae6fd;
+    }
+
+    .signup-note {
+      background: #3f3f1a;
+      border-color: #854d0e;
+    }
+
+    .signup-note p {
+      color: #fef08a;
+    }
+
+    .signup-note strong {
+      color: #fde047;
+    }
+  }
+</style>

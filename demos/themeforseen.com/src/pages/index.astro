@@ -12,7 +12,53 @@ import { Icon } from 'astro-icon/components'
 
 <DefaultLayout title="Home">
   <Hero />
-  <section class="my-64">
+  <section class="narrow container my-16">
+    <div class="space-content">
+      <Heading level="h2">What This Is</Heading>
+      <p>
+        I got tired of building websites and constantly toggling between tabs to preview different color schemes. So I
+        made this thing where you just scroll through themes and fonts, and the whole page updates instantly. No
+        refreshing, no copy-pasting hex codes. Just scroll and watch.
+      </p>
+
+      <Heading level="h2">The Color Stuff</Heading>
+      <p>
+        I put together a bunch of color palettes that actually work together—each one has your primary colors,
+        backgrounds, accents, all that. Light mode and dark mode are separate, which is important because a color
+        scheme that looks good in light mode usually looks terrible in dark mode and vice versa. Pick whatever makes
+        your eyes happy.
+      </p>
+
+      <Heading level="h2">Font Pairings</Heading>
+      <p>
+        Typography is one of those things that either works or it doesn't. I matched up heading fonts with body fonts
+        that actually complement each other instead of fighting for attention. They're all readable and tested for
+        accessibility, but more importantly they just look right together.
+      </p>
+
+      <Heading level="h2">Who This Is For</Heading>
+      <p>
+        If you're designing something and want to quickly try out different visual directions, this helps. Or if you're
+        building a site and need to pick a theme without overthinking it. The star/heart system lets you bookmark
+        combinations as you explore, which is helpful when you inevitably forget which one you liked five minutes ago.
+      </p>
+      <ul class="list-inside list-disc">
+        <li>Everything updates live as you scroll</li>
+        <li>Light and dark modes work independently</li>
+        <li>Star the ones you like, heart your favorites</li>
+        <li>Your picks get saved automatically</li>
+        <li>Works with keyboard if that's your thing</li>
+      </ul>
+
+      <Heading level="h2">How To Use It</Heading>
+      <p>
+        See that Nyan Unicorn bookmark on the left? Click it. A drawer slides open with all the themes and fonts.
+        Scroll through them, watch the page change. When you find something you like, star it. If you really like it,
+        heart it. Everything saves automatically so you can close your browser and come back later.
+      </p>
+    </div>
+  </section>
+  <!-- <section class="my-64">
     <div class="container">
       <Heading level="h2" class="mb-8">Features</Heading>
       <div class="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
@@ -159,7 +205,7 @@ import { Icon } from 'astro-icon/components'
         <Counter count="48+" title="Months" sub="Since launch" />
       </div>
     </div>
-  </section>
+  </section> -->
 </DefaultLayout>
 
 <style>

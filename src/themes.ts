@@ -1,6 +1,7 @@
 // Color theme definitions
 export interface ColorTheme {
   name: string;
+  tags?: string[];
   light: {
     primary: string;
     primaryShadow: string;
@@ -32,6 +33,7 @@ export interface ColorTheme {
 export const colorThemes: ColorTheme[] = [
   {
     name: 'Ocean Blue',
+    tags: ['corporate'],
     light: {
       primary: '#0066CC',
       primaryShadow: '#004C99',
@@ -90,6 +92,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Sunset Pink',
+    tags: ['funky'],
     light: {
       primary: '#E63946',
       primaryShadow: '#C5303D',
@@ -119,6 +122,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Purple Dream',
+    tags: ['funky'],
     light: {
       primary: '#7209B7',
       primaryShadow: '#560BAD',
@@ -148,6 +152,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Monochrome',
+    tags: ['corporate'],
     light: {
       primary: '#212529',
       primaryShadow: '#000000',
@@ -177,6 +182,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Midnight Blue',
+    tags: ['corporate'],
     light: {
       primary: '#1E3A8A',
       primaryShadow: '#1E3A8A',
@@ -206,6 +212,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Coral Reef',
+    tags: ['funky'],
     light: {
       primary: '#FF6B6B',
       primaryShadow: '#E85D5D',
@@ -322,6 +329,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Cherry Blossom',
+    tags: ['funky'],
     light: {
       primary: '#EC4899',
       primaryShadow: '#DB2777',
@@ -351,6 +359,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Deep Sea',
+    tags: ['corporate'],
     light: {
       primary: '#0E7490',
       primaryShadow: '#155E75',
@@ -380,6 +389,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Slate & Gold',
+    tags: ['corporate'],
     light: {
       primary: '#475569',
       primaryShadow: '#334155',
@@ -409,6 +419,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Crimson & Cream',
+    tags: ['funky'],
     light: {
       primary: '#BE123C',
       primaryShadow: '#9F1239',
@@ -467,6 +478,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Royal Purple',
+    tags: ['funky'],
     light: {
       primary: '#6B21A8',
       primaryShadow: '#581C87',
@@ -496,6 +508,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Tangerine Dream',
+    tags: ['funky'],
     light: {
       primary: '#EA580C',
       primaryShadow: '#C2410C',
@@ -525,6 +538,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Arctic Ice',
+    tags: ['corporate'],
     light: {
       primary: '#0369A1',
       primaryShadow: '#075985',
@@ -554,6 +568,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Berry Blast',
+    tags: ['funky'],
     light: {
       primary: '#BE185D',
       primaryShadow: '#9F1239',
@@ -583,6 +598,7 @@ export const colorThemes: ColorTheme[] = [
   },
   {
     name: 'Coffee & Cream',
+    tags: ['corporate'],
     light: {
       primary: '#78350F',
       primaryShadow: '#451A03',
@@ -616,158 +632,220 @@ export const colorThemes: ColorTheme[] = [
 export interface FontPairing {
   name: string;
   heading: string;
+  headingStyle: string[];
   body: string;
+  bodyStyle: string[];
 }
 
 export const fontPairings: FontPairing[] = [
   {
     name: 'Inter & Geist',
     heading: 'Inter',
+    headingStyle: ['sans'],
     body: 'Geist',
+    bodyStyle: ['sans', 'mono'],
   },
   {
     name: 'Playfair Display & Source Sans Pro',
     heading: 'Playfair Display',
+    headingStyle: ['serif', 'display'],
     body: 'Source Sans Pro',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Montserrat & Open Sans',
     heading: 'Montserrat',
+    headingStyle: ['sans', 'display'],
     body: 'Open Sans',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Raleway & Lato',
     heading: 'Raleway',
+    headingStyle: ['sans', 'display'],
     body: 'Lato',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Poppins & Roboto',
     heading: 'Poppins',
+    headingStyle: ['sans', 'display'],
     body: 'Roboto',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Merriweather & Lora',
     heading: 'Merriweather',
+    headingStyle: ['serif'],
     body: 'Lora',
+    bodyStyle: ['serif'],
   },
   {
     name: 'Oswald & Nunito',
     heading: 'Oswald',
+    headingStyle: ['sans', 'display'],
     body: 'Nunito',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Space Grotesk & Space Mono',
     heading: 'Space Grotesk',
+    headingStyle: ['sans'],
     body: 'Space Mono',
+    bodyStyle: ['mono'],
   },
   {
     name: 'DM Serif Display & DM Sans',
     heading: 'DM Serif Display',
+    headingStyle: ['serif', 'display'],
     body: 'DM Sans',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Crimson Text & Work Sans',
     heading: 'Crimson Text',
+    headingStyle: ['serif'],
     body: 'Work Sans',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Abril Fatface & Libre Baskerville',
     heading: 'Abril Fatface',
+    headingStyle: ['serif', 'display'],
     body: 'Libre Baskerville',
+    bodyStyle: ['serif'],
   },
   {
     name: 'Bebas Neue & Mukta',
     heading: 'Bebas Neue',
+    headingStyle: ['sans', 'display'],
     body: 'Mukta',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Cormorant Garamond & Proza Libre',
     heading: 'Cormorant Garamond',
+    headingStyle: ['serif'],
     body: 'Proza Libre',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Josefin Sans & Lato',
     heading: 'Josefin Sans',
+    headingStyle: ['sans', 'display'],
     body: 'Lato',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Spectral & Karla',
     heading: 'Spectral',
+    headingStyle: ['serif'],
     body: 'Karla',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Libre Franklin & Libre Baskerville',
     heading: 'Libre Franklin',
+    headingStyle: ['sans'],
     body: 'Libre Baskerville',
+    bodyStyle: ['serif'],
   },
   {
     name: 'Archivo & Roboto',
     heading: 'Archivo',
+    headingStyle: ['sans', 'display'],
     body: 'Roboto',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Yeseva One & Josefin Sans',
     heading: 'Yeseva One',
+    headingStyle: ['serif', 'display'],
     body: 'Josefin Sans',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Arvo & PT Sans',
     heading: 'Arvo',
+    headingStyle: ['serif'],
     body: 'PT Sans',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Cabin & Cabin',
     heading: 'Cabin',
+    headingStyle: ['sans'],
     body: 'Cabin',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Rubik & Karla',
     heading: 'Rubik',
+    headingStyle: ['sans', 'display'],
     body: 'Karla',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Vollkorn & Lato',
     heading: 'Vollkorn',
+    headingStyle: ['serif'],
     body: 'Lato',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Fjalla One & Noto Sans',
     heading: 'Fjalla One',
+    headingStyle: ['sans', 'display'],
     body: 'Noto Sans',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Bitter & Raleway',
     heading: 'Bitter',
+    headingStyle: ['serif'],
     body: 'Raleway',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Cardo & Muli',
     heading: 'Cardo',
+    headingStyle: ['serif'],
     body: 'Mulish',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Fira Sans & Merriweather',
     heading: 'Fira Sans',
+    headingStyle: ['sans'],
     body: 'Merriweather',
+    bodyStyle: ['serif'],
   },
   {
     name: 'Outfit & Outfit',
     heading: 'Outfit',
+    headingStyle: ['sans'],
     body: 'Outfit',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Manrope & Manrope',
     heading: 'Manrope',
+    headingStyle: ['sans'],
     body: 'Manrope',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Sora & Sora',
     heading: 'Sora',
+    headingStyle: ['sans'],
     body: 'Sora',
+    bodyStyle: ['sans'],
   },
   {
     name: 'Plus Jakarta Sans & Plus Jakarta Sans',
     heading: 'Plus Jakarta Sans',
+    headingStyle: ['sans'],
     body: 'Plus Jakarta Sans',
+    bodyStyle: ['sans'],
   },
 ];

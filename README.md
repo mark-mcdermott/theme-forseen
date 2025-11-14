@@ -135,6 +135,43 @@ Then configure your CSS framework to use the CSS variables.
    - Click any font pairing to apply it
    - Use ↑/↓ arrow keys or mouse wheel to scroll through fonts
 4. **See Changes Live**: All changes apply immediately to your page!
+5. **Activate a Theme**: Click the lightning bolt (⚡) icon on any tile to export the configuration to your project files
+
+## Theme Activation
+
+ThemeForseen includes a powerful activation feature that exports your chosen theme or font pairing to your project files.
+
+### How Activation Works
+
+1. Click the ⚡ (lightning bolt) icon on any theme or font tile
+2. A modal appears with generated code
+3. Choose one of two options:
+   - **Save to File**: Uses the File System Access API (Chrome/Edge) to save directly to your project
+   - **Copy**: Copies the code to your clipboard for manual pasting
+
+### For Color Themes
+
+Activating a color theme generates Tailwind config code that should be added to your `tailwind.config.js` (or `.ts`, `.mjs`) file in the `theme.extend.colors` section.
+
+**Requirements:**
+- You must have a Tailwind config file in your project root
+- If you don't have one, create it with `npx tailwindcss init`
+
+### For Font Pairings
+
+Activating a font pairing generates CSS with custom properties (`--font-heading`, `--font-body`). We recommend saving this to `src/styles/fonts.css` and importing it in your main layout.
+
+The generated CSS includes:
+- CSS custom properties for heading and body fonts
+- Optional direct element styling
+- Tailwind config snippet for using `font-heading` and `font-body` classes
+
+### Browser Support
+
+The "Save to File" feature uses the File System Access API, supported in:
+- Chrome, Edge, and other Chromium-based browsers
+
+For other browsers, use the "Copy" button to paste the code manually.
 
 ## Customization
 
@@ -211,6 +248,42 @@ yarn dev
 ```
 
 The demo sites automatically import the drawer from `../../dist/index.js`, so make sure to build the library first before running the demos.
+
+## Repository Size & Font Management
+
+You might notice this repository has a significant file size. This is primarily due to bundling all fonts locally. ThemeForseen includes 30 font pairings (60+ individual font files with multiple weights) to provide a comprehensive selection for previewing.
+
+### Why Local Fonts?
+
+We chose to bundle fonts locally rather than loading from CDNs to minimize FOUC (Flash of Unstyled Content) during live previewing. When rapidly switching between font combinations, loading fonts on-demand causes noticeable flashing. Local fonts provide a smoother, more immediate preview experience.
+
+### FOUC Status
+
+While local fonts significantly reduce FOUC, it's not completely eliminated—you may still notice occasional font flashing, especially on first load or slower connections. We're continuing to investigate improvements:
+
+- Font preloading strategies
+- Progressive font subsetting
+- Smarter caching mechanisms
+- Alternative loading patterns
+
+We're open to suggestions and contributions on this front!
+
+## Contributing
+
+ThemeForseen is an open-source project and we welcome contributions! Whether you want to:
+
+- Add new color themes or font pairings
+- Improve FOUC handling and performance
+- Optimize bundle size
+- Fix bugs or enhance documentation
+- Suggest new features
+
+Feel free to:
+- **Open an issue** to report bugs or suggest features
+- **Submit a pull request** with improvements
+- **Start a discussion** about ideas or approaches
+
+Visit our [GitHub repository](https://github.com/mark-mcdermott/theme-forseen) to get started!
 
 ## License
 

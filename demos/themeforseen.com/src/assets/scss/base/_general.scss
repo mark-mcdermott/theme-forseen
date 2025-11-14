@@ -1,8 +1,7 @@
 @use './mixins' as *;
 
-@view-transition {
-  navigation: auto;
-}
+// Astro handles view transitions via <ClientRouter /> component
+// @view-transition CSS at-rule is not supported by esbuild
 
 body {
   font-weight: 400;

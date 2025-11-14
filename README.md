@@ -16,39 +16,53 @@ A live color theme and font pairing preview tool that adds an interactive sideba
 
 ```
 theme-forseen/
-├── theme-forseen-drawer/    # The drawer library (main product)
-│   ├── src/
-│   │   ├── ThemeForseenDrawer.ts  # Main web component
-│   │   ├── themes.ts              # Color & font definitions
-│   │   └── index.ts               # Entry point
-│   ├── dist/                      # Built library
-│   └── package.json
-└── site/                    # Demo Astro website
-    └── src/
-        └── layouts/
-            └── DefaultLayout.astro  # Drawer integrated here
+├── src/                           # Drawer library source code
+│   ├── ThemeForseenDrawer.ts      # Main web component
+│   ├── themes.ts                  # Color & font definitions
+│   └── index.ts                   # Entry point
+├── dist/                          # Built library
+├── package.json                   # Library package configuration
+└── demos/                         # Demo websites
+    ├── themeforseen.com/          # Astro demo site (main)
+    │   └── src/layouts/
+    │       └── DefaultLayout.astro
+    └── the-office-placeholder-site.com/  # React demo site
+        └── src/
 ```
 
 ## Quick Start
 
-The drawer is already integrated into the demo site. To see it in action:
+The drawer is already integrated into the demo sites. To see it in action:
 
 ```bash
-cd site
-npm install
-npm run dev
+# For the Astro demo site
+cd demos/themeforseen.com
+yarn install
+yarn dev
 ```
 
-Then open http://localhost:4321/ and click the 🎨 icon on the left side of the screen!
+Or try the React demo:
+
+```bash
+# For the React demo site
+cd demos/the-office-placeholder-site.com
+yarn install
+yarn dev
+```
+
+Then click the 🎨 icon on the left side of the screen!
 
 ## Usage in Your Project
 
 ### For Astro Projects
 
-1. Copy the `theme-forseen-drawer` folder into your project
+1. Copy the ThemeForseen library files into your project:
+   ```bash
+   # Copy src/, dist/, package.json, and tsconfig.json to your project root
+   ```
+
 2. Build the drawer:
    ```bash
-   cd theme-forseen-drawer
    npm install
    npm run build
    ```
@@ -60,7 +74,7 @@ Then open http://localhost:4321/ and click the 🎨 icon on the left side of the
      <!-- your content -->
 
      <script>
-       import '../../theme-forseen-drawer/dist/index.js';
+       import '../path/to/dist/index.js';
      </script>
    </body>
    ```
@@ -96,15 +110,17 @@ Then open http://localhost:4321/ and click the 🎨 icon on the left side of the
    <div class="bg-card-bg">Card content</div>
    ```
 
-### For Other Frameworks
+### For Other Frameworks (React, Vue, etc.)
 
 ThemeForseen uses Web Components, so it works with any framework:
 
 ```html
 <!-- Add to your HTML -->
-<script type="module" src="/path/to/theme-forseen-drawer/dist/index.js"></script>
+<script type="module" src="/path/to/dist/index.js"></script>
 <theme-forseen-drawer></theme-forseen-drawer>
 ```
+
+For React projects, see the example in `demos/the-office-placeholder-site.com/`
 
 Then configure your CSS framework to use the CSS variables.
 
@@ -122,7 +138,7 @@ Then configure your CSS framework to use the CSS variables.
 
 ## Customization
 
-Add your own themes and fonts by editing `theme-forseen-drawer/src/themes.ts`:
+Add your own themes and fonts by editing `src/themes.ts`:
 
 ```typescript
 export const colorThemes: ColorTheme[] = [
@@ -151,8 +167,9 @@ export const colorThemes: ColorTheme[] = [
 
 After editing, rebuild:
 ```bash
-cd theme-forseen-drawer
 npm run build
+# or use yarn
+yarn build
 ```
 
 ## CSS Variables Reference
@@ -175,16 +192,25 @@ npm run build
 ## Development
 
 ```bash
-# Build the drawer
-cd theme-forseen-drawer
+# Build the drawer library (from root)
 npm install
 npm run build
+# or use yarn
+yarn install
+yarn build
 
-# Run the demo site
-cd ../site
-npm install
-npm run dev
+# Run the Astro demo site
+cd demos/themeforseen.com
+yarn install
+yarn dev
+
+# Or run the React demo site
+cd demos/the-office-placeholder-site.com
+yarn install
+yarn dev
 ```
+
+The demo sites automatically import the drawer from `../../dist/index.js`, so make sure to build the library first before running the demos.
 
 ## License
 

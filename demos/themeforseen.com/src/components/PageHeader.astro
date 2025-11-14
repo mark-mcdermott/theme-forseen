@@ -162,22 +162,22 @@ const sanitizedSubtitle: string = subtitle
 <style>
   .page-header {
     .bg-primary {
-      background-color: light-dark(var(--color-primary-100), var(--color-primary-500));
+      background-color: var(--color-primary-100);
     }
 
     .bg-secondary {
-      background-color: light-dark(var(--color-secondary-100), var(--color-secondary-500));
+      background-color: var(--color-secondary-100);
     }
 
     .bg-neutral {
-      background-color: light-dark(var(--color-neutral-300), var(--color-neutral-800));
+      background-color: var(--color-neutral-300);
     }
 
     .bg-gradient {
       background-image: linear-gradient(
         315deg,
-        light-dark(var(--color-primary-100), var(--color-secondary-100)) 25%,
-        light-dark(var(--color-secondary-100), var(--color-primary-200))
+        var(--color-primary-100) 25%,
+        var(--color-secondary-100)
       );
       color: var(--color-neutral-900);
     }
@@ -190,6 +190,30 @@ const sanitizedSubtitle: string = subtitle
     .featured-image-container {
       max-height: 500px;
       overflow: hidden;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .page-header {
+      .bg-primary {
+        background-color: var(--color-primary-500);
+      }
+
+      .bg-secondary {
+        background-color: var(--color-secondary-500);
+      }
+
+      .bg-neutral {
+        background-color: var(--color-neutral-800);
+      }
+
+      .bg-gradient {
+        background-image: linear-gradient(
+          315deg,
+          var(--color-secondary-100) 25%,
+          var(--color-primary-200)
+        );
+      }
     }
   }
 </style>

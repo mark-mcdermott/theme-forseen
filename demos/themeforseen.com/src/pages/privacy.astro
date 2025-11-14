@@ -1,0 +1,285 @@
+---
+import DefaultLayout from '@layouts/DefaultLayout.astro'
+import { Heading } from 'accessible-astro-components'
+---
+
+<DefaultLayout title="Privacy Policy">
+  <section class="my-24">
+    <div class="container">
+      <Heading level="h1">Privacy Policy</Heading>
+      <p class="last-updated">Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+    </div>
+  </section>
+
+  <section class="my-12">
+    <div class="narrow container space-content privacy-content">
+      <Heading level="h2">Introduction</Heading>
+      <p>
+        Welcome to ThemeForseen ("we," "our," or "us"). We are committed to protecting your privacy and ensuring you have a positive experience on our website. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website.
+      </p>
+
+      <Heading level="h2">Information We Collect</Heading>
+
+      <Heading level="h3">Information You Provide</Heading>
+      <p>
+        When you use our contact form or sign up for our services, we may collect:
+      </p>
+      <ul>
+        <li>Name</li>
+        <li>Email address</li>
+        <li>Any other information you choose to provide in messages or forms</li>
+      </ul>
+
+      <Heading level="h3">Automatically Collected Information</Heading>
+      <p>
+        When you visit our website, we may automatically collect certain information about your device, including:
+      </p>
+      <ul>
+        <li>Browser type and version</li>
+        <li>Operating system</li>
+        <li>Pages visited and time spent on pages</li>
+        <li>IP address (anonymized)</li>
+        <li>Referring website addresses</li>
+      </ul>
+
+      <Heading level="h2">How We Use Your Information</Heading>
+      <p>
+        We use the information we collect to:
+      </p>
+      <ul>
+        <li>Respond to your inquiries and provide customer support</li>
+        <li>Send you updates about ThemeForseen (if you've opted in)</li>
+        <li>Improve our website and services</li>
+        <li>Analyze usage patterns and optimize user experience</li>
+        <li>Prevent fraud and enhance security</li>
+      </ul>
+
+      <Heading level="h2">Cookies and Local Storage</Heading>
+
+      <Heading level="h3">Essential Cookies</Heading>
+      <p>
+        We use essential cookies and browser local storage to:
+      </p>
+      <ul>
+        <li>Remember your theme and font preferences</li>
+        <li>Store your favorite color palettes and font pairings</li>
+        <li>Remember your cookie consent preferences</li>
+        <li>Maintain your session state (when logged in)</li>
+      </ul>
+
+      <Heading level="h3">Analytics Cookies (Optional)</Heading>
+      <p>
+        With your consent, we may use analytics cookies to understand how visitors interact with our website. You can opt out of these cookies through our cookie consent banner.
+      </p>
+
+      <Heading level="h2">Data Storage and Security</Heading>
+      <p>
+        Your theme preferences and favorites are stored locally in your browser using localStorage. This data never leaves your device unless you explicitly choose to sync it across devices (available in paid plans).
+      </p>
+      <p>
+        When you contact us via email or form submissions, your information is transmitted securely using industry-standard encryption (SSL/TLS). We store contact form submissions on secure servers provided by Formspree.
+      </p>
+
+      <Heading level="h2">Third-Party Services</Heading>
+      <p>
+        We may use the following third-party services:
+      </p>
+      <ul>
+        <li><strong>Formspree:</strong> For processing contact form submissions</li>
+        <li><strong>GitHub:</strong> For hosting our code repository</li>
+        <li><strong>Netlify/Vercel (if applicable):</strong> For website hosting</li>
+      </ul>
+      <p>
+        These services have their own privacy policies and may collect information as described in their respective policies.
+      </p>
+
+      <Heading level="h2">Your Rights</Heading>
+      <p>
+        You have the right to:
+      </p>
+      <ul>
+        <li><strong>Access:</strong> Request a copy of the personal data we hold about you</li>
+        <li><strong>Correction:</strong> Request correction of any inaccurate data</li>
+        <li><strong>Deletion:</strong> Request deletion of your personal data</li>
+        <li><strong>Objection:</strong> Object to processing of your personal data</li>
+        <li><strong>Data Portability:</strong> Request transfer of your data to another service</li>
+        <li><strong>Withdraw Consent:</strong> Withdraw consent for data processing at any time</li>
+      </ul>
+      <p>
+        To exercise these rights, please contact us at <a href="mailto:mark@markmcdermott.io">mark@markmcdermott.io</a>.
+      </p>
+
+      <Heading level="h2">Children's Privacy</Heading>
+      <p>
+        Our website is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.
+      </p>
+
+      <Heading level="h2">International Data Transfers</Heading>
+      <p>
+        Your information may be transferred to and processed in countries other than your country of residence. We ensure that such transfers comply with applicable data protection laws.
+      </p>
+
+      <Heading level="h2">Changes to This Privacy Policy</Heading>
+      <p>
+        We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
+      </p>
+
+      <Heading level="h2">California Privacy Rights (CCPA)</Heading>
+      <p>
+        If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):
+      </p>
+      <ul>
+        <li>Right to know what personal information is collected</li>
+        <li>Right to know whether personal information is sold or disclosed</li>
+        <li>Right to say no to the sale of personal information</li>
+        <li>Right to access your personal information</li>
+        <li>Right to equal service and price</li>
+      </ul>
+
+      <Heading level="h2">European Privacy Rights (GDPR)</Heading>
+      <p>
+        If you are in the European Economic Area (EEA), you have rights under the General Data Protection Regulation (GDPR), including those mentioned in the "Your Rights" section above.
+      </p>
+
+      <Heading level="h2">Do Not Track Signals</Heading>
+      <p>
+        We respect Do Not Track (DNT) signals. When we detect a DNT signal from your browser, we will not track your browsing activity or serve analytics cookies.
+      </p>
+
+      <Heading level="h2">Contact Us</Heading>
+      <p>
+        If you have any questions about this Privacy Policy or our privacy practices, please contact us:
+      </p>
+      <ul class="contact-info">
+        <li><strong>Email:</strong> <a href="mailto:mark@markmcdermott.io">mark@markmcdermott.io</a></li>
+        <li><strong>Contact Form:</strong> <a href="/contact">Use our contact page</a></li>
+        <li><strong>GitHub:</strong> <a href="https://github.com/mark-mcdermott/theme-forseen/issues">Open an issue</a></li>
+      </ul>
+
+      <div class="consent-reminder">
+        <p>
+          <strong>Remember:</strong> You can manage your cookie preferences at any time by clearing your browser's local storage or by refreshing the page and updating your consent in the cookie banner.
+        </p>
+      </div>
+    </div>
+  </section>
+</DefaultLayout>
+
+<style>
+  .last-updated {
+    color: #666;
+    font-size: 0.95rem;
+    margin-top: -1rem;
+  }
+
+  .privacy-content {
+    line-height: 1.8;
+  }
+
+  .privacy-content h2 {
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .privacy-content h2:first-of-type {
+    margin-top: 0;
+  }
+
+  .privacy-content h3 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-primary);
+  }
+
+  .privacy-content p {
+    margin-bottom: 1rem;
+    color: #333;
+  }
+
+  .privacy-content ul {
+    margin: 1rem 0 1.5rem 0;
+    padding-left: 2rem;
+  }
+
+  .privacy-content li {
+    margin-bottom: 0.5rem;
+    color: #444;
+  }
+
+  .privacy-content a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .privacy-content a:hover {
+    text-decoration: none;
+  }
+
+  .privacy-content strong {
+    color: #000;
+    font-weight: 600;
+  }
+
+  .contact-info {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .contact-info li {
+    margin-bottom: 0.75rem;
+  }
+
+  .consent-reminder {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+    border-radius: 8px;
+    border: 2px solid #bae6fd;
+  }
+
+  .consent-reminder p {
+    margin: 0;
+    color: #0c4a6e;
+  }
+
+  .consent-reminder strong {
+    color: #075985;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .last-updated {
+      color: #aaa;
+    }
+
+    .privacy-content h2 {
+      border-bottom-color: #444;
+    }
+
+    .privacy-content p {
+      color: #e0e0e0;
+    }
+
+    .privacy-content li {
+      color: #ccc;
+    }
+
+    .privacy-content strong {
+      color: #fff;
+    }
+
+    .consent-reminder {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2942 100%);
+      border-color: #1e3a5f;
+    }
+
+    .consent-reminder p {
+      color: #bae6fd;
+    }
+
+    .consent-reminder strong {
+      color: #e0f2fe;
+    }
+  }
+</style>

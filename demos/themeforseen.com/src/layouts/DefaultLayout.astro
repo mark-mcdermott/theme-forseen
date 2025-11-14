@@ -5,14 +5,15 @@ import '../assets/scss/index.scss'
 import SiteMeta from '@components/SiteMeta.astro'
 import Header from '@components/Header.astro'
 import Footer from '@components/Footer.astro'
+import CookieConsent from '@components/CookieConsent.astro'
 import { ClientRouter } from 'astro:transitions'
 
 const {
-  title = 'Accessible Astro',
-  description = 'A starter project with accessibility features using Astro static site builder. Contains accessible landmarks, skip links, a dark mode color scheme, better focus outline and keyboard menu navigation.',
+  title = 'ThemeForseen',
+  description = 'Scrollable color themes and font pairings with live preview. Experiment with different color palettes and typography combinations in real-time.',
   url = Astro.site,
   image = 'social-preview-image.png',
-  author = 'Incluud',
+  author = 'ThemeForseen',
 } = Astro.props
 ---
 <!-- This is a modified Astroplate template https://github.com/zeon-studio/astroplate -->
@@ -51,6 +52,7 @@ const {
       <slot />
     </main>
     <Footer />
+    <CookieConsent />
     <script>
       import '../../../../dist/index.js';
     </script>

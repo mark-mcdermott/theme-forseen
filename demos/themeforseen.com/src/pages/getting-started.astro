@@ -1,0 +1,208 @@
+---
+import DefaultLayout from '@layouts/DefaultLayout.astro'
+import { Heading, Link } from 'accessible-astro-components'
+import { Icon } from 'astro-icon/components'
+---
+
+<DefaultLayout title="Getting Started">
+  <section class="my-24">
+    <div class="container">
+      <Heading level="h1">Getting Started</Heading>
+    </div>
+  </section>
+
+  <section class="my-12">
+    <div class="narrow container space-content">
+      <Heading level="h2">How To Run The Demo</Heading>
+      <p>
+        Want to see ThemeForseen in action? Clone the repository and run the demo site locally.
+      </p>
+
+      <Heading level="h3">Clone the Repository</Heading>
+      <pre class="code-block"><code>{`git clone https://github.com/mark-mcdermott/theme-forseen.git
+cd theme-forseen`}</code></pre>
+
+      <Heading level="h3">Install Dependencies</Heading>
+      <pre class="code-block"><code>{`cd demos/themeforseen.com
+npm install`}</code></pre>
+
+      <Heading level="h3">Run the Development Server</Heading>
+      <pre class="code-block"><code>{`npm run dev`}</code></pre>
+
+      <p>
+        The demo site will be available at <code class="inline-code">{"http://localhost:4321"}</code>. Click the Nyan Unicorn bookmark on the left side of the screen to open the ThemeForseen drawer!
+      </p>
+    </div>
+  </section>
+
+  <section class="my-12">
+    <div class="narrow container space-content">
+      <Heading level="h2">How To Add ThemeForseen To A Site You're Building</Heading>
+      <p>
+        ThemeForseen is a web component that works with any framework. Here's how to add it to your project.
+      </p>
+
+      <Heading level="h3">Step 1: Copy the Library</Heading>
+      <p>
+        Copy the ThemeForseen library files into your project. You'll need:
+      </p>
+      <ul class="list-inside list-disc">
+        <li><code class="inline-code">{"src/"}</code> directory</li>
+        <li><code class="inline-code">{"dist/"}</code> directory</li>
+        <li><code class="inline-code">{"package.json"}</code></li>
+        <li><code class="inline-code">{"tsconfig.json"}</code></li>
+      </ul>
+
+      <Heading level="h3">Step 2: Build the Drawer</Heading>
+      <pre class="code-block"><code>{`npm install
+npm run build`}</code></pre>
+
+      <Heading level="h3">Step 3: Add to Your Layout</Heading>
+      <p>For Astro projects, add the drawer to your main layout file.</p>
+      <pre class="code-block"><code>{`<body>
+  <theme-forseen-drawer></theme-forseen-drawer>
+  <!-- your content -->
+
+  <script>
+    import '../path/to/dist/index.js';
+  </script>
+</body>`}</code></pre>
+
+      <p>
+        For other frameworks (React, Vue, etc.), ThemeForseen uses Web Components so it works anywhere:
+      </p>
+      <pre class="code-block"><code>{`<!-- Add to your HTML -->
+<script type="module" src="/path/to/dist/index.js"></script>
+<theme-forseen-drawer></theme-forseen-drawer>`}</code></pre>
+
+      <Heading level="h3">Step 4: Configure Your CSS</Heading>
+      <p>
+        Update your <code class="inline-code">{"tailwind.config.js"}</code> to use ThemeForseen's CSS variables:
+      </p>
+      <pre class="code-block"><code>{`export default {
+  theme: {
+    extend: {
+      colors: {
+        primary: 'var(--color-primary, #0066CC)',
+        'primary-shadow': 'var(--color-primary-shadow, #004C99)',
+        accent: 'var(--color-accent, #FF6B35)',
+        'accent-shadow': 'var(--color-accent-shadow, #CC5529)',
+        bg: 'var(--color-bg, #FFFFFF)',
+        'card-bg': 'var(--color-card-bg, #F5F5F5)',
+        text: 'var(--color-text, #333333)',
+        extra: 'var(--color-extra, #00D4FF)',
+      },
+    },
+    fontFamily: {
+      heading: ['var(--font-heading, Inter)', 'sans-serif'],
+      body: ['var(--font-body, Geist)', 'sans-serif'],
+    },
+  },
+};`}</code></pre>
+
+      <Heading level="h3">Step 5: Use in Your Components</Heading>
+      <p>
+        Use the Tailwind classes in your components to automatically pick up theme changes:
+      </p>
+      <pre class="code-block"><code>{`<h1 class="font-heading text-primary">Hello World</h1>
+<p class="font-body text-text bg-bg">Some body text</p>
+<div class="bg-card-bg">Card content</div>`}</code></pre>
+
+      <p>
+        That's it! Your site now has live theme and font preview capabilities. Users can click the bookmark icon to explore different color schemes and font combinations.
+      </p>
+
+      <Heading level="h2">Activating a Theme or Font Pairing</Heading>
+      <p>
+        Once you've found a theme or font pairing you love, you can activate it to export the configuration to your project files.
+      </p>
+
+      <Heading level="h3">How Activation Works</Heading>
+      <ol class="list-inside list-decimal space-y-2">
+        <li>Click the lightning bolt (⚡) icon on any theme or font tile</li>
+        <li>A modal will appear with the generated code</li>
+        <li>Click "Save to File" to use the File System Access API (Chrome/Edge) to save directly to your project</li>
+        <li>Or click "Copy" to copy the code and paste it manually</li>
+      </ol>
+
+      <Heading level="h3">For Color Themes</Heading>
+      <p>
+        When you activate a color theme, ThemeForseen generates Tailwind config code. This code should be added to your <code class="inline-code">{"tailwind.config.js"}</code> (or <code class="inline-code">{".ts"}</code>, <code class="inline-code">{".mjs"}</code>) file in the <code class="inline-code">{"theme.extend.colors"}</code> section.
+      </p>
+      <p>
+        <strong>Important:</strong> You must have a Tailwind config file in your project root. If you don't have one, create it first by running <code class="inline-code">{"npx tailwindcss init"}</code>.
+      </p>
+
+      <Heading level="h3">For Font Pairings</Heading>
+      <p>
+        When you activate a font pairing, ThemeForseen generates CSS with CSS variables. We recommend saving this to a file like <code class="inline-code">{"src/styles/fonts.css"}</code> and importing it in your main layout or global styles file.
+      </p>
+      <p>
+        The generated CSS includes:
+      </p>
+      <ul class="list-inside list-disc">
+        <li>CSS custom properties (<code class="inline-code">{"--font-heading"}</code>, <code class="inline-code">{"--font-body"}</code>)</li>
+        <li>Optional direct element styling</li>
+        <li>Tailwind config snippet for using <code class="inline-code">{"font-heading"}</code> and <code class="inline-code">{"font-body"}</code> classes</li>
+      </ul>
+
+      <Heading level="h3">Browser Support</Heading>
+      <p>
+        The "Save to File" feature uses the File System Access API, which is supported in Chrome, Edge, and other Chromium-based browsers. For other browsers, you can copy the code and paste it manually.
+      </p>
+
+      <div class="mt-12">
+        <Link href="https://github.com/mark-mcdermott/theme-forseen" isButton type="primary" animateOnHover animationType="boop">
+          <Icon aria-hidden="true" name="lucide:github" size="1.5rem" />
+          View on GitHub
+        </Link>
+      </div>
+    </div>
+  </section>
+</DefaultLayout>
+
+<style>
+  .code-block {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+
+  .code-block code {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre;
+  }
+
+  .inline-code {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #d63384;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .code-block {
+      background: #1e1e1e;
+      border-color: #333;
+    }
+
+    .code-block code {
+      color: #e0e0e0;
+    }
+
+    .inline-code {
+      background: #2a2a2a;
+      border-color: #444;
+      color: #ff6b9d;
+    }
+  }
+</style>

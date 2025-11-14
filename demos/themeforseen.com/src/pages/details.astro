@@ -1,0 +1,150 @@
+---
+import DefaultLayout from '@layouts/DefaultLayout.astro'
+import { Heading, Link } from 'accessible-astro-components'
+import { Icon } from 'astro-icon/components'
+---
+
+<DefaultLayout title="Details">
+  <section class="my-24">
+    <div class="container">
+      <Heading level="h1">Details</Heading>
+    </div>
+  </section>
+
+  <section class="my-12">
+    <div class="narrow container space-content">
+      <Heading level="h2">Why Is The Repository So Large?</Heading>
+      <p>
+        You might notice that this repository has a pretty hefty file size. The main reason? We're bundling all the fonts locally.
+      </p>
+      <p>
+        ThemeForseen includes 30 font pairings, which means 60+ individual font files (many with multiple weights). We made the deliberate choice to include these fonts in the repository rather than loading them from Google Fonts or other CDNs. Why? To give you the best preview experience possible.
+      </p>
+
+      <Heading level="h3">The Tradeoffs We Encountered</Heading>
+      <p>
+        When building ThemeForseen, we faced a classic web development dilemma: **FOUC** (Flash of Unstyled Content). If you've ever seen a webpage load with the wrong font for a split second before switching to the correct one, you've experienced FOUC.
+      </p>
+      <p>
+        We explored several approaches:
+      </p>
+      <ul class="list-inside list-disc">
+        <li><strong>Loading fonts from CDN on demand</strong> - This kept the repo small but caused noticeable FOUC every time you switched fonts. Not great for a tool designed to preview fonts in real-time.</li>
+        <li><strong>Preloading a subset of fonts</strong> - Better, but still caused flashing when you scrolled through the less common pairings.</li>
+        <li><strong>Bundling all fonts locally</strong> - This gave us the most consistent experience. The fonts are available immediately, reducing (though not eliminating) FOUC.</li>
+      </ul>
+      <p>
+        We chose option 3 because the primary use case for ThemeForseen is rapid theme exploration. When you're scrolling through dozens of font combinations, every flash and delay breaks the flow. Local fonts made the experience significantly smoother.
+      </p>
+
+      <Heading level="h3">FOUC Isn't Completely Solved</Heading>
+      <p>
+        Even with local fonts, you might still notice occasional font flashing, especially on the first load or with slower connections. We're continuing to investigate ways to improve this:
+      </p>
+      <ul class="list-inside list-disc">
+        <li>Font preloading strategies</li>
+        <li>More aggressive font subsetting</li>
+        <li>Progressive enhancement patterns</li>
+        <li>Smarter caching mechanisms</li>
+      </ul>
+      <p>
+        This is an ongoing challenge in web development, and we're open to suggestions and improvements.
+      </p>
+
+      <Heading level="h2">The Font Selection</Heading>
+      <p>
+        We needed a wide variety of fonts to make ThemeForseen useful. Sans-serif, serif, display, monospace—each category serves different design needs. Having 30 curated pairings means you can quickly find something that works for your project, whether you're building a corporate site, a creative portfolio, or anything in between.
+      </p>
+      <p>
+        The tradeoff for this variety is repository size. We think it's worth it for the improved user experience, but we understand if you want to trim it down for your own deployment.
+      </p>
+
+      <Heading level="h2">Theme Activation Feature</Heading>
+      <p>
+        ThemeForseen includes a powerful activation feature that lets you export your chosen theme or font pairing directly to your project files. This bridges the gap between previewing and implementing.
+      </p>
+
+      <Heading level="h3">How It Works</Heading>
+      <p>
+        Each theme and font tile has a lightning bolt icon (⚡). Click it to activate that theme or font pairing. A modal will appear with generated code specific to your selection:
+      </p>
+      <ul class="list-inside list-disc">
+        <li><strong>For color themes:</strong> Generates Tailwind config code for <code>tailwind.config.js</code></li>
+        <li><strong>For font pairings:</strong> Generates CSS with custom properties for a file like <code>src/styles/fonts.css</code></li>
+      </ul>
+
+      <Heading level="h3">File System Integration</Heading>
+      <p>
+        The activation modal offers two ways to use the generated code:
+      </p>
+      <ul class="list-inside list-disc">
+        <li><strong>Save to File:</strong> Uses the modern <strong>File System Access API</strong> (supported in Chrome, Edge, and Chromium-based browsers) to let you select and directly write to files in your project. This provides a seamless, one-click experience.</li>
+        <li><strong>Copy Code:</strong> Falls back to copying the code to your clipboard, which you can then paste manually into the appropriate file.</li>
+      </ul>
+
+      <Heading level="h3">Requirements and Error Handling</Heading>
+      <p>
+        ThemeForseen's activation feature assumes a specific project structure:
+      </p>
+      <ul class="list-inside list-disc">
+        <li>For colors: You need a <code>tailwind.config.js</code> (or <code>.ts</code>, <code>.mjs</code>) file in your project root</li>
+        <li>For fonts: You need to create a CSS file (we recommend <code>src/styles/fonts.css</code>) and import it in your layout</li>
+      </ul>
+      <p>
+        If these files don't exist, the generated code still works—you just need to create the files first. The modal provides clear instructions for where to put the code.
+      </p>
+
+      <Heading level="h3">Future Plans</Heading>
+      <p>
+        We're considering expanding the activation feature to support:
+      </p>
+      <ul class="list-inside list-disc">
+        <li>Multiple framework variants (React, Vue, vanilla CSS, etc.)</li>
+        <li>Auto-detection of your project's framework and structure</li>
+        <li>Configuration presets for different CSS approaches (CSS-in-JS, styled-components, etc.)</li>
+        <li>Automatic validation of required files before activation</li>
+      </ul>
+      <p>
+        If you have ideas for improving the activation workflow, we'd love to hear them!
+      </p>
+
+      <Heading level="h2">We're Open To Contributions</Heading>
+      <p>
+        ThemeForseen is an open-source project, and we welcome contributions from the community. Whether you want to:
+      </p>
+      <ul class="list-inside list-disc">
+        <li>Add new color themes or font pairings</li>
+        <li>Improve the FOUC handling</li>
+        <li>Optimize the bundle size</li>
+        <li>Fix bugs or improve documentation</li>
+        <li>Suggest new features</li>
+      </ul>
+      <p>
+        We'd love to hear from you! Feel free to:
+      </p>
+      <ul class="list-inside list-disc">
+        <li><strong>Open an issue</strong> on GitHub to report bugs or suggest features</li>
+        <li><strong>Submit a pull request</strong> with improvements</li>
+        <li><strong>Start a discussion</strong> about ideas or approaches</li>
+      </ul>
+
+      <div class="mt-12 flex gap-4">
+        <Link href="https://github.com/mark-mcdermott/theme-forseen/issues" isButton type="primary" animateOnHover animationType="boop">
+          <Icon aria-hidden="true" name="lucide:message-circle" size="1.5rem" />
+          Open an Issue
+        </Link>
+        <Link href="https://github.com/mark-mcdermott/theme-forseen" isButton type="secondary" animateOnHover animationType="boop">
+          <Icon aria-hidden="true" name="lucide:github" size="1.5rem" />
+          View on GitHub
+        </Link>
+      </div>
+    </div>
+  </section>
+</DefaultLayout>
+
+<style>
+  strong {
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+</style>

@@ -1,0 +1,484 @@
+---
+import DefaultLayout from '@layouts/DefaultLayout.astro'
+import { Heading, Link } from 'accessible-astro-components'
+import { Icon } from 'astro-icon/components'
+---
+
+<DefaultLayout title="Subscribe - Pricing Plans">
+  <section class="my-24">
+    <div class="container text-center">
+      <Heading level="h1">Choose Your Plan</Heading>
+      <p class="subtitle">
+        Select the perfect plan for your needs. Upgrade or downgrade anytime.
+      </p>
+    </div>
+  </section>
+
+  <section class="my-12">
+    <div class="container">
+      <div class="pricing-grid">
+        <!-- Free Tier -->
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <Icon aria-hidden="true" name="lucide:zap" size="2.5rem" />
+            <Heading level="h3">Free</Heading>
+            <div class="price">
+              <span class="price-amount">$0</span>
+              <span class="price-period">/forever</span>
+            </div>
+            <p class="plan-description">Perfect for trying out ThemeForseen</p>
+          </div>
+
+          <div class="pricing-card-body">
+            <ul class="features-list">
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Access to 15+ color themes</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>30+ font pairings</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Live preview mode</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Keyboard shortcuts</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Theme activation & export</span>
+              </li>
+              <li class="disabled">
+                <Icon aria-hidden="true" name="lucide:x" />
+                <span>Save favorites across devices</span>
+              </li>
+              <li class="disabled">
+                <Icon aria-hidden="true" name="lucide:x" />
+                <span>Custom theme creation</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="pricing-card-footer">
+            <Link href="/" isButton type="secondary" animateOnHover animationType="boop">
+              Get Started Free
+            </Link>
+          </div>
+        </div>
+
+        <!-- Subscriber Tier -->
+        <div class="pricing-card featured">
+          <div class="popular-badge">Most Popular</div>
+          <div class="pricing-card-header">
+            <Icon aria-hidden="true" name="lucide:star" size="2.5rem" />
+            <Heading level="h3">Subscriber</Heading>
+            <div class="price">
+              <span class="price-amount">$5</span>
+              <span class="price-period">/month</span>
+            </div>
+            <p class="plan-description">For individuals and small teams</p>
+          </div>
+
+          <div class="pricing-card-body">
+            <ul class="features-list">
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span><strong>Everything in Free, plus:</strong></span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Save unlimited favorites</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Sync across all devices</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Create custom themes</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Share theme collections</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Priority support</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Early access to new features</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="pricing-card-footer">
+            <Link href="/contact" isButton type="primary" animateOnHover animationType="boop">
+              <Icon aria-hidden="true" name="lucide:crown" size="1.25rem" />
+              Start Free Trial
+            </Link>
+            <small class="trial-note">14-day free trial, cancel anytime</small>
+          </div>
+        </div>
+
+        <!-- Enterprise Tier -->
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <Icon aria-hidden="true" name="lucide:building-2" size="2.5rem" />
+            <Heading level="h3">Enterprise</Heading>
+            <div class="price">
+              <span class="price-amount">Custom</span>
+            </div>
+            <p class="plan-description">For large teams and organizations</p>
+          </div>
+
+          <div class="pricing-card-body">
+            <ul class="features-list">
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span><strong>Everything in Subscriber, plus:</strong></span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Unlimited team members</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Advanced analytics</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Custom integrations</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>Dedicated account manager</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>SLA & uptime guarantee</span>
+              </li>
+              <li>
+                <Icon aria-hidden="true" name="lucide:check" />
+                <span>White-label options</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="pricing-card-footer">
+            <Link href="/contact" isButton type="secondary" animateOnHover animationType="boop">
+              <Icon aria-hidden="true" name="lucide:mail" size="1.25rem" />
+              Contact Sales
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="faq-section">
+        <Heading level="h2">Frequently Asked Questions</Heading>
+
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h4>
+              <Icon aria-hidden="true" name="lucide:help-circle" size="1.25rem" />
+              When will paid plans be available?
+            </h4>
+            <p>
+              We're currently building out the subscription infrastructure. Paid plans will launch in the coming months.
+              <Link href="/contact">Contact us</Link> to be notified when they're ready!
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>
+              <Icon aria-hidden="true" name="lucide:help-circle" size="1.25rem" />
+              Will the free plan always be available?
+            </h4>
+            <p>
+              Absolutely! ThemeForseen will always have a robust free tier. We believe everyone should have access to great design tools.
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>
+              <Icon aria-hidden="true" name="lucide:help-circle" size="1.25rem" />
+              Can I upgrade or downgrade later?
+            </h4>
+            <p>
+              Yes! You'll be able to change your plan at any time. Upgrades take effect immediately, and downgrades apply at the end of your billing period.
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>
+              <Icon aria-hidden="true" name="lucide:help-circle" size="1.25rem" />
+              What payment methods do you accept?
+            </h4>
+            <p>
+              Once launched, we'll accept all major credit cards, PayPal, and can invoice for Enterprise plans.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</DefaultLayout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: #666;
+    margin-top: 1rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (min-width: 768px) {
+    .pricing-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .pricing-card {
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .pricing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .pricing-card.featured {
+    border-color: var(--color-primary);
+    box-shadow: 0 8px 24px rgba(0, 102, 204, 0.2);
+  }
+
+  .popular-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-primary);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .pricing-card-header {
+    text-align: center;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .pricing-card-header svg {
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+
+  .pricing-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+  }
+
+  .price {
+    margin: 1.5rem 0;
+  }
+
+  .price-amount {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #000;
+  }
+
+  .price-period {
+    font-size: 1rem;
+    color: #666;
+  }
+
+  .plan-description {
+    color: #666;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .pricing-card-body {
+    flex: 1;
+    padding: 2rem 0;
+  }
+
+  .features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .features-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+
+  .features-list li svg {
+    color: #4CAF50;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .features-list li.disabled {
+    opacity: 0.5;
+  }
+
+  .features-list li.disabled svg {
+    color: #999;
+  }
+
+  .pricing-card-footer {
+    text-align: center;
+  }
+
+  .trial-note {
+    display: block;
+    margin-top: 0.75rem;
+    color: #666;
+    font-size: 0.875rem;
+  }
+
+  /* FAQ Section */
+  .faq-section {
+    margin-top: 5rem;
+    text-align: center;
+  }
+
+  .faq-section h2 {
+    margin-bottom: 3rem;
+  }
+
+  .faq-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  @media (min-width: 768px) {
+    .faq-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .faq-item {
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
+
+  .faq-item h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1rem 0;
+    font-size: 1.125rem;
+    color: #000;
+  }
+
+  .faq-item h4 svg {
+    color: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .faq-item p {
+    margin: 0;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  .faq-item a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .subtitle {
+      color: #aaa;
+    }
+
+    .pricing-card {
+      background: #2a2a2a;
+      border-color: #444;
+    }
+
+    .pricing-card-header {
+      border-bottom-color: #444;
+    }
+
+    .price-amount {
+      color: #fff;
+    }
+
+    .price-period {
+      color: #aaa;
+    }
+
+    .plan-description {
+      color: #aaa;
+    }
+
+    .features-list li {
+      color: #e0e0e0;
+    }
+
+    .features-list li.disabled svg {
+      color: #666;
+    }
+
+    .trial-note {
+      color: #aaa;
+    }
+
+    .faq-item {
+      background: #1a1a1a;
+      border-color: #333;
+    }
+
+    .faq-item h4 {
+      color: #fff;
+    }
+
+    .faq-item p {
+      color: #ccc;
+    }
+  }
+</style>

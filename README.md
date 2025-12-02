@@ -1,181 +1,209 @@
 # ThemeForseen
 
-A live color theme and font pairing preview tool that adds an interactive sidebar drawer to your website. Browse and preview different color schemes and font combinations in real-time!
+A live color theme and font pairing preview drawer for websites. Browse and preview different color schemes and font combinations in real-time.
+
+Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) using the Custom Elements API, so it works with any framework (React, Vue, Svelte, Astro, plain HTML, etc.).
 
 ## Features
 
-- 🎨 **Live Color Theme Preview** - 5+ curated color palettes with instant visual feedback
-- 🔤 **Font Pairing Preview** - 8+ professionally paired font combinations
-- 🌓 **Light & Dark Mode Support** - Separate themes for light and dark modes
-- ⌨️ **Keyboard Navigation** - Use arrow keys to quickly browse options
-- 🖱️ **Mouse Wheel Support** - Scroll through themes and fonts with your mouse wheel
-- 🎯 **CSS Variables** - Uses CSS custom properties for seamless integration
-- 📦 **Framework Agnostic** - Works with any web framework (Astro, React, Vue, etc.)
+- **Live Color Theme Preview** - Curated color palettes with instant visual feedback
+- **Font Pairing Preview** - Professionally paired font combinations
+- **Light & Dark Mode Support** - Separate themes for each mode
+- **Keyboard Navigation** - Arrow keys to browse options
+- **Mouse Wheel Support** - Scroll through themes and fonts
+- **CSS Variables** - Uses CSS custom properties for seamless integration
+- **Framework Agnostic** - Works with any web framework
 
-## Project Structure
+## Installation (Local Development)
 
-```
-theme-forseen/
-├── src/                           # Drawer library source code
-│   ├── ThemeForseenDrawer.ts      # Main web component
-│   ├── themes.ts                  # Color & font definitions
-│   └── index.ts                   # Entry point
-├── dist/                          # Built library
-├── package.json                   # Library package configuration
-└── demos/                         # Demo websites
-    ├── themeforseen.com/          # Astro demo site (main)
-    │   └── src/layouts/
-    │       └── DefaultLayout.astro
-    └── the-office-placeholder-site.com/  # React demo site
-        └── src/
-```
+This package isn't on npm yet. To use it locally:
 
-## Quick Start
-
-The drawer is already integrated into the demo sites. To see it in action:
+### Option 1: npm link (recommended for active development)
 
 ```bash
-# For the Astro demo site
-cd demos/themeforseen.com
-yarn install
-yarn dev
+# Clone the repo
+git clone https://github.com/mark-mcdermott/theme-forseen.git
+cd theme-forseen
+
+# Install dependencies and build
+npm install
+npm run build
+
+# Create a global symlink
+npm link
+
+# In your project directory
+cd /path/to/your-project
+npm link theme-forseen
 ```
 
-Or try the React demo:
+Changes to theme-forseen will be reflected after rebuilding (`npm run build`).
+
+### Option 2: File path in package.json
+
+```json
+{
+  "dependencies": {
+    "theme-forseen": "file:../path/to/theme-forseen"
+  }
+}
+```
+
+Then run `npm install` in your project.
+
+### Option 3: npm pack (simulates real npm install)
 
 ```bash
-# For the React demo site
-cd demos/the-office-placeholder-site.com
-yarn install
-yarn dev
+# In theme-forseen directory
+npm run build
+npm pack
+# Creates theme-forseen-0.1.0.tgz
+
+# In your project
+npm install ../path/to/theme-forseen-0.1.0.tgz
 ```
 
-Then click the 🎨 icon on the left side of the screen!
+## Usage
 
-## Usage in Your Project
-
-### For Astro Projects
-
-1. Copy the ThemeForseen library files into your project:
-   ```bash
-   # Copy src/, dist/, package.json, and tsconfig.json to your project root
-   ```
-
-2. Build the drawer:
-   ```bash
-   npm install
-   npm run build
-   ```
-
-3. Add to your layout file (e.g., `src/layouts/Layout.astro`):
-   ```astro
-   <body>
-     <theme-forseen-drawer></theme-forseen-drawer>
-     <!-- your content -->
-
-     <script>
-       import '../path/to/dist/index.js';
-     </script>
-   </body>
-   ```
-
-4. Update your `tailwind.config.js`:
-   ```js
-   export default {
-     theme: {
-       extend: {
-         colors: {
-           primary: 'var(--color-primary, #0066CC)',
-           'primary-shadow': 'var(--color-primary-shadow, #004C99)',
-           accent: 'var(--color-accent, #FF6B35)',
-           'accent-shadow': 'var(--color-accent-shadow, #CC5529)',
-           bg: 'var(--color-bg, #FFFFFF)',
-           'card-bg': 'var(--color-card-bg, #F5F5F5)',
-           text: 'var(--color-text, #333333)',
-           extra: 'var(--color-extra, #00D4FF)',
-         },
-       },
-       fontFamily: {
-         heading: ['var(--font-heading, Inter)', 'sans-serif'],
-         body: ['var(--font-body, Geist)', 'sans-serif'],
-       },
-     },
-   };
-   ```
-
-5. Use the Tailwind classes in your components:
-   ```html
-   <h1 class="font-heading text-primary">Hello World</h1>
-   <p class="font-body text-text bg-bg">Some body text</p>
-   <div class="bg-card-bg">Card content</div>
-   ```
-
-### For Other Frameworks (React, Vue, etc.)
-
-ThemeForseen uses Web Components, so it works with any framework:
+### Basic Usage (any framework)
 
 ```html
-<!-- Add to your HTML -->
-<script type="module" src="/path/to/dist/index.js"></script>
-<theme-forseen-drawer></theme-forseen-drawer>
+<script type="module">
+  import { initThemeForseen } from 'theme-forseen';
+  initThemeForseen();
+</script>
 ```
 
-For React projects, see the example in `demos/the-office-placeholder-site.com/`
+Or add the element directly:
 
-Then configure your CSS framework to use the CSS variables.
+```html
+<script type="module" src="path/to/theme-forseen/dist/index.js"></script>
+<theme-forseen></theme-forseen>
+```
+
+### SvelteKit
+
+```svelte
+<script>
+  import { onMount } from 'svelte';
+  import { initThemeForseen } from 'theme-forseen';
+
+  onMount(() => {
+    initThemeForseen();
+  });
+</script>
+```
+
+### React
+
+```jsx
+import { useEffect } from 'react';
+import { initThemeForseen } from 'theme-forseen';
+
+function App() {
+  useEffect(() => {
+    initThemeForseen();
+  }, []);
+
+  return <div>Your app</div>;
+}
+```
+
+### Tailwind CSS Integration
+
+ThemeForseen sets CSS variables on `<html>` at runtime when you select themes. You just need to tell Tailwind about them.
+
+#### Tailwind v4 (CSS-first config)
+
+Add this to your main CSS file:
+
+```css
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-shadow: var(--color-primary-shadow);
+  --color-accent: var(--color-accent);
+  --color-accent-shadow: var(--color-accent-shadow);
+  --color-bg: var(--color-bg);
+  --color-card-bg: var(--color-card-bg);
+  --color-text: var(--color-text);
+  --color-extra: var(--color-extra);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+```
+
+The `inline` keyword tells Tailwind these reference external runtime variables.
+
+#### Tailwind v3 (JS config)
+
+Update your `tailwind.config.js`:
+
+```js
+export default {
+  theme: {
+    extend: {
+      colors: {
+        primary: 'var(--color-primary)',
+        'primary-shadow': 'var(--color-primary-shadow)',
+        accent: 'var(--color-accent)',
+        'accent-shadow': 'var(--color-accent-shadow)',
+        bg: 'var(--color-bg)',
+        'card-bg': 'var(--color-card-bg)',
+        text: 'var(--color-text)',
+        extra: 'var(--color-extra)',
+      },
+    },
+    fontFamily: {
+      heading: ['var(--font-heading)', 'sans-serif'],
+      body: ['var(--font-body)', 'sans-serif'],
+    },
+  },
+};
+```
+
+#### Using the classes
+
+Then use in your markup:
+
+```html
+<h1 class="font-heading text-primary">Hello World</h1>
+<p class="font-body text-text bg-bg">Body text</p>
+```
 
 ## How to Use the Drawer
 
-1. **Open the Drawer**: Click the 🎨 icon on the left side of the screen
-2. **Browse Themes**:
-   - Click any theme to apply it instantly
-   - Use ↑/↓ arrow keys or mouse wheel to scroll through themes
-   - Toggle between Light and Dark mode
-3. **Browse Fonts**:
-   - Click any font pairing to apply it
-   - Use ↑/↓ arrow keys or mouse wheel to scroll through fonts
-4. **See Changes Live**: All changes apply immediately to your page!
-5. **Activate a Theme**: Click the lightning bolt (⚡) icon on any tile to export the configuration to your project files
+1. **Open**: Click the icon on the left side of the screen
+2. **Browse Themes**: Click to apply, use arrow keys or mouse wheel to scroll
+3. **Toggle Mode**: Switch between Light and Dark mode
+4. **Browse Fonts**: Click any font pairing to apply it
+5. **Activate**: Click the lightning bolt icon to export config to your project
 
-## Theme Activation
+## CSS Variables Reference
 
-ThemeForseen includes a powerful activation feature that exports your chosen theme or font pairing to your project files.
+### Colors
+| Variable | Description |
+|----------|-------------|
+| `--color-primary` | Primary brand color |
+| `--color-primary-shadow` | Darker shade of primary |
+| `--color-accent` | Accent/secondary color |
+| `--color-accent-shadow` | Darker shade of accent |
+| `--color-bg` | Background color |
+| `--color-card-bg` | Card/surface background |
+| `--color-text` | Main text color |
+| `--color-extra` | Additional accent color |
+| `--color-h1`, `--color-h2`, `--color-h3` | Heading colors |
 
-### How Activation Works
-
-1. Click the ⚡ (lightning bolt) icon on any theme or font tile
-2. A modal appears with generated code
-3. Choose one of two options:
-   - **Save to File**: Uses the File System Access API (Chrome/Edge) to save directly to your project
-   - **Copy**: Copies the code to your clipboard for manual pasting
-
-### For Color Themes
-
-Activating a color theme generates Tailwind config code that should be added to your `tailwind.config.js` (or `.ts`, `.mjs`) file in the `theme.extend.colors` section.
-
-**Requirements:**
-- You must have a Tailwind config file in your project root
-- If you don't have one, create it with `npx tailwindcss init`
-
-### For Font Pairings
-
-Activating a font pairing generates CSS with custom properties (`--font-heading`, `--font-body`). We recommend saving this to `src/styles/fonts.css` and importing it in your main layout.
-
-The generated CSS includes:
-- CSS custom properties for heading and body fonts
-- Optional direct element styling
-- Tailwind config snippet for using `font-heading` and `font-body` classes
-
-### Browser Support
-
-The "Save to File" feature uses the File System Access API, supported in:
-- Chrome, Edge, and other Chromium-based browsers
-
-For other browsers, use the "Copy" button to paste the code manually.
+### Fonts
+| Variable | Description |
+|----------|-------------|
+| `--font-heading` | Font family for headings |
+| `--font-body` | Font family for body text |
 
 ## Customization
 
-Add your own themes and fonts by editing `src/themes.ts`:
+Add your own themes by editing `src/themes.ts`:
 
 ```typescript
 export const colorThemes: ColorTheme[] = [
@@ -195,95 +223,32 @@ export const colorThemes: ColorTheme[] = [
       h3Color: 'accent',
     },
     dark: {
-      // ... dark mode colors
+      // dark mode colors...
     },
   },
-  // Add more themes...
 ];
 ```
 
-After editing, rebuild:
+Rebuild after changes:
+
 ```bash
 npm run build
-# or use yarn
-yarn build
 ```
-
-## CSS Variables Reference
-
-### Colors
-- `--color-primary` - Primary brand color
-- `--color-primary-shadow` - Darker shade of primary
-- `--color-accent` - Accent/secondary color
-- `--color-accent-shadow` - Darker shade of accent
-- `--color-bg` - Background color
-- `--color-card-bg` - Card/surface background
-- `--color-text` - Main text color
-- `--color-extra` - Additional color for special elements
-- `--color-h1`, `--color-h2`, `--color-h3` - Heading colors
-
-### Fonts
-- `--font-heading` - Font family for headings
-- `--font-body` - Font family for body text
 
 ## Development
 
 ```bash
-# Build the drawer library (from root)
+# Install and build
 npm install
 npm run build
-# or use yarn
-yarn install
-yarn build
 
-# Run the Astro demo site
-cd demos/themeforseen.com
-yarn install
-yarn dev
-
-# Or run the React demo site
-cd demos/the-office-placeholder-site.com
-yarn install
-yarn dev
+# Watch mode
+npm run dev
 ```
-
-The demo sites automatically import the drawer from `../../dist/index.js`, so make sure to build the library first before running the demos.
-
-## Repository Size & Font Management
-
-You might notice this repository has a significant file size. This is primarily due to bundling all fonts locally. ThemeForseen includes 30 font pairings (60+ individual font files with multiple weights) to provide a comprehensive selection for previewing.
-
-### Why Local Fonts?
-
-We chose to bundle fonts locally rather than loading from CDNs to minimize FOUC (Flash of Unstyled Content) during live previewing. When rapidly switching between font combinations, loading fonts on-demand causes noticeable flashing. Local fonts provide a smoother, more immediate preview experience.
-
-### FOUC Status
-
-While local fonts significantly reduce FOUC, it's not completely eliminated—you may still notice occasional font flashing, especially on first load or slower connections. We're continuing to investigate improvements:
-
-- Font preloading strategies
-- Progressive font subsetting
-- Smarter caching mechanisms
-- Alternative loading patterns
-
-We're open to suggestions and contributions on this front!
 
 ## Contributing
 
-ThemeForseen is an open-source project and we welcome contributions! Whether you want to:
-
-- Add new color themes or font pairings
-- Improve FOUC handling and performance
-- Optimize bundle size
-- Fix bugs or enhance documentation
-- Suggest new features
-
-Feel free to:
-- **Open an issue** to report bugs or suggest features
-- **Submit a pull request** with improvements
-- **Start a discussion** about ideas or approaches
-
-Visit our [GitHub repository](https://github.com/mark-mcdermott/theme-forseen) to get started!
+Contributions welcome! Open an issue or submit a PR at [GitHub](https://github.com/mark-mcdermott/theme-forseen).
 
 ## License
 

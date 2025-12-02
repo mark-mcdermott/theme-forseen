@@ -1,4 +1,4 @@
-export { ThemeForseenDrawer } from './ThemeForseenDrawer';
+export { ThemeForseen } from './ThemeForseen';
 export { colorThemes, fontPairings, type ColorTheme, type FontPairing } from './themes';
 
 // Initialize function to add the drawer to the page
@@ -14,7 +14,7 @@ export function initThemeForseen() {
 }
 
 function addDrawer() {
-  const drawer = document.createElement('theme-forseen-drawer');
+  const drawer = document.createElement('theme-forseen');
   document.body.appendChild(drawer);
 }
 

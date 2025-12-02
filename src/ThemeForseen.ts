@@ -5,7 +5,7 @@ import {
   type FontPairing,
 } from "./themes";
 
-export class ThemeForseenDrawer extends HTMLElement {
+export class ThemeForseen extends HTMLElement {
   private isOpen = false;
   private selectedLightTheme = 0;
   private selectedDarkTheme = 0;
@@ -2401,7 +2401,7 @@ export default {
 // Register the custom element
 if (
   typeof window !== "undefined" &&
-  !customElements.get("theme-forseen-drawer")
+  !customElements.get("theme-forseen")
 ) {
-  customElements.define("theme-forseen-drawer", ThemeForseenDrawer);
+  customElements.define("theme-forseen", ThemeForseen);
 }

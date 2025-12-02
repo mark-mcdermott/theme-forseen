@@ -1,5 +1,5 @@
 {
-  "name": "theme-forseen-drawer",
+  "name": "theme-forseen",
   "version": "0.1.0",
   "description": "A live color theme and font pairing preview drawer for web applications",
   "main": "dist/index.js",

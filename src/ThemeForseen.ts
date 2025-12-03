@@ -3,7 +3,7 @@ import {
   fontPairings,
   type ColorTheme,
   type FontPairing,
-} from "./themes";
+} from "./themes.js";
 
 export class ThemeForseen extends HTMLElement {
   private isOpen = false;
@@ -12,12 +12,12 @@ export class ThemeForseen extends HTMLElement {
   private selectedFontPairing = 0;
   private isDarkMode = false;
   private focusedColumn: "themes" | "fonts" = "themes";
-  private starredLightThemes = new Set<number>();
-  private starredDarkThemes = new Set<number>();
-  private lovedLightTheme: number | null = null;
-  private lovedDarkTheme: number | null = null;
-  private starredFonts = new Set<number>();
-  private lovedFont: number | null = null;
+  private starredLightTheme: number | null = null;
+  private starredDarkTheme: number | null = null;
+  private lovedLightThemes = new Set<number>();
+  private lovedDarkThemes = new Set<number>();
+  private starredFont: number | null = null;
+  private lovedFonts = new Set<number>();
 
   // Individual font selections
   private selectedHeadingFont: string | null = null;
@@ -158,31 +158,40 @@ export class ThemeForseen extends HTMLElement {
     if (savedDarkTheme) this.selectedDarkTheme = parseInt(savedDarkTheme);
     if (savedFont) this.selectedFontPairing = parseInt(savedFont);
 
-    // Load starred themes
+    // Load starred themes (single value per mode)
     const savedStarredLight = localStorage.getItem("themeforseen-starred-light");
     const savedStarredDark = localStorage.getItem("themeforseen-starred-dark");
-    if (savedStarredLight) {
-      this.starredLightThemes = new Set(JSON.parse(savedStarredLight));
-    }
-    if (savedStarredDark) {
-      this.starredDarkThemes = new Set(JSON.parse(savedStarredDark));
-    }
+    if (savedStarredLight) this.starredLightTheme = parseInt(savedStarredLight);
+    if (savedStarredDark) this.starredDarkTheme = parseInt(savedStarredDark);
 
-    // Load loved themes
+    // Load loved themes (multiple per mode)
     const savedLovedLight = localStorage.getItem("themeforseen-loved-light");
     const savedLovedDark = localStorage.getItem("themeforseen-loved-dark");
-    if (savedLovedLight) this.lovedLightTheme = parseInt(savedLovedLight);
-    if (savedLovedDark) this.lovedDarkTheme = parseInt(savedLovedDark);
-
-    // Load starred fonts
-    const savedStarredFonts = localStorage.getItem("themeforseen-starred-fonts");
-    if (savedStarredFonts) {
-      this.starredFonts = new Set(JSON.parse(savedStarredFonts));
+    if (savedLovedLight) {
+      try {
+        const parsed = JSON.parse(savedLovedLight);
+        if (Array.isArray(parsed)) this.lovedLightThemes = new Set(parsed);
+      } catch (e) { /* ignore corrupted data */ }
+    }
+    if (savedLovedDark) {
+      try {
+        const parsed = JSON.parse(savedLovedDark);
+        if (Array.isArray(parsed)) this.lovedDarkThemes = new Set(parsed);
+      } catch (e) { /* ignore corrupted data */ }
     }
 
-    // Load loved font
-    const savedLovedFont = localStorage.getItem("themeforseen-loved-font");
-    if (savedLovedFont) this.lovedFont = parseInt(savedLovedFont);
+    // Load starred font (single value)
+    const savedStarredFont = localStorage.getItem("themeforseen-starred-font");
+    if (savedStarredFont) this.starredFont = parseInt(savedStarredFont);
+
+    // Load loved fonts (multiple)
+    const savedLovedFonts = localStorage.getItem("themeforseen-loved-fonts");
+    if (savedLovedFonts) {
+      try {
+        const parsed = JSON.parse(savedLovedFonts);
+        if (Array.isArray(parsed)) this.lovedFonts = new Set(parsed);
+      } catch (e) { /* ignore corrupted data */ }
+    }
 
     // Load individual font selections
     const savedHeadingFont = localStorage.getItem("themeforseen-heading-font");
@@ -196,16 +205,25 @@ export class ThemeForseen extends HTMLElement {
     const savedHeadingStyles = localStorage.getItem("themeforseen-filter-heading-styles");
     const savedBodyStyles = localStorage.getItem("themeforseen-filter-body-styles");
     if (savedTags) {
-      this.selectedTags = new Set(JSON.parse(savedTags));
+      try {
+        const parsed = JSON.parse(savedTags);
+        if (Array.isArray(parsed)) this.selectedTags = new Set(parsed);
+      } catch (e) { /* ignore corrupted data */ }
     }
     if (savedSearch) {
       this.searchText = savedSearch;
     }
     if (savedHeadingStyles) {
-      this.selectedHeadingStyles = new Set(JSON.parse(savedHeadingStyles));
+      try {
+        const parsed = JSON.parse(savedHeadingStyles);
+        if (Array.isArray(parsed)) this.selectedHeadingStyles = new Set(parsed);
+      } catch (e) { /* ignore corrupted data */ }
     }
     if (savedBodyStyles) {
-      this.selectedBodyStyles = new Set(JSON.parse(savedBodyStyles));
+      try {
+        const parsed = JSON.parse(savedBodyStyles);
+        if (Array.isArray(parsed)) this.selectedBodyStyles = new Set(parsed);
+      } catch (e) { /* ignore corrupted data */ }
     }
 
     // Load column collapse state
@@ -243,31 +261,31 @@ export class ThemeForseen extends HTMLElement {
     localStorage.setItem("themeforseen-darktheme", String(this.selectedDarkTheme));
     localStorage.setItem("themeforseen-font", String(this.selectedFontPairing));
 
-    // Save starred themes
-    localStorage.setItem("themeforseen-starred-light", JSON.stringify(Array.from(this.starredLightThemes)));
-    localStorage.setItem("themeforseen-starred-dark", JSON.stringify(Array.from(this.starredDarkThemes)));
-
-    // Save loved themes
-    if (this.lovedLightTheme !== null) {
-      localStorage.setItem("themeforseen-loved-light", String(this.lovedLightTheme));
+    // Save starred themes (single value per mode)
+    if (this.starredLightTheme !== null) {
+      localStorage.setItem("themeforseen-starred-light", String(this.starredLightTheme));
     } else {
-      localStorage.removeItem("themeforseen-loved-light");
+      localStorage.removeItem("themeforseen-starred-light");
     }
-    if (this.lovedDarkTheme !== null) {
-      localStorage.setItem("themeforseen-loved-dark", String(this.lovedDarkTheme));
+    if (this.starredDarkTheme !== null) {
+      localStorage.setItem("themeforseen-starred-dark", String(this.starredDarkTheme));
     } else {
-      localStorage.removeItem("themeforseen-loved-dark");
+      localStorage.removeItem("themeforseen-starred-dark");
     }
 
-    // Save starred fonts
-    localStorage.setItem("themeforseen-starred-fonts", JSON.stringify(Array.from(this.starredFonts)));
+    // Save loved themes (multiple per mode)
+    localStorage.setItem("themeforseen-loved-light", JSON.stringify(Array.from(this.lovedLightThemes)));
+    localStorage.setItem("themeforseen-loved-dark", JSON.stringify(Array.from(this.lovedDarkThemes)));
 
-    // Save loved font
-    if (this.lovedFont !== null) {
-      localStorage.setItem("themeforseen-loved-font", String(this.lovedFont));
+    // Save starred font (single value)
+    if (this.starredFont !== null) {
+      localStorage.setItem("themeforseen-starred-font", String(this.starredFont));
     } else {
-      localStorage.removeItem("themeforseen-loved-font");
+      localStorage.removeItem("themeforseen-starred-font");
     }
+
+    // Save loved fonts (multiple)
+    localStorage.setItem("themeforseen-loved-fonts", JSON.stringify(Array.from(this.lovedFonts)));
 
     // Save individual font selections
     if (this.selectedHeadingFont) {
@@ -306,7 +324,7 @@ export class ThemeForseen extends HTMLElement {
         :host {
           position: fixed;
           top: 0;
-          left: 0;
+          right: 0;
           height: 100vh;
           z-index: 999999;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -314,75 +332,105 @@ export class ThemeForseen extends HTMLElement {
 
         .drawer-toggle {
           position: fixed;
-          left: 0;
+          right: 0;
           top: 50%;
           transform: translateY(-50%);
-          width: 70px;
-          height: 80px;
-          background: transparent;
+          width: 48px;
+          height: 120px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+          background-size: 200% 200%;
+          animation: shimmer 3s ease-in-out infinite;
           border: none;
-          border-radius: 0 6px 6px 0;
+          border-radius: 12px 0 0 12px;
           cursor: pointer;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 0;
-          transition: all 0.3s ease;
+          gap: 8px;
+          padding: 16px 8px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 999998;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)) drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+          box-shadow:
+            -4px 0 20px rgba(102, 126, 234, 0.4),
+            -2px 0 8px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
         }
 
-        .drawer-toggle img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          image-rendering: auto;
-          transform: scaleX(-1);
-          clip-path: url(#bookmark-clip);
-          position: relative;
-          z-index: 2;
-        }
-
-        .bookmark-border {
+        .drawer-toggle::before {
+          content: '';
           position: absolute;
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
-          z-index: 1;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.15) 50%,
+            transparent 70%
+          );
+          animation: sparkle 4s ease-in-out infinite;
+          pointer-events: none;
         }
 
-        .bookmark-shape {
-          position: absolute;
-          width: 0;
-          height: 0;
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        @keyframes sparkle {
+          0% { transform: translateX(-100%) rotate(45deg); }
+          100% { transform: translateX(100%) rotate(45deg); }
         }
 
         .drawer-toggle:hover {
-          width: 75px;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)) drop-shadow(0 2px 3px rgba(0,0,0,0.3)) brightness(1.1);
+          width: 54px;
+          background: linear-gradient(135deg, #764ba2 0%, #667eea 50%, #764ba2 100%);
+          background-size: 200% 200%;
+          box-shadow:
+            -6px 0 30px rgba(102, 126, 234, 0.6),
+            -2px 0 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .drawer-toggle:active {
+          transform: translateY(-50%) scale(0.98);
+        }
+
+        .drawer-toggle .toggle-icon {
+          width: 24px;
+          height: 24px;
+          color: white;
+          opacity: 0.95;
+        }
+
+        .drawer-toggle .toggle-text {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          transform: rotate(180deg);
+          font-size: 11px;
+          font-weight: 600;
+          color: white;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          opacity: 0.9;
         }
 
         .drawer-toggle.hidden {
           opacity: 0;
           pointer-events: none;
+          transform: translateY(-50%) translateX(100%);
         }
 
         @keyframes jiggle {
           0%, 100% { transform: translateY(-50%) rotate(0deg); }
-          10% { transform: translateY(-50%) rotate(-3deg); }
-          20% { transform: translateY(-50%) rotate(3deg); }
-          30% { transform: translateY(-50%) rotate(-3deg); }
-          40% { transform: translateY(-50%) rotate(3deg); }
-          50% { transform: translateY(-50%) rotate(-2deg); }
-          60% { transform: translateY(-50%) rotate(2deg); }
-          70% { transform: translateY(-50%) rotate(-1deg); }
-          80% { transform: translateY(-50%) rotate(1deg); }
-          90% { transform: translateY(-50%) rotate(0deg); }
+          25% { transform: translateY(-50%) rotate(-2deg) scale(1.02); }
+          50% { transform: translateY(-50%) rotate(2deg) scale(1.02); }
+          75% { transform: translateY(-50%) rotate(-1deg); }
         }
 
         .drawer-toggle.jiggle {
-          animation: jiggle 0.6s ease-in-out;
+          animation: jiggle 0.5s ease-in-out;
         }
 
         .backdrop {
@@ -405,14 +453,14 @@ export class ThemeForseen extends HTMLElement {
 
         .drawer {
           position: fixed;
-          left: -600px;
+          right: -600px;
           top: 0;
           height: 100vh;
           width: 600px;
           background: light-dark(white, #1a1a1a);
           color: light-dark(#333, #e0e0e0);
-          box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-          transition: left 0.3s ease;
+          box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+          transition: right 0.3s ease, width 0.3s ease;
           overflow: hidden;
           display: flex;
           flex-direction: column;
@@ -420,7 +468,25 @@ export class ThemeForseen extends HTMLElement {
         }
 
         .drawer.open {
-          left: 0;
+          right: 0;
+        }
+
+        .drawer.one-collapsed {
+          width: 340px;
+          right: -340px;
+        }
+
+        .drawer.one-collapsed.open {
+          right: 0;
+        }
+
+        .drawer.both-collapsed {
+          width: 100px;
+          right: -100px;
+        }
+
+        .drawer.both-collapsed.open {
+          right: 0;
         }
 
         .drawer-header {
@@ -481,11 +547,13 @@ export class ThemeForseen extends HTMLElement {
         }
 
         .column {
-          flex: 1;
+          width: 300px;
+          flex-shrink: 0;
           display: flex;
           flex-direction: column;
           border-right: 1px solid light-dark(#ddd, #444);
           overflow: hidden;
+          transition: width 0.3s ease;
         }
 
         .column:last-child {
@@ -524,7 +592,7 @@ export class ThemeForseen extends HTMLElement {
         }
 
         .column.collapsed {
-          flex: 0 0 40px;
+          width: 40px;
           min-width: 40px;
         }
 
@@ -532,6 +600,7 @@ export class ThemeForseen extends HTMLElement {
           writing-mode: vertical-lr;
           text-align: center;
           padding: 15px 5px;
+          gap: 12px;
         }
 
         .column.collapsed .column-title {
@@ -540,7 +609,6 @@ export class ThemeForseen extends HTMLElement {
 
         .column.collapsed .collapse-btn {
           writing-mode: horizontal-tb;
-          transform: rotate(180deg);
         }
 
         .column.collapsed .column-content {
@@ -645,12 +713,15 @@ export class ThemeForseen extends HTMLElement {
         .favorites {
           position: absolute;
           right: 8px;
-          top: 50%;
-          transform: translateY(-50%);
+          top: 8px;
           display: flex;
           flex-direction: column;
           gap: 8px;
           z-index: 10;
+        }
+
+        [data-column="themes"] .favorites {
+          gap: 5px;
         }
 
         .favorite-icon {
@@ -670,19 +741,19 @@ export class ThemeForseen extends HTMLElement {
         }
 
         .favorite-icon.starred {
-          color: #fcd997;
+          color: #f5c518;
         }
 
         .favorite-icon.starred:hover {
-          color: #fcd997;
+          color: #ffd700;
         }
 
         .favorite-icon.loved {
-          color: #bf195e;
+          color: #e57373;
         }
 
         .favorite-icon.loved:hover {
-          color: #bf195e;
+          color: #ef5350;
         }
 
         .activate-icon {
@@ -1136,32 +1207,16 @@ export class ThemeForseen extends HTMLElement {
         }
       </style>
 
-      <svg class="bookmark-shape" width="0" height="0">
-        <defs>
-          <clipPath id="bookmark-clip" clipPathUnits="objectBoundingBox">
-            <!-- Banner/flag shape showing full image width -->
-            <path d="M 0,0 L 0.1,0.5 L 0,1 L 1,1 L 1,0 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
       <div class="backdrop"></div>
 
-      <button class="drawer-toggle" title="Click the Nyan Unicorn to open Theme Drawer!">
-        <svg class="bookmark-border" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <!-- Top edge -->
-          <line x1="100" y1="0" x2="0" y2="0" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
-          <!-- Triangle top edge -->
-          <line x1="0" y1="0" x2="10" y2="50" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
-          <!-- Triangle bottom edge -->
-          <line x1="10" y1="50" x2="0" y2="100" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
-          <!-- Bottom edge -->
-          <line x1="0" y1="100" x2="100" y2="100" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <button class="drawer-toggle" title="Open Theme Picker">
+        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
         </svg>
-        <img src="/nyan-unicorn.webp" alt="Nyan Unicorn" />
+        <span class="toggle-text">Theme</span>
       </button>
 
-      <div class="drawer">
+      <div class="drawer ${this.themesColumnCollapsed && this.fontsColumnCollapsed ? 'both-collapsed' : (this.themesColumnCollapsed || this.fontsColumnCollapsed ? 'one-collapsed' : '')}">
         <div class="drawer-header">
           <div class="drawer-header-content ${this.themesColumnCollapsed || this.fontsColumnCollapsed ? 'logo-hidden' : ''}">
             <svg class="drawer-header-logo" viewBox="0 0 97.6 56.38" xmlns="http://www.w3.org/2000/svg">
@@ -1202,7 +1257,7 @@ export class ThemeForseen extends HTMLElement {
             <div class="column-header">
               <span class="column-title">Color Themes</span>
               <button class="collapse-btn" data-column-type="themes" title="${this.themesColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.themesColumnCollapsed ? '→' : '←'}
+                ${this.themesColumnCollapsed ? '←' : '→'}
               </button>
             </div>
             <div class="column-content">
@@ -1252,7 +1307,7 @@ export class ThemeForseen extends HTMLElement {
             <div class="column-header">
               <span class="column-title">Font Pairings</span>
               <button class="collapse-btn" data-column-type="fonts" title="${this.fontsColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.fontsColumnCollapsed ? '→' : '←'}
+                ${this.fontsColumnCollapsed ? '←' : '→'}
               </button>
             </div>
             <div class="column-content">
@@ -1428,23 +1483,26 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private restoreThemeFavorites() {
-    // Restore starred themes for current mode
-    const starredSet = this.isDarkMode ? this.starredDarkThemes : this.starredLightThemes;
-    starredSet.forEach((index) => {
+    // Restore starred theme for current mode (single)
+    const starredIndex = this.isDarkMode ? this.starredDarkTheme : this.starredLightTheme;
+    if (starredIndex !== null) {
       const star = this.shadowRoot?.querySelector(
-        `.star[data-type="theme"][data-index="${index}"]`
+        `.star[data-type="theme"][data-index="${starredIndex}"]`
       );
       star?.classList.add("starred");
-    });
+    }
 
-    // Restore loved theme for current mode
-    const lovedIndex = this.isDarkMode ? this.lovedDarkTheme : this.lovedLightTheme;
-    if (lovedIndex !== null) {
+    // Restore loved themes for current mode (multiple)
+    const lovedSet = this.isDarkMode ? this.lovedDarkThemes : this.lovedLightThemes;
+    lovedSet.forEach((index) => {
       const heart = this.shadowRoot?.querySelector(
-        `.heart[data-type="theme"][data-index="${lovedIndex}"]`
+        `.heart[data-type="theme"][data-index="${index}"]`
       );
       heart?.classList.add("loved");
-    }
+    });
+
+    // Attach click handlers to icons
+    this.attachIconHandlers("theme");
   }
 
   private filterFontPairing(pairing: FontPairing): boolean {
@@ -1506,21 +1564,29 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private restoreFontFavorites() {
-    // Restore starred fonts
-    this.starredFonts.forEach((index) => {
+    // Restore starred font (single)
+    if (this.starredFont !== null) {
       const star = this.shadowRoot?.querySelector(
-        `.star[data-type="font"][data-index="${index}"]`
+        `.star[data-type="font"][data-index="${this.starredFont}"]`
       );
       star?.classList.add("starred");
-    });
+    }
 
-    // Restore loved font
-    if (this.lovedFont !== null) {
+    // Restore loved fonts (multiple)
+    this.lovedFonts.forEach((index) => {
       const heart = this.shadowRoot?.querySelector(
-        `.heart[data-type="font"][data-index="${this.lovedFont}"]`
+        `.heart[data-type="font"][data-index="${index}"]`
       );
       heart?.classList.add("loved");
-    }
+    });
+
+    // Attach click handlers to icons
+    this.attachIconHandlers("font");
+  }
+
+  private attachIconHandlers(_type: "theme" | "font") {
+    // Icon click handling is done via event delegation on shadowRoot in attachEventListeners()
+    // This function is kept for compatibility but the actual handlers are centralized
   }
 
   private attachFilterListeners() {
@@ -1554,6 +1620,7 @@ export class ThemeForseen extends HTMLElement {
           this.render();
           this.attachEventListeners();
           this.renderThemes();
+          this.renderFonts();
         }
       });
     });
@@ -1568,6 +1635,7 @@ export class ThemeForseen extends HTMLElement {
           this.render();
           this.attachEventListeners();
           this.renderThemes();
+          this.renderFonts();
         }
       });
     });
@@ -1629,15 +1697,18 @@ export class ThemeForseen extends HTMLElement {
     closeBtn?.addEventListener("click", () => this.toggleDrawer());
     this.backdrop?.addEventListener("click", () => this.toggleDrawer());
 
-    // Prevent clicks inside the drawer from bubbling to backdrop
-    drawer?.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
+    // Note: Backdrop click handling works because backdrop is a sibling of drawer,
+    // not an ancestor, so clicks inside drawer don't bubble through backdrop anyway.
 
     // Theme items - using event delegation to survive re-renders
     const themesList = this.shadowRoot?.querySelector(".themes-list");
     themesList?.addEventListener("click", (e) => {
-      const themeItem = (e.target as HTMLElement).closest(".theme-item");
+      const target = e.target as HTMLElement;
+      // Ignore clicks on favorite/activate icons - they have their own handlers
+      if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+        return;
+      }
+      const themeItem = target.closest(".theme-item");
       if (themeItem) {
         const index = parseInt((themeItem as HTMLElement).dataset.index || "0");
         this.activeThemeIndex = index;
@@ -1656,6 +1727,11 @@ export class ThemeForseen extends HTMLElement {
     const fontsList = this.shadowRoot?.querySelector(".fonts-list");
     fontsList?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
+
+      // Ignore clicks on favorite/activate icons - they have their own handlers
+      if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+        return;
+      }
 
       // Check if clicking the switch button
       if (target.classList.contains("font-switch-icon")) {
@@ -1806,72 +1882,73 @@ export class ThemeForseen extends HTMLElement {
 
         if (type === "theme") {
           if (isStar) {
-            // Stars are independent per mode (light/dark)
-            const starredSet = this.isDarkMode ? this.starredDarkThemes : this.starredLightThemes;
-            if (starredSet.has(index)) {
-              starredSet.delete(index);
+            // Stars: only one per mode (light/dark)
+            const currentStarred = this.isDarkMode ? this.starredDarkTheme : this.starredLightTheme;
+
+            if (currentStarred === index) {
+              // Deselect current starred
+              if (this.isDarkMode) {
+                this.starredDarkTheme = null;
+              } else {
+                this.starredLightTheme = null;
+              }
               target.classList.remove("starred");
             } else {
-              starredSet.add(index);
+              // Remove previous starred
+              if (currentStarred !== null) {
+                const prevStar = this.shadowRoot?.querySelector(
+                  `.star[data-type="theme"][data-index="${currentStarred}"]`
+                );
+                prevStar?.classList.remove("starred");
+              }
+
+              // Set new starred
+              if (this.isDarkMode) {
+                this.starredDarkTheme = index;
+              } else {
+                this.starredLightTheme = index;
+              }
               target.classList.add("starred");
             }
           } else {
-            // Hearts: only one favorite per mode (light/dark)
-            const currentFavorite = this.isDarkMode ? this.lovedDarkTheme : this.lovedLightTheme;
+            // Hearts: multiple allowed per mode (light/dark)
+            const lovedSet = this.isDarkMode ? this.lovedDarkThemes : this.lovedLightThemes;
 
-            if (currentFavorite === index) {
-              // Deselect current favorite
-              if (this.isDarkMode) {
-                this.lovedDarkTheme = null;
-              } else {
-                this.lovedLightTheme = null;
-              }
+            if (lovedSet.has(index)) {
+              lovedSet.delete(index);
               target.classList.remove("loved");
             } else {
-              // Remove previous favorite's heart
-              if (currentFavorite !== null) {
-                const prevHeart = this.shadowRoot?.querySelector(
-                  `.heart[data-type="theme"][data-index="${currentFavorite}"]`
-                );
-                prevHeart?.classList.remove("loved");
-              }
-
-              // Set new favorite
-              if (this.isDarkMode) {
-                this.lovedDarkTheme = index;
-              } else {
-                this.lovedLightTheme = index;
-              }
+              lovedSet.add(index);
               target.classList.add("loved");
             }
           }
         } else if (type === "font") {
           if (isStar) {
-            // Stars can have multiple selected
-            if (this.starredFonts.has(index)) {
-              this.starredFonts.delete(index);
+            // Stars: only one selected
+            if (this.starredFont === index) {
+              // Deselect current starred
+              this.starredFont = null;
               target.classList.remove("starred");
             } else {
-              this.starredFonts.add(index);
+              // Remove previous starred
+              if (this.starredFont !== null) {
+                const prevStar = this.shadowRoot?.querySelector(
+                  `.star[data-type="font"][data-index="${this.starredFont}"]`
+                );
+                prevStar?.classList.remove("starred");
+              }
+
+              // Set new starred
+              this.starredFont = index;
               target.classList.add("starred");
             }
           } else {
-            // Hearts: only one favorite font
-            if (this.lovedFont === index) {
-              // Deselect current favorite
-              this.lovedFont = null;
+            // Hearts: multiple allowed
+            if (this.lovedFonts.has(index)) {
+              this.lovedFonts.delete(index);
               target.classList.remove("loved");
             } else {
-              // Remove previous favorite's heart
-              if (this.lovedFont !== null) {
-                const prevHeart = this.shadowRoot?.querySelector(
-                  `.heart[data-type="font"][data-index="${this.lovedFont}"]`
-                );
-                prevHeart?.classList.remove("loved");
-              }
-
-              // Set new favorite
-              this.lovedFont = index;
+              this.lovedFonts.add(index);
               target.classList.add("loved");
             }
           }
@@ -1956,30 +2033,30 @@ export class ThemeForseen extends HTMLElement {
     if (this.focusedColumn === "themes" && this.activeThemeIndex !== null) {
       const index = this.activeThemeIndex;
       if (key === "s") {
-        // Toggle star
-        const starredSet = this.isDarkMode ? this.starredDarkThemes : this.starredLightThemes;
-        if (starredSet.has(index)) {
-          starredSet.delete(index);
+        // Toggle star (only one allowed)
+        const currentStarred = this.isDarkMode ? this.starredDarkTheme : this.starredLightTheme;
+        if (currentStarred === index) {
+          if (this.isDarkMode) {
+            this.starredDarkTheme = null;
+          } else {
+            this.starredLightTheme = null;
+          }
         } else {
-          starredSet.add(index);
+          if (this.isDarkMode) {
+            this.starredDarkTheme = index;
+          } else {
+            this.starredLightTheme = index;
+          }
         }
         this.saveToLocalStorage();
         this.renderThemes();
       } else if (key === "h") {
-        // Toggle heart
-        const currentLoved = this.isDarkMode ? this.lovedDarkTheme : this.lovedLightTheme;
-        if (currentLoved === index) {
-          if (this.isDarkMode) {
-            this.lovedDarkTheme = null;
-          } else {
-            this.lovedLightTheme = null;
-          }
+        // Toggle heart (multiple allowed)
+        const lovedSet = this.isDarkMode ? this.lovedDarkThemes : this.lovedLightThemes;
+        if (lovedSet.has(index)) {
+          lovedSet.delete(index);
         } else {
-          if (this.isDarkMode) {
-            this.lovedDarkTheme = index;
-          } else {
-            this.lovedLightTheme = index;
-          }
+          lovedSet.add(index);
         }
         this.saveToLocalStorage();
         this.renderThemes();
@@ -1987,20 +2064,20 @@ export class ThemeForseen extends HTMLElement {
     } else if (this.focusedColumn === "fonts" && this.activeFontIndex !== null) {
       const index = this.activeFontIndex;
       if (key === "s") {
-        // Toggle star
-        if (this.starredFonts.has(index)) {
-          this.starredFonts.delete(index);
+        // Toggle star (only one allowed)
+        if (this.starredFont === index) {
+          this.starredFont = null;
         } else {
-          this.starredFonts.add(index);
+          this.starredFont = index;
         }
         this.saveToLocalStorage();
         this.renderFonts();
       } else if (key === "h") {
-        // Toggle heart
-        if (this.lovedFont === index) {
-          this.lovedFont = null;
+        // Toggle heart (multiple allowed)
+        if (this.lovedFonts.has(index)) {
+          this.lovedFonts.delete(index);
         } else {
-          this.lovedFont = index;
+          this.lovedFonts.add(index);
         }
         this.saveToLocalStorage();
         this.renderFonts();
@@ -2101,8 +2178,43 @@ export class ThemeForseen extends HTMLElement {
       this.fontsColumnCollapsed = !this.fontsColumnCollapsed;
       localStorage.setItem("fontsColumnCollapsed", JSON.stringify(this.fontsColumnCollapsed));
     }
-    this.render();
-    this.attachEventListeners();
+
+    // Update classes on existing elements for smooth animation
+    const column = this.shadowRoot?.querySelector(`[data-column="${columnType}"]`);
+    const collapseBtn = column?.querySelector('.collapse-btn') as HTMLButtonElement;
+    const headerContent = this.shadowRoot?.querySelector('.drawer-header-content');
+
+    if (column) {
+      if (columnType === "themes") {
+        column.classList.toggle("collapsed", this.themesColumnCollapsed);
+        if (collapseBtn) {
+          collapseBtn.innerHTML = this.themesColumnCollapsed ? '←' : '→';
+          collapseBtn.title = this.themesColumnCollapsed ? 'Expand' : 'Collapse';
+        }
+      } else {
+        column.classList.toggle("collapsed", this.fontsColumnCollapsed);
+        if (collapseBtn) {
+          collapseBtn.innerHTML = this.fontsColumnCollapsed ? '←' : '→';
+          collapseBtn.title = this.fontsColumnCollapsed ? 'Expand' : 'Collapse';
+        }
+      }
+    }
+
+    // Update drawer width classes
+    this.drawerElement.classList.remove('one-collapsed', 'both-collapsed');
+    if (this.themesColumnCollapsed && this.fontsColumnCollapsed) {
+      this.drawerElement.classList.add('both-collapsed');
+    } else if (this.themesColumnCollapsed || this.fontsColumnCollapsed) {
+      this.drawerElement.classList.add('one-collapsed');
+    }
+
+    // Update header content visibility
+    if (headerContent) {
+      headerContent.classList.toggle('logo-hidden', this.themesColumnCollapsed || this.fontsColumnCollapsed);
+    }
+
+    // Save to localStorage
+    this.saveToLocalStorage();
   }
 
   private handleActivate(type: "theme" | "font", index: number) {

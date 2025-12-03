@@ -1,5 +1,5 @@
-export { ThemeForseen } from './ThemeForseen';
-export { colorThemes, fontPairings, type ColorTheme, type FontPairing } from './themes';
+export { ThemeForseen } from './ThemeForseen.js';
+export { colorThemes, fontPairings, type ColorTheme, type FontPairing } from './themes.js';
 
 // Initialize function to add the drawer to the page
 export function initThemeForseen() {

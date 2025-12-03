@@ -43,6 +43,9 @@ export class ThemeForseen extends HTMLElement {
   private themesColumn!: HTMLElement;
   private fontsColumn!: HTMLElement;
 
+  // Track loaded Google Fonts to avoid duplicate loading
+  private loadedFonts = new Set<string>();
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -2364,6 +2367,28 @@ export default {
     }
   }
 
+  private loadGoogleFont(fontName: string) {
+    // Skip if already loaded
+    if (this.loadedFonts.has(fontName)) {
+      return;
+    }
+
+    // Create the Google Fonts URL
+    // Font name needs spaces replaced with + for URL
+    const fontNameForUrl = fontName.replace(/ /g, '+');
+
+    // Create link element
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${fontNameForUrl}:wght@400;500;600;700&display=swap`;
+
+    // Add to document head
+    document.head.appendChild(link);
+
+    // Track that we've loaded this font
+    this.loadedFonts.add(fontName);
+  }
+
   private applyTheme() {
     const themeIndex = this.isDarkMode
       ? this.selectedDarkTheme
@@ -2425,6 +2450,11 @@ export default {
     document.documentElement.style.setProperty(
       "--color-h3",
       getColor(colors.h3Color)
+    );
+    // General heading color (uses h1 color as default)
+    document.documentElement.style.setProperty(
+      "--color-heading",
+      getColor(colors.h1Color)
     );
 
     this.saveToLocalStorage();
@@ -2496,6 +2526,10 @@ export default {
         ? `"${fontName}", Georgia, "Times New Roman", serif`
         : `"${fontName}", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`;
     };
+
+    // Load Google Fonts before applying them
+    this.loadGoogleFont(headingFont);
+    this.loadGoogleFont(bodyFont);
 
     document.documentElement.style.setProperty(
       "--font-heading",

@@ -6,6 +6,9 @@ import {
 } from "./themes.js";
 
 export class ThemeForseen extends HTMLElement {
+  // Static flag to prevent any instance from applying while another is applying
+  private static isApplyingTheme = false;
+
   private isOpen = false;
   private selectedLightTheme = 0;
   private selectedDarkTheme = 0;
@@ -46,18 +49,23 @@ export class ThemeForseen extends HTMLElement {
   // Track loaded Google Fonts to avoid duplicate loading
   private loadedFonts = new Set<string>();
 
+
+  // Instance ID for debugging
+  private instanceId = Math.random().toString(36).substring(7);
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    console.log(`ThemeForseen instance created: ${this.instanceId}`);
   }
 
   connectedCallback() {
     this.loadFromLocalStorage();
     this.incrementVisitCounter();
+    this.checkDarkMode(); // Must be before render() so isDarkMode is set correctly
     this.render();
     this.attachEventListeners();
-    this.checkDarkMode();
-    this.applyTheme();
+    this.applyTheme(true); // Force on initial load
     this.applyFonts();
 
     // Render theme and font lists (this also restores favorites)
@@ -624,6 +632,21 @@ export class ThemeForseen extends HTMLElement {
           padding: 10px;
         }
 
+        .column-controls {
+          position: sticky;
+          top: -10px;
+          z-index: 100;
+          background: light-dark(#f5f5f5, #1e1e1e);
+          margin: -10px -10px 10px -10px;
+          padding: 10px;
+          border-bottom: 1px solid light-dark(#ddd, #444);
+        }
+
+        .themes-list, .fonts-list {
+          position: relative;
+          z-index: 1;
+        }
+
         .column-content::-webkit-scrollbar {
           width: 8px;
         }
@@ -667,6 +690,29 @@ export class ThemeForseen extends HTMLElement {
         .theme-item.active, .font-item.active {
           outline: 3px solid light-dark(#2196F3, #64B5F6);
           outline-offset: 2px;
+        }
+
+        /* Light mode selection - blue */
+        .theme-item.selected-light {
+          border: 2px solid light-dark(#2196F3, #64B5F6);
+          background: light-dark(rgba(33,150,243,0.1), rgba(100,181,246,0.1));
+        }
+
+        /* Dark mode selection - green */
+        .theme-item.selected-dark {
+          border: 2px solid light-dark(#4CAF50, #81C784);
+          background: light-dark(rgba(76,175,80,0.1), rgba(129,199,132,0.1));
+        }
+
+        /* Both selected - show both colors */
+        .theme-item.selected-light.selected-dark {
+          border: 2px solid light-dark(#4CAF50, #81C784);
+          outline: 3px solid light-dark(#2196F3, #64B5F6);
+          outline-offset: -1px;
+          background: light-dark(
+            linear-gradient(135deg, rgba(33,150,243,0.1) 50%, rgba(76,175,80,0.1) 50%),
+            linear-gradient(135deg, rgba(100,181,246,0.1) 50%, rgba(129,199,132,0.1) 50%)
+          );
         }
 
         .theme-item .theme-name, .font-item .font-name {
@@ -1264,42 +1310,44 @@ export class ThemeForseen extends HTMLElement {
               </button>
             </div>
             <div class="column-content">
-              <div class="instructions" data-instructions="themes">
-                <button class="instructions-close" aria-label="Close">&times;</button>
-                Use ↑/↓ arrow keys or mouse wheel to browse themes. Themes apply in real-time!
-              </div>
-              <div class="filter-container">
-                <div class="filter-input-wrapper">
-                  <input
-                    type="text"
-                    class="filter-input"
-                    placeholder="Search or select tags..."
-                    value="${this.searchText}"
-                  />
-                  <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
+              <div class="column-controls">
+                <div class="instructions" data-instructions="themes">
+                  <button class="instructions-close" aria-label="Close">&times;</button>
+                  Use ↑/↓ arrow keys or mouse wheel to browse themes. Themes apply in real-time!
                 </div>
-                <div class="filter-tags">
-                  ${Array.from(this.selectedTags).map(tag => `
-                    <span class="filter-tag" data-tag="${tag}">
-                      ${tag}
-                      <button class="filter-tag-remove" data-tag="${tag}">&times;</button>
-                    </span>
-                  `).join('')}
-                </div>
-                <div class="filter-dropdown hidden">
-                  <div class="filter-option" data-tag="corporate">
-                    <input type="checkbox" id="tag-corporate" ${this.selectedTags.has('corporate') ? 'checked' : ''}>
-                    <label for="tag-corporate">Corporate</label>
+                <div class="filter-container">
+                  <div class="filter-input-wrapper">
+                    <input
+                      type="text"
+                      class="filter-input"
+                      placeholder="Search or select tags..."
+                      value="${this.searchText}"
+                    />
+                    <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
                   </div>
-                  <div class="filter-option" data-tag="funky">
-                    <input type="checkbox" id="tag-funky" ${this.selectedTags.has('funky') ? 'checked' : ''}>
-                    <label for="tag-funky">Funky</label>
+                  <div class="filter-tags">
+                    ${Array.from(this.selectedTags).map(tag => `
+                      <span class="filter-tag" data-tag="${tag}">
+                        ${tag}
+                        <button class="filter-tag-remove" data-tag="${tag}">&times;</button>
+                      </span>
+                    `).join('')}
+                  </div>
+                  <div class="filter-dropdown hidden">
+                    <div class="filter-option" data-tag="corporate">
+                      <input type="checkbox" id="tag-corporate" ${this.selectedTags.has('corporate') ? 'checked' : ''}>
+                      <label for="tag-corporate">Corporate</label>
+                    </div>
+                    <div class="filter-option" data-tag="funky">
+                      <input type="checkbox" id="tag-funky" ${this.selectedTags.has('funky') ? 'checked' : ''}>
+                      <label for="tag-funky">Funky</label>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="mode-toggle">
-                <button class="mode-btn" data-mode="light">Light Mode</button>
-                <button class="mode-btn active" data-mode="dark">Dark Mode</button>
+                <div class="mode-toggle">
+                  <button class="mode-btn ${!this.isDarkMode ? 'active' : ''}" data-mode="light">Light Mode</button>
+                  <button class="mode-btn ${this.isDarkMode ? 'active' : ''}" data-mode="dark">Dark Mode</button>
+                </div>
               </div>
               <div class="themes-list"></div>
             </div>
@@ -1314,56 +1362,58 @@ export class ThemeForseen extends HTMLElement {
               </button>
             </div>
             <div class="column-content">
-              <div class="instructions" data-instructions="fonts">
-                <button class="instructions-close" aria-label="Close">&times;</button>
-                Use ↑/↓ arrow keys or mouse wheel to browse fonts. Changes apply instantly!
-              </div>
-              <div class="font-filters">
-                <div class="font-filter-group">
-                  <label class="font-filter-label">Heading</label>
-                  <button class="font-filter-dropdown-btn" data-filter-type="heading">
-                    ${this.selectedHeadingStyles.size > 0 ? Array.from(this.selectedHeadingStyles).join(', ') : 'All styles'} ▼
-                  </button>
-                  <div class="font-filter-dropdown hidden" data-filter-type="heading">
-                    <div class="filter-option" data-style="sans">
-                      <input type="checkbox" id="heading-sans" ${this.selectedHeadingStyles.has('sans') ? 'checked' : ''}>
-                      <label for="heading-sans">Sans</label>
-                    </div>
-                    <div class="filter-option" data-style="serif">
-                      <input type="checkbox" id="heading-serif" ${this.selectedHeadingStyles.has('serif') ? 'checked' : ''}>
-                      <label for="heading-serif">Serif</label>
-                    </div>
-                    <div class="filter-option" data-style="display">
-                      <input type="checkbox" id="heading-display" ${this.selectedHeadingStyles.has('display') ? 'checked' : ''}>
-                      <label for="heading-display">Display</label>
-                    </div>
-                    <div class="filter-option" data-style="mono">
-                      <input type="checkbox" id="heading-mono" ${this.selectedHeadingStyles.has('mono') ? 'checked' : ''}>
-                      <label for="heading-mono">Mono</label>
+              <div class="column-controls">
+                <div class="instructions" data-instructions="fonts">
+                  <button class="instructions-close" aria-label="Close">&times;</button>
+                  Use ↑/↓ arrow keys or mouse wheel to browse fonts. Changes apply instantly!
+                </div>
+                <div class="font-filters">
+                  <div class="font-filter-group">
+                    <label class="font-filter-label">Heading</label>
+                    <button class="font-filter-dropdown-btn" data-filter-type="heading">
+                      ${this.selectedHeadingStyles.size > 0 ? Array.from(this.selectedHeadingStyles).join(', ') : 'All styles'} ▼
+                    </button>
+                    <div class="font-filter-dropdown hidden" data-filter-type="heading">
+                      <div class="filter-option" data-style="sans">
+                        <input type="checkbox" id="heading-sans" ${this.selectedHeadingStyles.has('sans') ? 'checked' : ''}>
+                        <label for="heading-sans">Sans</label>
+                      </div>
+                      <div class="filter-option" data-style="serif">
+                        <input type="checkbox" id="heading-serif" ${this.selectedHeadingStyles.has('serif') ? 'checked' : ''}>
+                        <label for="heading-serif">Serif</label>
+                      </div>
+                      <div class="filter-option" data-style="display">
+                        <input type="checkbox" id="heading-display" ${this.selectedHeadingStyles.has('display') ? 'checked' : ''}>
+                        <label for="heading-display">Display</label>
+                      </div>
+                      <div class="filter-option" data-style="mono">
+                        <input type="checkbox" id="heading-mono" ${this.selectedHeadingStyles.has('mono') ? 'checked' : ''}>
+                        <label for="heading-mono">Mono</label>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="font-filter-group">
-                  <label class="font-filter-label">Body</label>
-                  <button class="font-filter-dropdown-btn" data-filter-type="body">
-                    ${this.selectedBodyStyles.size > 0 ? Array.from(this.selectedBodyStyles).join(', ') : 'All styles'} ▼
-                  </button>
-                  <div class="font-filter-dropdown hidden" data-filter-type="body">
-                    <div class="filter-option" data-style="sans">
-                      <input type="checkbox" id="body-sans" ${this.selectedBodyStyles.has('sans') ? 'checked' : ''}>
-                      <label for="body-sans">Sans</label>
-                    </div>
-                    <div class="filter-option" data-style="serif">
-                      <input type="checkbox" id="body-serif" ${this.selectedBodyStyles.has('serif') ? 'checked' : ''}>
-                      <label for="body-serif">Serif</label>
-                    </div>
-                    <div class="filter-option" data-style="display">
-                      <input type="checkbox" id="body-display" ${this.selectedBodyStyles.has('display') ? 'checked' : ''}>
-                      <label for="body-display">Display</label>
-                    </div>
-                    <div class="filter-option" data-style="mono">
-                      <input type="checkbox" id="body-mono" ${this.selectedBodyStyles.has('mono') ? 'checked' : ''}>
-                      <label for="body-mono">Mono</label>
+                  <div class="font-filter-group">
+                    <label class="font-filter-label">Body</label>
+                    <button class="font-filter-dropdown-btn" data-filter-type="body">
+                      ${this.selectedBodyStyles.size > 0 ? Array.from(this.selectedBodyStyles).join(', ') : 'All styles'} ▼
+                    </button>
+                    <div class="font-filter-dropdown hidden" data-filter-type="body">
+                      <div class="filter-option" data-style="sans">
+                        <input type="checkbox" id="body-sans" ${this.selectedBodyStyles.has('sans') ? 'checked' : ''}>
+                        <label for="body-sans">Sans</label>
+                      </div>
+                      <div class="filter-option" data-style="serif">
+                        <input type="checkbox" id="body-serif" ${this.selectedBodyStyles.has('serif') ? 'checked' : ''}>
+                        <label for="body-serif">Serif</label>
+                      </div>
+                      <div class="filter-option" data-style="display">
+                        <input type="checkbox" id="body-display" ${this.selectedBodyStyles.has('display') ? 'checked' : ''}>
+                        <label for="body-display">Display</label>
+                      </div>
+                      <div class="filter-option" data-style="mono">
+                        <input type="checkbox" id="body-mono" ${this.selectedBodyStyles.has('mono') ? 'checked' : ''}>
+                        <label for="body-mono">Mono</label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1460,9 +1510,9 @@ export class ThemeForseen extends HTMLElement {
       .map((theme, _) => {
         const index = colorThemes.indexOf(theme);
         const colors = this.isDarkMode ? theme.dark : theme.light;
-        const isActive = this.activeThemeIndex === index;
+        // Selection classes added by updateThemeSelection()
         return `
-        <div class="theme-item ${isActive ? 'active' : ''}" data-index="${index}">
+        <div class="theme-item" data-index="${index}">
           <div class="theme-name">${theme.name}</div>
           <div class="theme-colors">
             <div class="color-swatch" style="background-color: ${colors.primary}" title="Primary"></div>
@@ -1714,12 +1764,15 @@ export class ThemeForseen extends HTMLElement {
       const themeItem = target.closest(".theme-item");
       if (themeItem) {
         const index = parseInt((themeItem as HTMLElement).dataset.index || "0");
+        console.log(`Theme clicked: index=${index}, isDarkMode=${this.isDarkMode}`);
         this.activeThemeIndex = index;
         this.focusedColumn = "themes";
         if (this.isDarkMode) {
           this.selectedDarkTheme = index;
+          console.log(`Updated selectedDarkTheme to ${index}`);
         } else {
           this.selectedLightTheme = index;
+          console.log(`Updated selectedLightTheme to ${index}`);
         }
         this.applyTheme();
         this.renderThemes(); // Re-render to show active state
@@ -1793,7 +1846,12 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const mode = (e.currentTarget as HTMLElement).dataset.mode;
+        console.log(`Mode toggle clicked: ${mode}`);
+        console.log(`Before: isDarkMode=${this.isDarkMode}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`);
         this.isDarkMode = mode === "dark";
+        // Sync activeThemeIndex with the new mode's selected theme
+        this.activeThemeIndex = this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme;
+        console.log(`After: isDarkMode=${this.isDarkMode}, will apply theme index=${this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme}`);
         this.applyTheme();
         this.updateModeButtons();
         this.renderThemes();
@@ -2107,15 +2165,25 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private updateThemeSelection() {
-    this.shadowRoot?.querySelectorAll(".theme-item").forEach((item, index) => {
-      const selectedIndex = this.isDarkMode
-        ? this.selectedDarkTheme
-        : this.selectedLightTheme;
-      if (index === selectedIndex) {
-        item.classList.add("selected");
+    this.shadowRoot?.querySelectorAll(".theme-item").forEach((item) => {
+      const itemIndex = parseInt((item as HTMLElement).dataset.index || "0");
+
+      // Light mode selection - blue
+      if (itemIndex === this.selectedLightTheme) {
+        item.classList.add("selected-light");
       } else {
-        item.classList.remove("selected");
+        item.classList.remove("selected-light");
       }
+
+      // Dark mode selection - green
+      if (itemIndex === this.selectedDarkTheme) {
+        item.classList.add("selected-dark");
+      } else {
+        item.classList.remove("selected-dark");
+      }
+
+      // Remove old classes
+      item.classList.remove("selected", "active");
     });
   }
 
@@ -2389,11 +2457,28 @@ export default {
     this.loadedFonts.add(fontName);
   }
 
-  private applyTheme() {
+  private applyTheme(force = false) {
+    // Prevent recursive calls from MutationObserver (static flag shared across all instances)
+    if (ThemeForseen.isApplyingTheme) {
+      console.log(`[${this.instanceId}] applyTheme skipped - another instance is applying`);
+      return;
+    }
+
+    // Only apply if this instance's drawer is open, OR if forced (initial load), OR if no drawer is open yet
+    if (!force && !this.isOpen && this.drawerElement) {
+      console.log(`[${this.instanceId}] applyTheme skipped - drawer not open`);
+      return;
+    }
+
+    ThemeForseen.isApplyingTheme = true;
+
+    try {
     const themeIndex = this.isDarkMode
       ? this.selectedDarkTheme
       : this.selectedLightTheme;
+    console.log(`[${this.instanceId}] applyTheme called: isDarkMode=${this.isDarkMode}, themeIndex=${themeIndex}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`);
     const theme = colorThemes[themeIndex];
+    console.log(`Applying theme: "${theme.name}" with ${this.isDarkMode ? 'dark' : 'light'} colors`);
     const colors = this.isDarkMode ? theme.dark : theme.light;
 
     // Set color-scheme on document root for proper light/dark mode
@@ -2458,6 +2543,10 @@ export default {
     );
 
     this.saveToLocalStorage();
+    } finally {
+      // Reset the guard flag (static, shared across all instances)
+      ThemeForseen.isApplyingTheme = false;
+    }
   }
 
   private applyFonts() {

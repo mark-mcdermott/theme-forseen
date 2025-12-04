@@ -464,40 +464,24 @@ export class ThemeForseen extends HTMLElement {
 
         .drawer {
           position: fixed;
-          right: -600px;
+          right: 0;
           top: 0;
           height: 100vh;
-          width: 600px;
+          width: auto;
+          max-width: 90vw;
           background: light-dark(white, #1a1a1a);
           color: light-dark(#333, #e0e0e0);
           box-shadow: -2px 0 10px rgba(0,0,0,0.2);
-          transition: right 0.3s ease, width 0.3s ease;
+          transition: transform 0.3s ease, width 0.3s ease;
           overflow: hidden;
+          transform: translateX(100%);
           display: flex;
           flex-direction: column;
           z-index: 999999;
         }
 
         .drawer.open {
-          right: 0;
-        }
-
-        .drawer.one-collapsed {
-          width: 340px;
-          right: -340px;
-        }
-
-        .drawer.one-collapsed.open {
-          right: 0;
-        }
-
-        .drawer.both-collapsed {
-          width: 100px;
-          right: -100px;
-        }
-
-        .drawer.both-collapsed.open {
-          right: 0;
+          transform: translateX(0);
         }
 
         .drawer-header {
@@ -555,6 +539,7 @@ export class ThemeForseen extends HTMLElement {
           display: flex;
           flex: 1;
           overflow: hidden;
+          width: fit-content;
         }
 
         .column {
@@ -612,6 +597,8 @@ export class ThemeForseen extends HTMLElement {
           text-align: center;
           padding: 15px 5px;
           gap: 12px;
+          height: 140px;
+          box-sizing: border-box;
         }
 
         .column.collapsed .column-title {
@@ -1265,7 +1252,7 @@ export class ThemeForseen extends HTMLElement {
         <span class="toggle-text">Theme</span>
       </button>
 
-      <div class="drawer ${this.themesColumnCollapsed && this.fontsColumnCollapsed ? 'both-collapsed' : (this.themesColumnCollapsed || this.fontsColumnCollapsed ? 'one-collapsed' : '')}">
+      <div class="drawer">
         <div class="drawer-header">
           <div class="drawer-header-content ${this.themesColumnCollapsed || this.fontsColumnCollapsed ? 'logo-hidden' : ''}">
             <svg class="drawer-header-logo" viewBox="0 0 97.6 56.38" xmlns="http://www.w3.org/2000/svg">
@@ -1304,9 +1291,9 @@ export class ThemeForseen extends HTMLElement {
           <!-- Themes Column -->
           <div class="column ${this.themesColumnCollapsed ? 'collapsed' : ''}" data-column="themes">
             <div class="column-header">
-              <span class="column-title">Color Themes</span>
+              <span class="column-title">${this.themesColumnCollapsed ? 'Themes Color' : 'Color Themes'}</span>
               <button class="collapse-btn" data-column-type="themes" title="${this.themesColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.themesColumnCollapsed ? '←' : '→'}
+                ${this.themesColumnCollapsed ? '«' : '»'}
               </button>
             </div>
             <div class="column-content">
@@ -1356,9 +1343,9 @@ export class ThemeForseen extends HTMLElement {
           <!-- Fonts Column -->
           <div class="column ${this.fontsColumnCollapsed ? 'collapsed' : ''}" data-column="fonts">
             <div class="column-header">
-              <span class="column-title">Font Pairings</span>
+              <span class="column-title">${this.fontsColumnCollapsed ? 'Pairings Font' : 'Font Pairings'}</span>
               <button class="collapse-btn" data-column-type="fonts" title="${this.fontsColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.fontsColumnCollapsed ? '←' : '→'}
+                ${this.fontsColumnCollapsed ? '«' : '»'}
               </button>
             </div>
             <div class="column-content">
@@ -2259,24 +2246,16 @@ export class ThemeForseen extends HTMLElement {
       if (columnType === "themes") {
         column.classList.toggle("collapsed", this.themesColumnCollapsed);
         if (collapseBtn) {
-          collapseBtn.innerHTML = this.themesColumnCollapsed ? '←' : '→';
+          collapseBtn.innerHTML = this.themesColumnCollapsed ? '«' : '»';
           collapseBtn.title = this.themesColumnCollapsed ? 'Expand' : 'Collapse';
         }
       } else {
         column.classList.toggle("collapsed", this.fontsColumnCollapsed);
         if (collapseBtn) {
-          collapseBtn.innerHTML = this.fontsColumnCollapsed ? '←' : '→';
+          collapseBtn.innerHTML = this.fontsColumnCollapsed ? '«' : '»';
           collapseBtn.title = this.fontsColumnCollapsed ? 'Expand' : 'Collapse';
         }
       }
-    }
-
-    // Update drawer width classes
-    this.drawerElement.classList.remove('one-collapsed', 'both-collapsed');
-    if (this.themesColumnCollapsed && this.fontsColumnCollapsed) {
-      this.drawerElement.classList.add('both-collapsed');
-    } else if (this.themesColumnCollapsed || this.fontsColumnCollapsed) {
-      this.drawerElement.classList.add('one-collapsed');
     }
 
     // Update header content visibility

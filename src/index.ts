@@ -14,6 +14,9 @@ export function initThemeForseen() {
 }
 
 function addDrawer() {
+  // Prevent duplicate drawers
+  if (document.querySelector('theme-forseen')) return;
+
   const drawer = document.createElement('theme-forseen');
   document.body.appendChild(drawer);
 }

@@ -49,7 +49,6 @@ export class ThemeForseen extends HTMLElement {
   // Track loaded Google Fonts to avoid duplicate loading
   private loadedFonts = new Set<string>();
 
-
   // Instance ID for debugging
   private instanceId = Math.random().toString(36).substring(7);
 
@@ -77,12 +76,12 @@ export class ThemeForseen extends HTMLElement {
 
     // Jiggle the bookmark after 7 seconds to attract attention
     setTimeout(() => {
-      const toggle = this.shadowRoot?.querySelector('.drawer-toggle');
+      const toggle = this.shadowRoot?.querySelector(".drawer-toggle");
       if (toggle && !this.isOpen) {
-        toggle.classList.add('jiggle');
+        toggle.classList.add("jiggle");
         // Remove the class after animation completes so it can be triggered again if needed
         setTimeout(() => {
-          toggle.classList.remove('jiggle');
+          toggle.classList.remove("jiggle");
         }, 600);
       }
     }, 7000);
@@ -94,7 +93,9 @@ export class ThemeForseen extends HTMLElement {
     if (saved !== null) {
       this.isDarkMode = saved === "true";
     } else {
-      this.isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      this.isDarkMode = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
     }
 
     // Watch for system changes (but saved preference takes priority)
@@ -110,7 +111,8 @@ export class ThemeForseen extends HTMLElement {
 
     // Helper function to check and sync dark mode
     const syncDarkMode = () => {
-      const currentColorScheme = document.documentElement.style.colorScheme ||
+      const currentColorScheme =
+        document.documentElement.style.colorScheme ||
         getComputedStyle(document.documentElement).colorScheme;
       const shouldBeDark = currentColorScheme === "dark";
 
@@ -170,7 +172,9 @@ export class ThemeForseen extends HTMLElement {
     if (savedFont) this.selectedFontPairing = parseInt(savedFont);
 
     // Load starred themes (single value per mode)
-    const savedStarredLight = localStorage.getItem("themeforseen-starred-light");
+    const savedStarredLight = localStorage.getItem(
+      "themeforseen-starred-light"
+    );
     const savedStarredDark = localStorage.getItem("themeforseen-starred-dark");
     if (savedStarredLight) this.starredLightTheme = parseInt(savedStarredLight);
     if (savedStarredDark) this.starredDarkTheme = parseInt(savedStarredDark);
@@ -182,13 +186,17 @@ export class ThemeForseen extends HTMLElement {
       try {
         const parsed = JSON.parse(savedLovedLight);
         if (Array.isArray(parsed)) this.lovedLightThemes = new Set(parsed);
-      } catch (e) { /* ignore corrupted data */ }
+      } catch (e) {
+        /* ignore corrupted data */
+      }
     }
     if (savedLovedDark) {
       try {
         const parsed = JSON.parse(savedLovedDark);
         if (Array.isArray(parsed)) this.lovedDarkThemes = new Set(parsed);
-      } catch (e) { /* ignore corrupted data */ }
+      } catch (e) {
+        /* ignore corrupted data */
+      }
     }
 
     // Load starred font (single value)
@@ -201,7 +209,9 @@ export class ThemeForseen extends HTMLElement {
       try {
         const parsed = JSON.parse(savedLovedFonts);
         if (Array.isArray(parsed)) this.lovedFonts = new Set(parsed);
-      } catch (e) { /* ignore corrupted data */ }
+      } catch (e) {
+        /* ignore corrupted data */
+      }
     }
 
     // Load individual font selections
@@ -213,13 +223,19 @@ export class ThemeForseen extends HTMLElement {
     // Load filter state
     const savedTags = localStorage.getItem("themeforseen-filter-tags");
     const savedSearch = localStorage.getItem("themeforseen-filter-search");
-    const savedHeadingStyles = localStorage.getItem("themeforseen-filter-heading-styles");
-    const savedBodyStyles = localStorage.getItem("themeforseen-filter-body-styles");
+    const savedHeadingStyles = localStorage.getItem(
+      "themeforseen-filter-heading-styles"
+    );
+    const savedBodyStyles = localStorage.getItem(
+      "themeforseen-filter-body-styles"
+    );
     if (savedTags) {
       try {
         const parsed = JSON.parse(savedTags);
         if (Array.isArray(parsed)) this.selectedTags = new Set(parsed);
-      } catch (e) { /* ignore corrupted data */ }
+      } catch (e) {
+        /* ignore corrupted data */
+      }
     }
     if (savedSearch) {
       this.searchText = savedSearch;
@@ -228,18 +244,26 @@ export class ThemeForseen extends HTMLElement {
       try {
         const parsed = JSON.parse(savedHeadingStyles);
         if (Array.isArray(parsed)) this.selectedHeadingStyles = new Set(parsed);
-      } catch (e) { /* ignore corrupted data */ }
+      } catch (e) {
+        /* ignore corrupted data */
+      }
     }
     if (savedBodyStyles) {
       try {
         const parsed = JSON.parse(savedBodyStyles);
         if (Array.isArray(parsed)) this.selectedBodyStyles = new Set(parsed);
-      } catch (e) { /* ignore corrupted data */ }
+      } catch (e) {
+        /* ignore corrupted data */
+      }
     }
 
     // Load column collapse state
-    const savedThemesCollapsed = localStorage.getItem("themeforseen-themes-collapsed");
-    const savedFontsCollapsed = localStorage.getItem("themeforseen-fonts-collapsed");
+    const savedThemesCollapsed = localStorage.getItem(
+      "themeforseen-themes-collapsed"
+    );
+    const savedFontsCollapsed = localStorage.getItem(
+      "themeforseen-fonts-collapsed"
+    );
     if (savedThemesCollapsed) {
       this.themesColumnCollapsed = savedThemesCollapsed === "true";
     }
@@ -249,12 +273,16 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private incrementVisitCounter() {
-    const visitCount = parseInt(localStorage.getItem("themeforseen-visit-count") || "0");
+    const visitCount = parseInt(
+      localStorage.getItem("themeforseen-visit-count") || "0"
+    );
     localStorage.setItem("themeforseen-visit-count", String(visitCount + 1));
   }
 
   private maybeHideInstructions() {
-    const visitCount = parseInt(localStorage.getItem("themeforseen-visit-count") || "0");
+    const visitCount = parseInt(
+      localStorage.getItem("themeforseen-visit-count") || "0"
+    );
     if (visitCount >= 10) {
       // Hide both instruction boxes
       this.shadowRoot?.querySelectorAll(".instructions").forEach((el) => {
@@ -268,39 +296,66 @@ export class ThemeForseen extends HTMLElement {
     localStorage.setItem("themeforseen-darkmode", String(this.isDarkMode));
 
     // Save selections
-    localStorage.setItem("themeforseen-lighttheme", String(this.selectedLightTheme));
-    localStorage.setItem("themeforseen-darktheme", String(this.selectedDarkTheme));
+    localStorage.setItem(
+      "themeforseen-lighttheme",
+      String(this.selectedLightTheme)
+    );
+    localStorage.setItem(
+      "themeforseen-darktheme",
+      String(this.selectedDarkTheme)
+    );
     localStorage.setItem("themeforseen-font", String(this.selectedFontPairing));
 
     // Save starred themes (single value per mode)
     if (this.starredLightTheme !== null) {
-      localStorage.setItem("themeforseen-starred-light", String(this.starredLightTheme));
+      localStorage.setItem(
+        "themeforseen-starred-light",
+        String(this.starredLightTheme)
+      );
     } else {
       localStorage.removeItem("themeforseen-starred-light");
     }
     if (this.starredDarkTheme !== null) {
-      localStorage.setItem("themeforseen-starred-dark", String(this.starredDarkTheme));
+      localStorage.setItem(
+        "themeforseen-starred-dark",
+        String(this.starredDarkTheme)
+      );
     } else {
       localStorage.removeItem("themeforseen-starred-dark");
     }
 
     // Save loved themes (multiple per mode)
-    localStorage.setItem("themeforseen-loved-light", JSON.stringify(Array.from(this.lovedLightThemes)));
-    localStorage.setItem("themeforseen-loved-dark", JSON.stringify(Array.from(this.lovedDarkThemes)));
+    localStorage.setItem(
+      "themeforseen-loved-light",
+      JSON.stringify(Array.from(this.lovedLightThemes))
+    );
+    localStorage.setItem(
+      "themeforseen-loved-dark",
+      JSON.stringify(Array.from(this.lovedDarkThemes))
+    );
 
     // Save starred font (single value)
     if (this.starredFont !== null) {
-      localStorage.setItem("themeforseen-starred-font", String(this.starredFont));
+      localStorage.setItem(
+        "themeforseen-starred-font",
+        String(this.starredFont)
+      );
     } else {
       localStorage.removeItem("themeforseen-starred-font");
     }
 
     // Save loved fonts (multiple)
-    localStorage.setItem("themeforseen-loved-fonts", JSON.stringify(Array.from(this.lovedFonts)));
+    localStorage.setItem(
+      "themeforseen-loved-fonts",
+      JSON.stringify(Array.from(this.lovedFonts))
+    );
 
     // Save individual font selections
     if (this.selectedHeadingFont) {
-      localStorage.setItem("themeforseen-heading-font", this.selectedHeadingFont);
+      localStorage.setItem(
+        "themeforseen-heading-font",
+        this.selectedHeadingFont
+      );
     } else {
       localStorage.removeItem("themeforseen-heading-font");
     }
@@ -311,14 +366,29 @@ export class ThemeForseen extends HTMLElement {
     }
 
     // Save filter state
-    localStorage.setItem("themeforseen-filter-tags", JSON.stringify(Array.from(this.selectedTags)));
+    localStorage.setItem(
+      "themeforseen-filter-tags",
+      JSON.stringify(Array.from(this.selectedTags))
+    );
     localStorage.setItem("themeforseen-filter-search", this.searchText);
-    localStorage.setItem("themeforseen-filter-heading-styles", JSON.stringify(Array.from(this.selectedHeadingStyles)));
-    localStorage.setItem("themeforseen-filter-body-styles", JSON.stringify(Array.from(this.selectedBodyStyles)));
+    localStorage.setItem(
+      "themeforseen-filter-heading-styles",
+      JSON.stringify(Array.from(this.selectedHeadingStyles))
+    );
+    localStorage.setItem(
+      "themeforseen-filter-body-styles",
+      JSON.stringify(Array.from(this.selectedBodyStyles))
+    );
 
     // Save column collapse state
-    localStorage.setItem("themeforseen-themes-collapsed", String(this.themesColumnCollapsed));
-    localStorage.setItem("themeforseen-fonts-collapsed", String(this.fontsColumnCollapsed));
+    localStorage.setItem(
+      "themeforseen-themes-collapsed",
+      String(this.themesColumnCollapsed)
+    );
+    localStorage.setItem(
+      "themeforseen-fonts-collapsed",
+      String(this.fontsColumnCollapsed)
+    );
   }
 
   private render() {
@@ -1254,7 +1324,11 @@ export class ThemeForseen extends HTMLElement {
 
       <div class="drawer">
         <div class="drawer-header">
-          <div class="drawer-header-content ${this.themesColumnCollapsed || this.fontsColumnCollapsed ? 'logo-hidden' : ''}">
+          <div class="drawer-header-content ${
+            this.themesColumnCollapsed || this.fontsColumnCollapsed
+              ? "logo-hidden"
+              : ""
+          }">
             <svg class="drawer-header-logo" viewBox="0 0 97.6 56.38" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <style>
@@ -1289,11 +1363,17 @@ export class ThemeForseen extends HTMLElement {
 
         <div class="drawer-content">
           <!-- Themes Column -->
-          <div class="column ${this.themesColumnCollapsed ? 'collapsed' : ''}" data-column="themes">
+          <div class="column ${
+            this.themesColumnCollapsed ? "collapsed" : ""
+          }" data-column="themes">
             <div class="column-header">
-              <span class="column-title">${this.themesColumnCollapsed ? 'Themes Color' : 'Color Themes'}</span>
-              <button class="collapse-btn" data-column-type="themes" title="${this.themesColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.themesColumnCollapsed ? '«' : '»'}
+              <span class="column-title">${
+                this.themesColumnCollapsed ? "Themes Color" : "Color Themes"
+              }</span>
+              <button class="collapse-btn" data-column-type="themes" title="${
+                this.themesColumnCollapsed ? "Expand" : "Collapse"
+              }">
+                ${this.themesColumnCollapsed ? "«" : "»"}
               </button>
             </div>
             <div class="column-content">
@@ -1313,27 +1393,39 @@ export class ThemeForseen extends HTMLElement {
                     <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
                   </div>
                   <div class="filter-tags">
-                    ${Array.from(this.selectedTags).map(tag => `
+                    ${Array.from(this.selectedTags)
+                      .map(
+                        (tag) => `
                       <span class="filter-tag" data-tag="${tag}">
                         ${tag}
                         <button class="filter-tag-remove" data-tag="${tag}">&times;</button>
                       </span>
-                    `).join('')}
+                    `
+                      )
+                      .join("")}
                   </div>
                   <div class="filter-dropdown hidden">
                     <div class="filter-option" data-tag="corporate">
-                      <input type="checkbox" id="tag-corporate" ${this.selectedTags.has('corporate') ? 'checked' : ''}>
+                      <input type="checkbox" id="tag-corporate" ${
+                        this.selectedTags.has("corporate") ? "checked" : ""
+                      }>
                       <label for="tag-corporate">Corporate</label>
                     </div>
                     <div class="filter-option" data-tag="funky">
-                      <input type="checkbox" id="tag-funky" ${this.selectedTags.has('funky') ? 'checked' : ''}>
+                      <input type="checkbox" id="tag-funky" ${
+                        this.selectedTags.has("funky") ? "checked" : ""
+                      }>
                       <label for="tag-funky">Funky</label>
                     </div>
                   </div>
                 </div>
                 <div class="mode-toggle">
-                  <button class="mode-btn ${!this.isDarkMode ? 'active' : ''}" data-mode="light">Light Mode</button>
-                  <button class="mode-btn ${this.isDarkMode ? 'active' : ''}" data-mode="dark">Dark Mode</button>
+                  <button class="mode-btn ${
+                    !this.isDarkMode ? "active" : ""
+                  }" data-mode="light">Light Mode</button>
+                  <button class="mode-btn ${
+                    this.isDarkMode ? "active" : ""
+                  }" data-mode="dark">Dark Mode</button>
                 </div>
               </div>
               <div class="themes-list"></div>
@@ -1341,11 +1433,17 @@ export class ThemeForseen extends HTMLElement {
           </div>
 
           <!-- Fonts Column -->
-          <div class="column ${this.fontsColumnCollapsed ? 'collapsed' : ''}" data-column="fonts">
+          <div class="column ${
+            this.fontsColumnCollapsed ? "collapsed" : ""
+          }" data-column="fonts">
             <div class="column-header">
-              <span class="column-title">${this.fontsColumnCollapsed ? 'Pairings Font' : 'Font Pairings'}</span>
-              <button class="collapse-btn" data-column-type="fonts" title="${this.fontsColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.fontsColumnCollapsed ? '«' : '»'}
+              <span class="column-title">${
+                this.fontsColumnCollapsed ? "Pairings Font" : "Font Pairings"
+              }</span>
+              <button class="collapse-btn" data-column-type="fonts" title="${
+                this.fontsColumnCollapsed ? "Expand" : "Collapse"
+              }">
+                ${this.fontsColumnCollapsed ? "«" : "»"}
               </button>
             </div>
             <div class="column-content">
@@ -1358,23 +1456,43 @@ export class ThemeForseen extends HTMLElement {
                   <div class="font-filter-group">
                     <label class="font-filter-label">Heading</label>
                     <button class="font-filter-dropdown-btn" data-filter-type="heading">
-                      ${this.selectedHeadingStyles.size > 0 ? Array.from(this.selectedHeadingStyles).join(', ') : 'All styles'} ▼
+                      ${
+                        this.selectedHeadingStyles.size > 0
+                          ? Array.from(this.selectedHeadingStyles).join(", ")
+                          : "All styles"
+                      } ▼
                     </button>
                     <div class="font-filter-dropdown hidden" data-filter-type="heading">
                       <div class="filter-option" data-style="sans">
-                        <input type="checkbox" id="heading-sans" ${this.selectedHeadingStyles.has('sans') ? 'checked' : ''}>
+                        <input type="checkbox" id="heading-sans" ${
+                          this.selectedHeadingStyles.has("sans")
+                            ? "checked"
+                            : ""
+                        }>
                         <label for="heading-sans">Sans</label>
                       </div>
                       <div class="filter-option" data-style="serif">
-                        <input type="checkbox" id="heading-serif" ${this.selectedHeadingStyles.has('serif') ? 'checked' : ''}>
+                        <input type="checkbox" id="heading-serif" ${
+                          this.selectedHeadingStyles.has("serif")
+                            ? "checked"
+                            : ""
+                        }>
                         <label for="heading-serif">Serif</label>
                       </div>
                       <div class="filter-option" data-style="display">
-                        <input type="checkbox" id="heading-display" ${this.selectedHeadingStyles.has('display') ? 'checked' : ''}>
+                        <input type="checkbox" id="heading-display" ${
+                          this.selectedHeadingStyles.has("display")
+                            ? "checked"
+                            : ""
+                        }>
                         <label for="heading-display">Display</label>
                       </div>
                       <div class="filter-option" data-style="mono">
-                        <input type="checkbox" id="heading-mono" ${this.selectedHeadingStyles.has('mono') ? 'checked' : ''}>
+                        <input type="checkbox" id="heading-mono" ${
+                          this.selectedHeadingStyles.has("mono")
+                            ? "checked"
+                            : ""
+                        }>
                         <label for="heading-mono">Mono</label>
                       </div>
                     </div>
@@ -1382,23 +1500,37 @@ export class ThemeForseen extends HTMLElement {
                   <div class="font-filter-group">
                     <label class="font-filter-label">Body</label>
                     <button class="font-filter-dropdown-btn" data-filter-type="body">
-                      ${this.selectedBodyStyles.size > 0 ? Array.from(this.selectedBodyStyles).join(', ') : 'All styles'} ▼
+                      ${
+                        this.selectedBodyStyles.size > 0
+                          ? Array.from(this.selectedBodyStyles).join(", ")
+                          : "All styles"
+                      } ▼
                     </button>
                     <div class="font-filter-dropdown hidden" data-filter-type="body">
                       <div class="filter-option" data-style="sans">
-                        <input type="checkbox" id="body-sans" ${this.selectedBodyStyles.has('sans') ? 'checked' : ''}>
+                        <input type="checkbox" id="body-sans" ${
+                          this.selectedBodyStyles.has("sans") ? "checked" : ""
+                        }>
                         <label for="body-sans">Sans</label>
                       </div>
                       <div class="filter-option" data-style="serif">
-                        <input type="checkbox" id="body-serif" ${this.selectedBodyStyles.has('serif') ? 'checked' : ''}>
+                        <input type="checkbox" id="body-serif" ${
+                          this.selectedBodyStyles.has("serif") ? "checked" : ""
+                        }>
                         <label for="body-serif">Serif</label>
                       </div>
                       <div class="filter-option" data-style="display">
-                        <input type="checkbox" id="body-display" ${this.selectedBodyStyles.has('display') ? 'checked' : ''}>
+                        <input type="checkbox" id="body-display" ${
+                          this.selectedBodyStyles.has("display")
+                            ? "checked"
+                            : ""
+                        }>
                         <label for="body-display">Display</label>
                       </div>
                       <div class="filter-option" data-style="mono">
-                        <input type="checkbox" id="body-mono" ${this.selectedBodyStyles.has('mono') ? 'checked' : ''}>
+                        <input type="checkbox" id="body-mono" ${
+                          this.selectedBodyStyles.has("mono") ? "checked" : ""
+                        }>
                         <label for="body-mono">Mono</label>
                       </div>
                     </div>
@@ -1452,7 +1584,9 @@ export class ThemeForseen extends HTMLElement {
     // Filter by tags if any are selected
     if (this.selectedTags.size > 0) {
       const themeTags = theme.tags || [];
-      const hasMatchingTag = Array.from(this.selectedTags).some(tag => themeTags.includes(tag));
+      const hasMatchingTag = Array.from(this.selectedTags).some((tag) =>
+        themeTags.includes(tag)
+      );
       if (!hasMatchingTag) return false;
     }
 
@@ -1475,12 +1609,13 @@ export class ThemeForseen extends HTMLElement {
         colors.background,
         colors.cardBackground,
         colors.text,
-        colors.extra
+        colors.extra,
       ];
 
-      return colorValues.some(color =>
-        color.toLowerCase().includes(search) ||
-        color.toLowerCase().replace('#', '').includes(search.replace('#', ''))
+      return colorValues.some(
+        (color) =>
+          color.toLowerCase().includes(search) ||
+          color.toLowerCase().replace("#", "").includes(search.replace("#", ""))
       );
     }
 
@@ -1491,7 +1626,9 @@ export class ThemeForseen extends HTMLElement {
     const themesList = this.shadowRoot?.querySelector(".themes-list");
     if (!themesList) return;
 
-    const filteredThemes = colorThemes.filter(theme => this.filterTheme(theme));
+    const filteredThemes = colorThemes.filter((theme) =>
+      this.filterTheme(theme)
+    );
 
     themesList.innerHTML = filteredThemes
       .map((theme, _) => {
@@ -1524,7 +1661,9 @@ export class ThemeForseen extends HTMLElement {
 
   private restoreThemeFavorites() {
     // Restore starred theme for current mode (single)
-    const starredIndex = this.isDarkMode ? this.starredDarkTheme : this.starredLightTheme;
+    const starredIndex = this.isDarkMode
+      ? this.starredDarkTheme
+      : this.starredLightTheme;
     if (starredIndex !== null) {
       const star = this.shadowRoot?.querySelector(
         `.star[data-type="theme"][data-index="${starredIndex}"]`
@@ -1533,7 +1672,9 @@ export class ThemeForseen extends HTMLElement {
     }
 
     // Restore loved themes for current mode (multiple)
-    const lovedSet = this.isDarkMode ? this.lovedDarkThemes : this.lovedLightThemes;
+    const lovedSet = this.isDarkMode
+      ? this.lovedDarkThemes
+      : this.lovedLightThemes;
     lovedSet.forEach((index) => {
       const heart = this.shadowRoot?.querySelector(
         `.heart[data-type="theme"][data-index="${index}"]`
@@ -1548,7 +1689,7 @@ export class ThemeForseen extends HTMLElement {
   private filterFontPairing(pairing: FontPairing): boolean {
     // Filter by heading styles if any are selected
     if (this.selectedHeadingStyles.size > 0) {
-      const hasMatchingHeadingStyle = pairing.headingStyle.some(style =>
+      const hasMatchingHeadingStyle = pairing.headingStyle.some((style) =>
         this.selectedHeadingStyles.has(style)
       );
       if (!hasMatchingHeadingStyle) return false;
@@ -1556,7 +1697,7 @@ export class ThemeForseen extends HTMLElement {
 
     // Filter by body styles if any are selected
     if (this.selectedBodyStyles.size > 0) {
-      const hasMatchingBodyStyle = pairing.bodyStyle.some(style =>
+      const hasMatchingBodyStyle = pairing.bodyStyle.some((style) =>
         this.selectedBodyStyles.has(style)
       );
       if (!hasMatchingBodyStyle) return false;
@@ -1569,21 +1710,28 @@ export class ThemeForseen extends HTMLElement {
     const fontsList = this.shadowRoot?.querySelector(".fonts-list");
     if (!fontsList) return;
 
-    const filteredPairings = fontPairings.filter(pairing => this.filterFontPairing(pairing));
+    const filteredPairings = fontPairings.filter((pairing) =>
+      this.filterFontPairing(pairing)
+    );
 
     fontsList.innerHTML = filteredPairings
-      .map(
-        (pairing, _) => {
-          const index = fontPairings.indexOf(pairing);
-          const isActive = this.activeFontIndex === index;
-          return `
-        <div class="font-item ${isActive ? 'active' : ''}" data-index="${index}">
+      .map((pairing, _) => {
+        const index = fontPairings.indexOf(pairing);
+        const isActive = this.activeFontIndex === index;
+        return `
+        <div class="font-item ${
+          isActive ? "active" : ""
+        }" data-index="${index}">
           <div class="font-name">${pairing.name}</div>
           <div class="font-preview">
-            <span class="individual-font heading-font" data-font="${pairing.heading}" data-type="heading">
+            <span class="individual-font heading-font" data-font="${
+              pairing.heading
+            }" data-type="heading">
               Heading: ${pairing.heading}
             </span><br>
-            <span class="individual-font body-font" data-font="${pairing.body}" data-type="body">
+            <span class="individual-font body-font" data-font="${
+              pairing.body
+            }" data-type="body">
               Body: ${pairing.body}
             </span>
           </div>
@@ -1595,8 +1743,7 @@ export class ThemeForseen extends HTMLElement {
           </div>
         </div>
       `;
-        }
-      )
+      })
       .join("");
 
     this.updateFontSelection();
@@ -1631,7 +1778,9 @@ export class ThemeForseen extends HTMLElement {
 
   private attachFilterListeners() {
     // Filter input
-    const filterInput = this.shadowRoot?.querySelector(".filter-input") as HTMLInputElement;
+    const filterInput = this.shadowRoot?.querySelector(
+      ".filter-input"
+    ) as HTMLInputElement;
     filterInput?.addEventListener("input", (e) => {
       this.searchText = (e.target as HTMLInputElement).value;
       this.saveToLocalStorage();
@@ -1639,31 +1788,39 @@ export class ThemeForseen extends HTMLElement {
     });
 
     // Filter dropdown button
-    const filterDropdownBtn = this.shadowRoot?.querySelector(".filter-dropdown-btn");
+    const filterDropdownBtn = this.shadowRoot?.querySelector(
+      ".filter-dropdown-btn"
+    );
     const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
     filterDropdownBtn?.addEventListener("click", () => {
       filterDropdown?.classList.toggle("hidden");
     });
 
     // Filter checkboxes
-    this.shadowRoot?.querySelectorAll(".filter-container .filter-option input[type='checkbox']").forEach((checkbox) => {
-      checkbox.addEventListener("change", (e) => {
-        const option = (e.target as HTMLInputElement).closest(".filter-option");
-        const tag = option?.getAttribute("data-tag");
-        if (tag) {
-          if ((e.target as HTMLInputElement).checked) {
-            this.selectedTags.add(tag);
-          } else {
-            this.selectedTags.delete(tag);
+    this.shadowRoot
+      ?.querySelectorAll(
+        ".filter-container .filter-option input[type='checkbox']"
+      )
+      .forEach((checkbox) => {
+        checkbox.addEventListener("change", (e) => {
+          const option = (e.target as HTMLInputElement).closest(
+            ".filter-option"
+          );
+          const tag = option?.getAttribute("data-tag");
+          if (tag) {
+            if ((e.target as HTMLInputElement).checked) {
+              this.selectedTags.add(tag);
+            } else {
+              this.selectedTags.delete(tag);
+            }
+            this.saveToLocalStorage();
+            this.render();
+            this.attachEventListeners();
+            this.renderThemes();
+            this.renderFonts();
           }
-          this.saveToLocalStorage();
-          this.render();
-          this.attachEventListeners();
-          this.renderThemes();
-          this.renderFonts();
-        }
+        });
       });
-    });
 
     // Filter tag remove buttons
     this.shadowRoot?.querySelectorAll(".filter-tag-remove").forEach((btn) => {
@@ -1681,51 +1838,70 @@ export class ThemeForseen extends HTMLElement {
     });
   }
 
-  private updateFontFilterButtonText(filterType: 'heading' | 'body') {
-    const targetSet = filterType === "heading" ? this.selectedHeadingStyles : this.selectedBodyStyles;
-    const btn = this.shadowRoot?.querySelector(`.font-filter-dropdown-btn[data-filter-type="${filterType}"]`);
+  private updateFontFilterButtonText(filterType: "heading" | "body") {
+    const targetSet =
+      filterType === "heading"
+        ? this.selectedHeadingStyles
+        : this.selectedBodyStyles;
+    const btn = this.shadowRoot?.querySelector(
+      `.font-filter-dropdown-btn[data-filter-type="${filterType}"]`
+    );
     if (btn) {
-      const text = targetSet.size > 0 ? Array.from(targetSet).join(', ') : 'All styles';
+      const text =
+        targetSet.size > 0 ? Array.from(targetSet).join(", ") : "All styles";
       btn.textContent = `${text} ▼`;
     }
   }
 
   private attachFontFilterListeners() {
     // Font filter dropdown buttons
-    this.shadowRoot?.querySelectorAll(".font-filter-dropdown-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const filterType = (e.currentTarget as HTMLElement).getAttribute("data-filter-type");
-        const dropdown = this.shadowRoot?.querySelector(
-          `.font-filter-dropdown[data-filter-type="${filterType}"]`
-        );
-        dropdown?.classList.toggle("hidden");
+    this.shadowRoot
+      ?.querySelectorAll(".font-filter-dropdown-btn")
+      .forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const filterType = (e.currentTarget as HTMLElement).getAttribute(
+            "data-filter-type"
+          );
+          const dropdown = this.shadowRoot?.querySelector(
+            `.font-filter-dropdown[data-filter-type="${filterType}"]`
+          );
+          dropdown?.classList.toggle("hidden");
+        });
       });
-    });
 
     // Font filter checkboxes
-    this.shadowRoot?.querySelectorAll(".font-filter-dropdown .filter-option input[type='checkbox']").forEach((checkbox) => {
-      checkbox.addEventListener("change", (e) => {
-        const input = e.target as HTMLInputElement;
-        const option = input.closest(".filter-option");
-        const style = option?.getAttribute("data-style");
-        const dropdown = option?.closest(".font-filter-dropdown");
-        const filterType = dropdown?.getAttribute("data-filter-type") as 'heading' | 'body';
+    this.shadowRoot
+      ?.querySelectorAll(
+        ".font-filter-dropdown .filter-option input[type='checkbox']"
+      )
+      .forEach((checkbox) => {
+        checkbox.addEventListener("change", (e) => {
+          const input = e.target as HTMLInputElement;
+          const option = input.closest(".filter-option");
+          const style = option?.getAttribute("data-style");
+          const dropdown = option?.closest(".font-filter-dropdown");
+          const filterType = dropdown?.getAttribute("data-filter-type") as
+            | "heading"
+            | "body";
 
-        if (style && filterType) {
-          const targetSet = filterType === "heading" ? this.selectedHeadingStyles : this.selectedBodyStyles;
+          if (style && filterType) {
+            const targetSet =
+              filterType === "heading"
+                ? this.selectedHeadingStyles
+                : this.selectedBodyStyles;
 
-          if (input.checked) {
-            targetSet.add(style);
-          } else {
-            targetSet.delete(style);
+            if (input.checked) {
+              targetSet.add(style);
+            } else {
+              targetSet.delete(style);
+            }
+
+            this.saveToLocalStorage();
+            this.updateFontFilterButtonText(filterType);
+            this.renderFonts();
           }
-
-          this.saveToLocalStorage();
-          this.updateFontFilterButtonText(filterType);
-          this.renderFonts();
-        }
+        });
       });
-    });
   }
 
   private attachEventListeners() {
@@ -1745,13 +1921,18 @@ export class ThemeForseen extends HTMLElement {
     themesList?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       // Ignore clicks on favorite/activate icons - they have their own handlers
-      if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+      if (
+        target.classList.contains("favorite-icon") ||
+        target.classList.contains("activate-icon")
+      ) {
         return;
       }
       const themeItem = target.closest(".theme-item");
       if (themeItem) {
         const index = parseInt((themeItem as HTMLElement).dataset.index || "0");
-        console.log(`Theme clicked: index=${index}, isDarkMode=${this.isDarkMode}`);
+        console.log(
+          `Theme clicked: index=${index}, isDarkMode=${this.isDarkMode}`
+        );
         this.activeThemeIndex = index;
         this.focusedColumn = "themes";
         if (this.isDarkMode) {
@@ -1772,7 +1953,10 @@ export class ThemeForseen extends HTMLElement {
       const target = e.target as HTMLElement;
 
       // Ignore clicks on favorite/activate icons - they have their own handlers
-      if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+      if (
+        target.classList.contains("favorite-icon") ||
+        target.classList.contains("activate-icon")
+      ) {
         return;
       }
 
@@ -1834,11 +2018,19 @@ export class ThemeForseen extends HTMLElement {
       btn.addEventListener("click", (e) => {
         const mode = (e.currentTarget as HTMLElement).dataset.mode;
         console.log(`Mode toggle clicked: ${mode}`);
-        console.log(`Before: isDarkMode=${this.isDarkMode}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`);
+        console.log(
+          `Before: isDarkMode=${this.isDarkMode}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`
+        );
         this.isDarkMode = mode === "dark";
         // Sync activeThemeIndex with the new mode's selected theme
-        this.activeThemeIndex = this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme;
-        console.log(`After: isDarkMode=${this.isDarkMode}, will apply theme index=${this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme}`);
+        this.activeThemeIndex = this.isDarkMode
+          ? this.selectedDarkTheme
+          : this.selectedLightTheme;
+        console.log(
+          `After: isDarkMode=${this.isDarkMode}, will apply theme index=${
+            this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme
+          }`
+        );
         this.applyTheme();
         this.updateModeButtons();
         this.renderThemes();
@@ -1849,7 +2041,8 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".collapse-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const columnType = (e.currentTarget as HTMLElement).dataset.columnType as "themes" | "fonts";
+        const columnType = (e.currentTarget as HTMLElement).dataset
+          .columnType as "themes" | "fonts";
         this.toggleColumn(columnType);
       });
     });
@@ -1912,7 +2105,9 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".instructions-close").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const instructionsDiv = (e.target as HTMLElement).closest(".instructions");
+        const instructionsDiv = (e.target as HTMLElement).closest(
+          ".instructions"
+        );
         if (instructionsDiv) {
           instructionsDiv.classList.add("hidden");
         }
@@ -1931,7 +2126,9 @@ export class ThemeForseen extends HTMLElement {
         if (type === "theme") {
           if (isStar) {
             // Stars: only one per mode (light/dark)
-            const currentStarred = this.isDarkMode ? this.starredDarkTheme : this.starredLightTheme;
+            const currentStarred = this.isDarkMode
+              ? this.starredDarkTheme
+              : this.starredLightTheme;
 
             if (currentStarred === index) {
               // Deselect current starred
@@ -1960,7 +2157,9 @@ export class ThemeForseen extends HTMLElement {
             }
           } else {
             // Hearts: multiple allowed per mode (light/dark)
-            const lovedSet = this.isDarkMode ? this.lovedDarkThemes : this.lovedLightThemes;
+            const lovedSet = this.isDarkMode
+              ? this.lovedDarkThemes
+              : this.lovedLightThemes;
 
             if (lovedSet.has(index)) {
               lovedSet.delete(index);
@@ -2020,10 +2219,18 @@ export class ThemeForseen extends HTMLElement {
 
     // Activation modal event listeners
     const activationModal = this.shadowRoot?.querySelector(".activation-modal");
-    const activationModalClose = this.shadowRoot?.querySelector(".activation-modal-close");
-    const activationCancelBtn = this.shadowRoot?.querySelector(".activation-cancel-btn");
-    const activationCopyBtn = this.shadowRoot?.querySelector(".activation-copy-btn");
-    const activationSaveBtn = this.shadowRoot?.querySelector(".activation-save-btn");
+    const activationModalClose = this.shadowRoot?.querySelector(
+      ".activation-modal-close"
+    );
+    const activationCancelBtn = this.shadowRoot?.querySelector(
+      ".activation-cancel-btn"
+    );
+    const activationCopyBtn = this.shadowRoot?.querySelector(
+      ".activation-copy-btn"
+    );
+    const activationSaveBtn = this.shadowRoot?.querySelector(
+      ".activation-save-btn"
+    );
 
     activationModalClose?.addEventListener("click", () => {
       activationModal?.classList.add("hidden");
@@ -2062,7 +2269,9 @@ export class ThemeForseen extends HTMLElement {
           ? Math.min(this.selectedLightTheme + 1, colorThemes.length - 1)
           : Math.max(this.selectedLightTheme - 1, 0);
       }
-      this.activeThemeIndex = this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme;
+      this.activeThemeIndex = this.isDarkMode
+        ? this.selectedDarkTheme
+        : this.selectedLightTheme;
       this.applyTheme();
       this.renderThemes(); // Re-render to show active state
       this.scrollToSelected(".theme-item");
@@ -2082,7 +2291,9 @@ export class ThemeForseen extends HTMLElement {
       const index = this.activeThemeIndex;
       if (key === "s") {
         // Toggle star (only one allowed)
-        const currentStarred = this.isDarkMode ? this.starredDarkTheme : this.starredLightTheme;
+        const currentStarred = this.isDarkMode
+          ? this.starredDarkTheme
+          : this.starredLightTheme;
         if (currentStarred === index) {
           if (this.isDarkMode) {
             this.starredDarkTheme = null;
@@ -2100,7 +2311,9 @@ export class ThemeForseen extends HTMLElement {
         this.renderThemes();
       } else if (key === "h") {
         // Toggle heart (multiple allowed)
-        const lovedSet = this.isDarkMode ? this.lovedDarkThemes : this.lovedLightThemes;
+        const lovedSet = this.isDarkMode
+          ? this.lovedDarkThemes
+          : this.lovedLightThemes;
         if (lovedSet.has(index)) {
           lovedSet.delete(index);
         } else {
@@ -2109,7 +2322,10 @@ export class ThemeForseen extends HTMLElement {
         this.saveToLocalStorage();
         this.renderThemes();
       }
-    } else if (this.focusedColumn === "fonts" && this.activeFontIndex !== null) {
+    } else if (
+      this.focusedColumn === "fonts" &&
+      this.activeFontIndex !== null
+    ) {
       const index = this.activeFontIndex;
       if (key === "s") {
         // Toggle star (only one allowed)
@@ -2176,7 +2392,8 @@ export class ThemeForseen extends HTMLElement {
 
   private updateFontSelection() {
     // Update font pairing card selection (only if no individual fonts selected)
-    const hasIndividualSelection = this.selectedHeadingFont !== null || this.selectedBodyFont !== null;
+    const hasIndividualSelection =
+      this.selectedHeadingFont !== null || this.selectedBodyFont !== null;
 
     this.shadowRoot?.querySelectorAll(".font-item").forEach((item, index) => {
       if (!hasIndividualSelection && index === this.selectedFontPairing) {
@@ -2231,36 +2448,53 @@ export class ThemeForseen extends HTMLElement {
   private toggleColumn(columnType: "themes" | "fonts") {
     if (columnType === "themes") {
       this.themesColumnCollapsed = !this.themesColumnCollapsed;
-      localStorage.setItem("themesColumnCollapsed", JSON.stringify(this.themesColumnCollapsed));
+      localStorage.setItem(
+        "themesColumnCollapsed",
+        JSON.stringify(this.themesColumnCollapsed)
+      );
     } else {
       this.fontsColumnCollapsed = !this.fontsColumnCollapsed;
-      localStorage.setItem("fontsColumnCollapsed", JSON.stringify(this.fontsColumnCollapsed));
+      localStorage.setItem(
+        "fontsColumnCollapsed",
+        JSON.stringify(this.fontsColumnCollapsed)
+      );
     }
 
     // Update classes on existing elements for smooth animation
-    const column = this.shadowRoot?.querySelector(`[data-column="${columnType}"]`);
-    const collapseBtn = column?.querySelector('.collapse-btn') as HTMLButtonElement;
-    const headerContent = this.shadowRoot?.querySelector('.drawer-header-content');
+    const column = this.shadowRoot?.querySelector(
+      `[data-column="${columnType}"]`
+    );
+    const collapseBtn = column?.querySelector(
+      ".collapse-btn"
+    ) as HTMLButtonElement;
+    const headerContent = this.shadowRoot?.querySelector(
+      ".drawer-header-content"
+    );
 
     if (column) {
       if (columnType === "themes") {
         column.classList.toggle("collapsed", this.themesColumnCollapsed);
         if (collapseBtn) {
-          collapseBtn.innerHTML = this.themesColumnCollapsed ? '«' : '»';
-          collapseBtn.title = this.themesColumnCollapsed ? 'Expand' : 'Collapse';
+          collapseBtn.innerHTML = this.themesColumnCollapsed ? "«" : "»";
+          collapseBtn.title = this.themesColumnCollapsed
+            ? "Expand"
+            : "Collapse";
         }
       } else {
         column.classList.toggle("collapsed", this.fontsColumnCollapsed);
         if (collapseBtn) {
-          collapseBtn.innerHTML = this.fontsColumnCollapsed ? '«' : '»';
-          collapseBtn.title = this.fontsColumnCollapsed ? 'Expand' : 'Collapse';
+          collapseBtn.innerHTML = this.fontsColumnCollapsed ? "«" : "»";
+          collapseBtn.title = this.fontsColumnCollapsed ? "Expand" : "Collapse";
         }
       }
     }
 
     // Update header content visibility
     if (headerContent) {
-      headerContent.classList.toggle('logo-hidden', this.themesColumnCollapsed || this.fontsColumnCollapsed);
+      headerContent.classList.toggle(
+        "logo-hidden",
+        this.themesColumnCollapsed || this.fontsColumnCollapsed
+      );
     }
 
     // Save to localStorage
@@ -2269,10 +2503,16 @@ export class ThemeForseen extends HTMLElement {
 
   private handleActivate(type: "theme" | "font", index: number) {
     const modal = this.shadowRoot?.querySelector(".activation-modal");
-    const instructions = this.shadowRoot?.querySelector(".activation-instructions");
-    const filename = this.shadowRoot?.querySelector(".activation-code-filename");
+    const instructions = this.shadowRoot?.querySelector(
+      ".activation-instructions"
+    );
+    const filename = this.shadowRoot?.querySelector(
+      ".activation-code-filename"
+    );
     const code = this.shadowRoot?.querySelector(".activation-code");
-    const saveBtn = this.shadowRoot?.querySelector(".activation-save-btn") as HTMLButtonElement;
+    const saveBtn = this.shadowRoot?.querySelector(
+      ".activation-save-btn"
+    ) as HTMLButtonElement;
 
     if (!modal || !instructions || !filename || !code || !saveBtn) return;
 
@@ -2366,14 +2606,16 @@ export default {
   }
 
   private async handleSaveToFile() {
-    const saveBtn = this.shadowRoot?.querySelector(".activation-save-btn") as any;
+    const saveBtn = this.shadowRoot?.querySelector(
+      ".activation-save-btn"
+    ) as any;
     if (!saveBtn || !saveBtn._generatedCode) return;
 
     const generatedCode = saveBtn._generatedCode;
     const targetFilename = saveBtn._targetFilename;
 
     // Check if File System Access API is supported
-    if ('showSaveFilePicker' in window) {
+    if ("showSaveFilePicker" in window) {
       try {
         const suggestedName = targetFilename.includes("tailwind")
           ? "tailwind.config.js"
@@ -2383,10 +2625,10 @@ export default {
           suggestedName: suggestedName,
           types: [
             {
-              description: 'Code Files',
+              description: "Code Files",
               accept: targetFilename.includes("tailwind")
-                ? { 'text/javascript': ['.js', '.ts', '.mjs'] }
-                : { 'text/css': ['.css'] }
+                ? { "text/javascript": [".js", ".ts", ".mjs"] }
+                : { "text/css": [".css"] },
             },
           ],
         });
@@ -2402,15 +2644,16 @@ export default {
           saveBtn.textContent = "Save to File";
           saveBtn.style.background = "";
         }, 2000);
-
       } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('Error saving file:', err);
-          alert('Error saving file. Please copy the code manually.');
+        if (err.name !== "AbortError") {
+          console.error("Error saving file:", err);
+          alert("Error saving file. Please copy the code manually.");
         }
       }
     } else {
-      alert('File System Access API is not supported in your browser. Please copy the code manually and paste it into your file.');
+      alert(
+        "File System Access API is not supported in your browser. Please copy the code manually and paste it into your file."
+      );
     }
   }
 
@@ -2422,11 +2665,11 @@ export default {
 
     // Create the Google Fonts URL
     // Font name needs spaces replaced with + for URL
-    const fontNameForUrl = fontName.replace(/ /g, '+');
+    const fontNameForUrl = fontName.replace(/ /g, "+");
 
     // Create link element
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
     link.href = `https://fonts.googleapis.com/css2?family=${fontNameForUrl}:wght@400;500;600;700&display=swap`;
 
     // Add to document head
@@ -2439,7 +2682,9 @@ export default {
   private applyTheme(force = false) {
     // Prevent recursive calls from MutationObserver (static flag shared across all instances)
     if (ThemeForseen.isApplyingTheme) {
-      console.log(`[${this.instanceId}] applyTheme skipped - another instance is applying`);
+      console.log(
+        `[${this.instanceId}] applyTheme skipped - another instance is applying`
+      );
       return;
     }
 
@@ -2452,76 +2697,96 @@ export default {
     ThemeForseen.isApplyingTheme = true;
 
     try {
-    const themeIndex = this.isDarkMode
-      ? this.selectedDarkTheme
-      : this.selectedLightTheme;
-    console.log(`[${this.instanceId}] applyTheme called: isDarkMode=${this.isDarkMode}, themeIndex=${themeIndex}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`);
-    const theme = colorThemes[themeIndex];
-    console.log(`Applying theme: "${theme.name}" with ${this.isDarkMode ? 'dark' : 'light'} colors`);
-    const colors = this.isDarkMode ? theme.dark : theme.light;
+      const themeIndex = this.isDarkMode
+        ? this.selectedDarkTheme
+        : this.selectedLightTheme;
+      console.log(
+        `[${this.instanceId}] applyTheme called: isDarkMode=${this.isDarkMode}, themeIndex=${themeIndex}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`
+      );
+      const theme = colorThemes[themeIndex];
+      console.log(
+        `Applying theme: "${theme.name}" with ${
+          this.isDarkMode ? "dark" : "light"
+        } colors`
+      );
+      const colors = this.isDarkMode ? theme.dark : theme.light;
 
-    // Set color-scheme on document root for proper light/dark mode
-    document.documentElement.style.colorScheme = this.isDarkMode ? "dark" : "light";
+      // Set color-scheme on document root for proper light/dark mode
+      document.documentElement.style.colorScheme = this.isDarkMode
+        ? "dark"
+        : "light";
 
-    // Apply CSS variables to document root
-    document.documentElement.style.setProperty(
-      "--color-primary",
-      colors.primary
-    );
-    document.documentElement.style.setProperty(
-      "--color-primary-shadow",
-      colors.primaryShadow
-    );
-    document.documentElement.style.setProperty("--color-accent", colors.accent);
-    document.documentElement.style.setProperty(
-      "--color-accent-shadow",
-      colors.accentShadow
-    );
-    document.documentElement.style.setProperty("--color-bg", colors.background);
-    document.documentElement.style.setProperty(
-      "--color-card-bg",
-      colors.cardBackground
-    );
-    document.documentElement.style.setProperty("--color-text", colors.text);
-    document.documentElement.style.setProperty("--color-extra", colors.extra);
+      // Apply CSS variables to document root
+      document.documentElement.style.setProperty(
+        "--color-primary",
+        colors.primary
+      );
+      document.documentElement.style.setProperty(
+        "--color-primary-shadow",
+        colors.primaryShadow
+      );
+      document.documentElement.style.setProperty(
+        "--color-accent",
+        colors.accent
+      );
+      document.documentElement.style.setProperty(
+        "--color-accent-shadow",
+        colors.accentShadow
+      );
+      document.documentElement.style.setProperty(
+        "--color-bg",
+        colors.background
+      );
+      document.documentElement.style.setProperty(
+        "--color-card-bg",
+        colors.cardBackground
+      );
+      document.documentElement.style.setProperty("--color-text", colors.text);
+      document.documentElement.style.setProperty("--color-extra", colors.extra);
 
-    // Also explicitly set background and foreground colors
-    document.documentElement.style.setProperty("--background-color", colors.background);
-    document.documentElement.style.setProperty("--foreground-color", colors.text);
+      // Also explicitly set background and foreground colors
+      document.documentElement.style.setProperty(
+        "--background-color",
+        colors.background
+      );
+      document.documentElement.style.setProperty(
+        "--foreground-color",
+        colors.text
+      );
 
-    // Apply heading colors
-    const getColor = (colorKey: string) => {
-      switch (colorKey) {
-        case "primary":
-          return colors.primary;
-        case "accent":
-          return colors.accent;
-        case "text":
-          return colors.text;
-        default:
-          return colors.text;
-      }
-    };
+      // Apply heading colors
+      const getColor = (colorKey: string) => {
+        switch (colorKey) {
+          case "primary":
+            return colors.primary;
+          case "accent":
+            return colors.accent;
+          case "text":
+            return colors.text;
+          default:
+            return colors.text;
+        }
+      };
 
-    document.documentElement.style.setProperty(
-      "--color-h1",
-      getColor(colors.h1Color)
-    );
-    document.documentElement.style.setProperty(
-      "--color-h2",
-      getColor(colors.h2Color)
-    );
-    document.documentElement.style.setProperty(
-      "--color-h3",
-      getColor(colors.h3Color)
-    );
-    // General heading color (uses h1 color as default)
-    document.documentElement.style.setProperty(
-      "--color-heading",
-      getColor(colors.h1Color)
-    );
+      document.documentElement.style.setProperty(
+        "--color-h1",
+        getColor(colors.h1Color)
+      );
+      document.documentElement.style.setProperty(
+        "--color-h2",
+        getColor(colors.h2Color)
+      );
+      document.documentElement.style.setProperty(
+        "--color-h3",
+        getColor(colors.h3Color)
+      );
+      // General heading color (uses h1 color as default)
+      document.documentElement.style.setProperty(
+        "--color-heading",
+        getColor(colors.h1Color)
+      );
 
-    this.saveToLocalStorage();
+      this.saveToLocalStorage();
     } finally {
       // Reset the guard flag (static, shared across all instances)
       ThemeForseen.isApplyingTheme = false;
@@ -2549,7 +2814,8 @@ export default {
       }
     } else {
       // Use pairing
-      const pairingIndex = this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
+      const pairingIndex =
+        this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
       const pairing = fontPairings[pairingIndex];
       headingFont = pairing.heading;
       bodyFont = pairing.body;
@@ -2613,9 +2879,6 @@ export default {
 }
 
 // Register the custom element
-if (
-  typeof window !== "undefined" &&
-  !customElements.get("theme-forseen")
-) {
+if (typeof window !== "undefined" && !customElements.get("theme-forseen")) {
   customElements.define("theme-forseen", ThemeForseen);
 }

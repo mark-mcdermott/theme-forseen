@@ -1,4 +1,4 @@
-import { colorThemes, fontPairings, } from "./themes";
+import { colorThemes, fontPairings, } from "./themes.js";
 export class ThemeForseen extends HTMLElement {
     constructor() {
         super();
@@ -8,12 +8,12 @@ export class ThemeForseen extends HTMLElement {
         this.selectedFontPairing = 0;
         this.isDarkMode = false;
         this.focusedColumn = "themes";
-        this.starredLightThemes = new Set();
-        this.starredDarkThemes = new Set();
-        this.lovedLightTheme = null;
-        this.lovedDarkTheme = null;
-        this.starredFonts = new Set();
-        this.lovedFont = null;
+        this.starredLightTheme = null;
+        this.starredDarkTheme = null;
+        this.lovedLightThemes = new Set();
+        this.lovedDarkThemes = new Set();
+        this.starredFont = null;
+        this.lovedFonts = new Set();
         // Individual font selections
         this.selectedHeadingFont = null;
         this.selectedBodyFont = null;
@@ -28,15 +28,20 @@ export class ThemeForseen extends HTMLElement {
         // Active tile state for keyboard shortcuts
         this.activeThemeIndex = null;
         this.activeFontIndex = null;
+        // Track loaded Google Fonts to avoid duplicate loading
+        this.loadedFonts = new Set();
+        // Instance ID for debugging
+        this.instanceId = Math.random().toString(36).substring(7);
         this.attachShadow({ mode: "open" });
+        console.log(`ThemeForseen instance created: ${this.instanceId}`);
     }
     connectedCallback() {
         this.loadFromLocalStorage();
         this.incrementVisitCounter();
+        this.checkDarkMode(); // Must be before render() so isDarkMode is set correctly
         this.render();
         this.attachEventListeners();
-        this.checkDarkMode();
-        this.applyTheme();
+        this.applyTheme(true); // Force on initial load
         this.applyFonts();
         // Render theme and font lists (this also restores favorites)
         this.renderThemes();
@@ -45,12 +50,12 @@ export class ThemeForseen extends HTMLElement {
         this.maybeHideInstructions();
         // Jiggle the bookmark after 7 seconds to attract attention
         setTimeout(() => {
-            const toggle = this.shadowRoot?.querySelector('.drawer-toggle');
+            const toggle = this.shadowRoot?.querySelector(".drawer-toggle");
             if (toggle && !this.isOpen) {
-                toggle.classList.add('jiggle');
+                toggle.classList.add("jiggle");
                 // Remove the class after animation completes so it can be triggered again if needed
                 setTimeout(() => {
-                    toggle.classList.remove('jiggle');
+                    toggle.classList.remove("jiggle");
                 }, 600);
             }
         }, 7000);
@@ -128,31 +133,52 @@ export class ThemeForseen extends HTMLElement {
             this.selectedDarkTheme = parseInt(savedDarkTheme);
         if (savedFont)
             this.selectedFontPairing = parseInt(savedFont);
-        // Load starred themes
+        // Load starred themes (single value per mode)
         const savedStarredLight = localStorage.getItem("themeforseen-starred-light");
         const savedStarredDark = localStorage.getItem("themeforseen-starred-dark");
-        if (savedStarredLight) {
-            this.starredLightThemes = new Set(JSON.parse(savedStarredLight));
-        }
-        if (savedStarredDark) {
-            this.starredDarkThemes = new Set(JSON.parse(savedStarredDark));
-        }
-        // Load loved themes
+        if (savedStarredLight)
+            this.starredLightTheme = parseInt(savedStarredLight);
+        if (savedStarredDark)
+            this.starredDarkTheme = parseInt(savedStarredDark);
+        // Load loved themes (multiple per mode)
         const savedLovedLight = localStorage.getItem("themeforseen-loved-light");
         const savedLovedDark = localStorage.getItem("themeforseen-loved-dark");
-        if (savedLovedLight)
-            this.lovedLightTheme = parseInt(savedLovedLight);
-        if (savedLovedDark)
-            this.lovedDarkTheme = parseInt(savedLovedDark);
-        // Load starred fonts
-        const savedStarredFonts = localStorage.getItem("themeforseen-starred-fonts");
-        if (savedStarredFonts) {
-            this.starredFonts = new Set(JSON.parse(savedStarredFonts));
+        if (savedLovedLight) {
+            try {
+                const parsed = JSON.parse(savedLovedLight);
+                if (Array.isArray(parsed))
+                    this.lovedLightThemes = new Set(parsed);
+            }
+            catch (e) {
+                /* ignore corrupted data */
+            }
         }
-        // Load loved font
-        const savedLovedFont = localStorage.getItem("themeforseen-loved-font");
-        if (savedLovedFont)
-            this.lovedFont = parseInt(savedLovedFont);
+        if (savedLovedDark) {
+            try {
+                const parsed = JSON.parse(savedLovedDark);
+                if (Array.isArray(parsed))
+                    this.lovedDarkThemes = new Set(parsed);
+            }
+            catch (e) {
+                /* ignore corrupted data */
+            }
+        }
+        // Load starred font (single value)
+        const savedStarredFont = localStorage.getItem("themeforseen-starred-font");
+        if (savedStarredFont)
+            this.starredFont = parseInt(savedStarredFont);
+        // Load loved fonts (multiple)
+        const savedLovedFonts = localStorage.getItem("themeforseen-loved-fonts");
+        if (savedLovedFonts) {
+            try {
+                const parsed = JSON.parse(savedLovedFonts);
+                if (Array.isArray(parsed))
+                    this.lovedFonts = new Set(parsed);
+            }
+            catch (e) {
+                /* ignore corrupted data */
+            }
+        }
         // Load individual font selections
         const savedHeadingFont = localStorage.getItem("themeforseen-heading-font");
         const savedBodyFont = localStorage.getItem("themeforseen-body-font");
@@ -166,16 +192,37 @@ export class ThemeForseen extends HTMLElement {
         const savedHeadingStyles = localStorage.getItem("themeforseen-filter-heading-styles");
         const savedBodyStyles = localStorage.getItem("themeforseen-filter-body-styles");
         if (savedTags) {
-            this.selectedTags = new Set(JSON.parse(savedTags));
+            try {
+                const parsed = JSON.parse(savedTags);
+                if (Array.isArray(parsed))
+                    this.selectedTags = new Set(parsed);
+            }
+            catch (e) {
+                /* ignore corrupted data */
+            }
         }
         if (savedSearch) {
             this.searchText = savedSearch;
         }
         if (savedHeadingStyles) {
-            this.selectedHeadingStyles = new Set(JSON.parse(savedHeadingStyles));
+            try {
+                const parsed = JSON.parse(savedHeadingStyles);
+                if (Array.isArray(parsed))
+                    this.selectedHeadingStyles = new Set(parsed);
+            }
+            catch (e) {
+                /* ignore corrupted data */
+            }
         }
         if (savedBodyStyles) {
-            this.selectedBodyStyles = new Set(JSON.parse(savedBodyStyles));
+            try {
+                const parsed = JSON.parse(savedBodyStyles);
+                if (Array.isArray(parsed))
+                    this.selectedBodyStyles = new Set(parsed);
+            }
+            catch (e) {
+                /* ignore corrupted data */
+            }
         }
         // Load column collapse state
         const savedThemesCollapsed = localStorage.getItem("themeforseen-themes-collapsed");
@@ -207,31 +254,31 @@ export class ThemeForseen extends HTMLElement {
         localStorage.setItem("themeforseen-lighttheme", String(this.selectedLightTheme));
         localStorage.setItem("themeforseen-darktheme", String(this.selectedDarkTheme));
         localStorage.setItem("themeforseen-font", String(this.selectedFontPairing));
-        // Save starred themes
-        localStorage.setItem("themeforseen-starred-light", JSON.stringify(Array.from(this.starredLightThemes)));
-        localStorage.setItem("themeforseen-starred-dark", JSON.stringify(Array.from(this.starredDarkThemes)));
-        // Save loved themes
-        if (this.lovedLightTheme !== null) {
-            localStorage.setItem("themeforseen-loved-light", String(this.lovedLightTheme));
+        // Save starred themes (single value per mode)
+        if (this.starredLightTheme !== null) {
+            localStorage.setItem("themeforseen-starred-light", String(this.starredLightTheme));
         }
         else {
-            localStorage.removeItem("themeforseen-loved-light");
+            localStorage.removeItem("themeforseen-starred-light");
         }
-        if (this.lovedDarkTheme !== null) {
-            localStorage.setItem("themeforseen-loved-dark", String(this.lovedDarkTheme));
-        }
-        else {
-            localStorage.removeItem("themeforseen-loved-dark");
-        }
-        // Save starred fonts
-        localStorage.setItem("themeforseen-starred-fonts", JSON.stringify(Array.from(this.starredFonts)));
-        // Save loved font
-        if (this.lovedFont !== null) {
-            localStorage.setItem("themeforseen-loved-font", String(this.lovedFont));
+        if (this.starredDarkTheme !== null) {
+            localStorage.setItem("themeforseen-starred-dark", String(this.starredDarkTheme));
         }
         else {
-            localStorage.removeItem("themeforseen-loved-font");
+            localStorage.removeItem("themeforseen-starred-dark");
         }
+        // Save loved themes (multiple per mode)
+        localStorage.setItem("themeforseen-loved-light", JSON.stringify(Array.from(this.lovedLightThemes)));
+        localStorage.setItem("themeforseen-loved-dark", JSON.stringify(Array.from(this.lovedDarkThemes)));
+        // Save starred font (single value)
+        if (this.starredFont !== null) {
+            localStorage.setItem("themeforseen-starred-font", String(this.starredFont));
+        }
+        else {
+            localStorage.removeItem("themeforseen-starred-font");
+        }
+        // Save loved fonts (multiple)
+        localStorage.setItem("themeforseen-loved-fonts", JSON.stringify(Array.from(this.lovedFonts)));
         // Save individual font selections
         if (this.selectedHeadingFont) {
             localStorage.setItem("themeforseen-heading-font", this.selectedHeadingFont);
@@ -268,7 +315,7 @@ export class ThemeForseen extends HTMLElement {
         :host {
           position: fixed;
           top: 0;
-          left: 0;
+          right: 0;
           height: 100vh;
           z-index: 999999;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -276,75 +323,105 @@ export class ThemeForseen extends HTMLElement {
 
         .drawer-toggle {
           position: fixed;
-          left: 0;
+          right: 0;
           top: 50%;
           transform: translateY(-50%);
-          width: 70px;
-          height: 80px;
-          background: transparent;
+          width: 48px;
+          height: 120px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+          background-size: 200% 200%;
+          animation: shimmer 3s ease-in-out infinite;
           border: none;
-          border-radius: 0 6px 6px 0;
+          border-radius: 12px 0 0 12px;
           cursor: pointer;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 0;
-          transition: all 0.3s ease;
+          gap: 8px;
+          padding: 16px 8px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 999998;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)) drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+          box-shadow:
+            -4px 0 20px rgba(102, 126, 234, 0.4),
+            -2px 0 8px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
         }
 
-        .drawer-toggle img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          image-rendering: auto;
-          transform: scaleX(-1);
-          clip-path: url(#bookmark-clip);
-          position: relative;
-          z-index: 2;
-        }
-
-        .bookmark-border {
+        .drawer-toggle::before {
+          content: '';
           position: absolute;
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
-          z-index: 1;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.15) 50%,
+            transparent 70%
+          );
+          animation: sparkle 4s ease-in-out infinite;
+          pointer-events: none;
         }
 
-        .bookmark-shape {
-          position: absolute;
-          width: 0;
-          height: 0;
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        @keyframes sparkle {
+          0% { transform: translateX(-100%) rotate(45deg); }
+          100% { transform: translateX(100%) rotate(45deg); }
         }
 
         .drawer-toggle:hover {
-          width: 75px;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)) drop-shadow(0 2px 3px rgba(0,0,0,0.3)) brightness(1.1);
+          width: 54px;
+          background: linear-gradient(135deg, #764ba2 0%, #667eea 50%, #764ba2 100%);
+          background-size: 200% 200%;
+          box-shadow:
+            -6px 0 30px rgba(102, 126, 234, 0.6),
+            -2px 0 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .drawer-toggle:active {
+          transform: translateY(-50%) scale(0.98);
+        }
+
+        .drawer-toggle .toggle-icon {
+          width: 24px;
+          height: 24px;
+          color: white;
+          opacity: 0.95;
+        }
+
+        .drawer-toggle .toggle-text {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          transform: rotate(180deg);
+          font-size: 11px;
+          font-weight: 600;
+          color: white;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          opacity: 0.9;
         }
 
         .drawer-toggle.hidden {
           opacity: 0;
           pointer-events: none;
+          transform: translateY(-50%) translateX(100%);
         }
 
         @keyframes jiggle {
           0%, 100% { transform: translateY(-50%) rotate(0deg); }
-          10% { transform: translateY(-50%) rotate(-3deg); }
-          20% { transform: translateY(-50%) rotate(3deg); }
-          30% { transform: translateY(-50%) rotate(-3deg); }
-          40% { transform: translateY(-50%) rotate(3deg); }
-          50% { transform: translateY(-50%) rotate(-2deg); }
-          60% { transform: translateY(-50%) rotate(2deg); }
-          70% { transform: translateY(-50%) rotate(-1deg); }
-          80% { transform: translateY(-50%) rotate(1deg); }
-          90% { transform: translateY(-50%) rotate(0deg); }
+          25% { transform: translateY(-50%) rotate(-2deg) scale(1.02); }
+          50% { transform: translateY(-50%) rotate(2deg) scale(1.02); }
+          75% { transform: translateY(-50%) rotate(-1deg); }
         }
 
         .drawer-toggle.jiggle {
-          animation: jiggle 0.6s ease-in-out;
+          animation: jiggle 0.5s ease-in-out;
         }
 
         .backdrop {
@@ -367,22 +444,24 @@ export class ThemeForseen extends HTMLElement {
 
         .drawer {
           position: fixed;
-          left: -600px;
+          right: 0;
           top: 0;
           height: 100vh;
-          width: 600px;
+          width: auto;
+          max-width: 90vw;
           background: light-dark(white, #1a1a1a);
           color: light-dark(#333, #e0e0e0);
-          box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-          transition: left 0.3s ease;
+          box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+          transition: transform 0.3s ease, width 0.3s ease;
           overflow: hidden;
+          transform: translateX(100%);
           display: flex;
           flex-direction: column;
           z-index: 999999;
         }
 
         .drawer.open {
-          left: 0;
+          transform: translateX(0);
         }
 
         .drawer-header {
@@ -440,14 +519,17 @@ export class ThemeForseen extends HTMLElement {
           display: flex;
           flex: 1;
           overflow: hidden;
+          width: fit-content;
         }
 
         .column {
-          flex: 1;
+          width: 300px;
+          flex-shrink: 0;
           display: flex;
           flex-direction: column;
           border-right: 1px solid light-dark(#ddd, #444);
           overflow: hidden;
+          transition: width 0.3s ease;
         }
 
         .column:last-child {
@@ -486,7 +568,7 @@ export class ThemeForseen extends HTMLElement {
         }
 
         .column.collapsed {
-          flex: 0 0 40px;
+          width: 40px;
           min-width: 40px;
         }
 
@@ -494,6 +576,9 @@ export class ThemeForseen extends HTMLElement {
           writing-mode: vertical-lr;
           text-align: center;
           padding: 15px 5px;
+          gap: 12px;
+          height: 140px;
+          box-sizing: border-box;
         }
 
         .column.collapsed .column-title {
@@ -502,7 +587,6 @@ export class ThemeForseen extends HTMLElement {
 
         .column.collapsed .collapse-btn {
           writing-mode: horizontal-tb;
-          transform: rotate(180deg);
         }
 
         .column.collapsed .column-content {
@@ -513,6 +597,21 @@ export class ThemeForseen extends HTMLElement {
           flex: 1;
           overflow-y: auto;
           padding: 10px;
+        }
+
+        .column-controls {
+          position: sticky;
+          top: -10px;
+          z-index: 100;
+          background: light-dark(#f5f5f5, #1e1e1e);
+          margin: -10px -10px 10px -10px;
+          padding: 10px;
+          border-bottom: 1px solid light-dark(#ddd, #444);
+        }
+
+        .themes-list, .fonts-list {
+          position: relative;
+          z-index: 1;
         }
 
         .column-content::-webkit-scrollbar {
@@ -558,6 +657,29 @@ export class ThemeForseen extends HTMLElement {
         .theme-item.active, .font-item.active {
           outline: 3px solid light-dark(#2196F3, #64B5F6);
           outline-offset: 2px;
+        }
+
+        /* Light mode selection - blue */
+        .theme-item.selected-light {
+          border: 2px solid light-dark(#2196F3, #64B5F6);
+          background: light-dark(rgba(33,150,243,0.1), rgba(100,181,246,0.1));
+        }
+
+        /* Dark mode selection - green */
+        .theme-item.selected-dark {
+          border: 2px solid light-dark(#4CAF50, #81C784);
+          background: light-dark(rgba(76,175,80,0.1), rgba(129,199,132,0.1));
+        }
+
+        /* Both selected - show both colors */
+        .theme-item.selected-light.selected-dark {
+          border: 2px solid light-dark(#4CAF50, #81C784);
+          outline: 3px solid light-dark(#2196F3, #64B5F6);
+          outline-offset: -1px;
+          background: light-dark(
+            linear-gradient(135deg, rgba(33,150,243,0.1) 50%, rgba(76,175,80,0.1) 50%),
+            linear-gradient(135deg, rgba(100,181,246,0.1) 50%, rgba(129,199,132,0.1) 50%)
+          );
         }
 
         .theme-item .theme-name, .font-item .font-name {
@@ -607,12 +729,15 @@ export class ThemeForseen extends HTMLElement {
         .favorites {
           position: absolute;
           right: 8px;
-          top: 50%;
-          transform: translateY(-50%);
+          top: 8px;
           display: flex;
           flex-direction: column;
           gap: 8px;
           z-index: 10;
+        }
+
+        [data-column="themes"] .favorites {
+          gap: 5px;
         }
 
         .favorite-icon {
@@ -632,19 +757,19 @@ export class ThemeForseen extends HTMLElement {
         }
 
         .favorite-icon.starred {
-          color: #fcd997;
+          color: #f5c518;
         }
 
         .favorite-icon.starred:hover {
-          color: #fcd997;
+          color: #ffd700;
         }
 
         .favorite-icon.loved {
-          color: #bf195e;
+          color: #e57373;
         }
 
         .favorite-icon.loved:hover {
-          color: #bf195e;
+          color: #ef5350;
         }
 
         .activate-icon {
@@ -1098,34 +1223,20 @@ export class ThemeForseen extends HTMLElement {
         }
       </style>
 
-      <svg class="bookmark-shape" width="0" height="0">
-        <defs>
-          <clipPath id="bookmark-clip" clipPathUnits="objectBoundingBox">
-            <!-- Banner/flag shape showing full image width -->
-            <path d="M 0,0 L 0.1,0.5 L 0,1 L 1,1 L 1,0 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
       <div class="backdrop"></div>
 
-      <button class="drawer-toggle" title="Click the Nyan Unicorn to open Theme Drawer!">
-        <svg class="bookmark-border" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <!-- Top edge -->
-          <line x1="100" y1="0" x2="0" y2="0" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
-          <!-- Triangle top edge -->
-          <line x1="0" y1="0" x2="10" y2="50" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
-          <!-- Triangle bottom edge -->
-          <line x1="10" y1="50" x2="0" y2="100" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
-          <!-- Bottom edge -->
-          <line x1="0" y1="100" x2="100" y2="100" stroke="black" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <button class="drawer-toggle" title="Open Theme Picker">
+        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
         </svg>
-        <img src="/nyan-unicorn.webp" alt="Nyan Unicorn" />
+        <span class="toggle-text">Theme</span>
       </button>
 
       <div class="drawer">
         <div class="drawer-header">
-          <div class="drawer-header-content ${this.themesColumnCollapsed || this.fontsColumnCollapsed ? 'logo-hidden' : ''}">
+          <div class="drawer-header-content ${this.themesColumnCollapsed || this.fontsColumnCollapsed
+            ? "logo-hidden"
+            : ""}">
             <svg class="drawer-header-logo" viewBox="0 0 97.6 56.38" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <style>
@@ -1160,114 +1271,134 @@ export class ThemeForseen extends HTMLElement {
 
         <div class="drawer-content">
           <!-- Themes Column -->
-          <div class="column ${this.themesColumnCollapsed ? 'collapsed' : ''}" data-column="themes">
+          <div class="column ${this.themesColumnCollapsed ? "collapsed" : ""}" data-column="themes">
             <div class="column-header">
-              <span class="column-title">Color Themes</span>
-              <button class="collapse-btn" data-column-type="themes" title="${this.themesColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.themesColumnCollapsed ? '→' : '←'}
+              <span class="column-title">${this.themesColumnCollapsed ? "Themes Color" : "Color Themes"}</span>
+              <button class="collapse-btn" data-column-type="themes" title="${this.themesColumnCollapsed ? "Expand" : "Collapse"}">
+                ${this.themesColumnCollapsed ? "«" : "»"}
               </button>
             </div>
             <div class="column-content">
-              <div class="instructions" data-instructions="themes">
-                <button class="instructions-close" aria-label="Close">&times;</button>
-                Use ↑/↓ arrow keys or mouse wheel to browse themes. Themes apply in real-time!
-              </div>
-              <div class="filter-container">
-                <div class="filter-input-wrapper">
-                  <input
-                    type="text"
-                    class="filter-input"
-                    placeholder="Search or select tags..."
-                    value="${this.searchText}"
-                  />
-                  <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
+              <div class="column-controls">
+                <div class="instructions" data-instructions="themes">
+                  <button class="instructions-close" aria-label="Close">&times;</button>
+                  Use ↑/↓ arrow keys or mouse wheel to browse themes. Themes apply in real-time!
                 </div>
-                <div class="filter-tags">
-                  ${Array.from(this.selectedTags).map(tag => `
-                    <span class="filter-tag" data-tag="${tag}">
-                      ${tag}
-                      <button class="filter-tag-remove" data-tag="${tag}">&times;</button>
-                    </span>
-                  `).join('')}
-                </div>
-                <div class="filter-dropdown hidden">
-                  <div class="filter-option" data-tag="corporate">
-                    <input type="checkbox" id="tag-corporate" ${this.selectedTags.has('corporate') ? 'checked' : ''}>
-                    <label for="tag-corporate">Corporate</label>
+                <div class="filter-container">
+                  <div class="filter-input-wrapper">
+                    <input
+                      type="text"
+                      class="filter-input"
+                      placeholder="Search or select tags..."
+                      value="${this.searchText}"
+                    />
+                    <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
                   </div>
-                  <div class="filter-option" data-tag="funky">
-                    <input type="checkbox" id="tag-funky" ${this.selectedTags.has('funky') ? 'checked' : ''}>
-                    <label for="tag-funky">Funky</label>
+                  <div class="filter-tags">
+                    ${Array.from(this.selectedTags)
+            .map((tag) => `
+                      <span class="filter-tag" data-tag="${tag}">
+                        ${tag}
+                        <button class="filter-tag-remove" data-tag="${tag}">&times;</button>
+                      </span>
+                    `)
+            .join("")}
+                  </div>
+                  <div class="filter-dropdown hidden">
+                    <div class="filter-option" data-tag="corporate">
+                      <input type="checkbox" id="tag-corporate" ${this.selectedTags.has("corporate") ? "checked" : ""}>
+                      <label for="tag-corporate">Corporate</label>
+                    </div>
+                    <div class="filter-option" data-tag="funky">
+                      <input type="checkbox" id="tag-funky" ${this.selectedTags.has("funky") ? "checked" : ""}>
+                      <label for="tag-funky">Funky</label>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="mode-toggle">
-                <button class="mode-btn" data-mode="light">Light Mode</button>
-                <button class="mode-btn active" data-mode="dark">Dark Mode</button>
+                <div class="mode-toggle">
+                  <button class="mode-btn ${!this.isDarkMode ? "active" : ""}" data-mode="light">Light Mode</button>
+                  <button class="mode-btn ${this.isDarkMode ? "active" : ""}" data-mode="dark">Dark Mode</button>
+                </div>
               </div>
               <div class="themes-list"></div>
             </div>
           </div>
 
           <!-- Fonts Column -->
-          <div class="column ${this.fontsColumnCollapsed ? 'collapsed' : ''}" data-column="fonts">
+          <div class="column ${this.fontsColumnCollapsed ? "collapsed" : ""}" data-column="fonts">
             <div class="column-header">
-              <span class="column-title">Font Pairings</span>
-              <button class="collapse-btn" data-column-type="fonts" title="${this.fontsColumnCollapsed ? 'Expand' : 'Collapse'}">
-                ${this.fontsColumnCollapsed ? '→' : '←'}
+              <span class="column-title">${this.fontsColumnCollapsed ? "Pairings Font" : "Font Pairings"}</span>
+              <button class="collapse-btn" data-column-type="fonts" title="${this.fontsColumnCollapsed ? "Expand" : "Collapse"}">
+                ${this.fontsColumnCollapsed ? "«" : "»"}
               </button>
             </div>
             <div class="column-content">
-              <div class="instructions" data-instructions="fonts">
-                <button class="instructions-close" aria-label="Close">&times;</button>
-                Use ↑/↓ arrow keys or mouse wheel to browse fonts. Changes apply instantly!
-              </div>
-              <div class="font-filters">
-                <div class="font-filter-group">
-                  <label class="font-filter-label">Heading</label>
-                  <button class="font-filter-dropdown-btn" data-filter-type="heading">
-                    ${this.selectedHeadingStyles.size > 0 ? Array.from(this.selectedHeadingStyles).join(', ') : 'All styles'} ▼
-                  </button>
-                  <div class="font-filter-dropdown hidden" data-filter-type="heading">
-                    <div class="filter-option" data-style="sans">
-                      <input type="checkbox" id="heading-sans" ${this.selectedHeadingStyles.has('sans') ? 'checked' : ''}>
-                      <label for="heading-sans">Sans</label>
-                    </div>
-                    <div class="filter-option" data-style="serif">
-                      <input type="checkbox" id="heading-serif" ${this.selectedHeadingStyles.has('serif') ? 'checked' : ''}>
-                      <label for="heading-serif">Serif</label>
-                    </div>
-                    <div class="filter-option" data-style="display">
-                      <input type="checkbox" id="heading-display" ${this.selectedHeadingStyles.has('display') ? 'checked' : ''}>
-                      <label for="heading-display">Display</label>
-                    </div>
-                    <div class="filter-option" data-style="mono">
-                      <input type="checkbox" id="heading-mono" ${this.selectedHeadingStyles.has('mono') ? 'checked' : ''}>
-                      <label for="heading-mono">Mono</label>
+              <div class="column-controls">
+                <div class="instructions" data-instructions="fonts">
+                  <button class="instructions-close" aria-label="Close">&times;</button>
+                  Use ↑/↓ arrow keys or mouse wheel to browse fonts. Changes apply instantly!
+                </div>
+                <div class="font-filters">
+                  <div class="font-filter-group">
+                    <label class="font-filter-label">Heading</label>
+                    <button class="font-filter-dropdown-btn" data-filter-type="heading">
+                      ${this.selectedHeadingStyles.size > 0
+            ? Array.from(this.selectedHeadingStyles).join(", ")
+            : "All styles"} ▼
+                    </button>
+                    <div class="font-filter-dropdown hidden" data-filter-type="heading">
+                      <div class="filter-option" data-style="sans">
+                        <input type="checkbox" id="heading-sans" ${this.selectedHeadingStyles.has("sans")
+            ? "checked"
+            : ""}>
+                        <label for="heading-sans">Sans</label>
+                      </div>
+                      <div class="filter-option" data-style="serif">
+                        <input type="checkbox" id="heading-serif" ${this.selectedHeadingStyles.has("serif")
+            ? "checked"
+            : ""}>
+                        <label for="heading-serif">Serif</label>
+                      </div>
+                      <div class="filter-option" data-style="display">
+                        <input type="checkbox" id="heading-display" ${this.selectedHeadingStyles.has("display")
+            ? "checked"
+            : ""}>
+                        <label for="heading-display">Display</label>
+                      </div>
+                      <div class="filter-option" data-style="mono">
+                        <input type="checkbox" id="heading-mono" ${this.selectedHeadingStyles.has("mono")
+            ? "checked"
+            : ""}>
+                        <label for="heading-mono">Mono</label>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="font-filter-group">
-                  <label class="font-filter-label">Body</label>
-                  <button class="font-filter-dropdown-btn" data-filter-type="body">
-                    ${this.selectedBodyStyles.size > 0 ? Array.from(this.selectedBodyStyles).join(', ') : 'All styles'} ▼
-                  </button>
-                  <div class="font-filter-dropdown hidden" data-filter-type="body">
-                    <div class="filter-option" data-style="sans">
-                      <input type="checkbox" id="body-sans" ${this.selectedBodyStyles.has('sans') ? 'checked' : ''}>
-                      <label for="body-sans">Sans</label>
-                    </div>
-                    <div class="filter-option" data-style="serif">
-                      <input type="checkbox" id="body-serif" ${this.selectedBodyStyles.has('serif') ? 'checked' : ''}>
-                      <label for="body-serif">Serif</label>
-                    </div>
-                    <div class="filter-option" data-style="display">
-                      <input type="checkbox" id="body-display" ${this.selectedBodyStyles.has('display') ? 'checked' : ''}>
-                      <label for="body-display">Display</label>
-                    </div>
-                    <div class="filter-option" data-style="mono">
-                      <input type="checkbox" id="body-mono" ${this.selectedBodyStyles.has('mono') ? 'checked' : ''}>
-                      <label for="body-mono">Mono</label>
+                  <div class="font-filter-group">
+                    <label class="font-filter-label">Body</label>
+                    <button class="font-filter-dropdown-btn" data-filter-type="body">
+                      ${this.selectedBodyStyles.size > 0
+            ? Array.from(this.selectedBodyStyles).join(", ")
+            : "All styles"} ▼
+                    </button>
+                    <div class="font-filter-dropdown hidden" data-filter-type="body">
+                      <div class="filter-option" data-style="sans">
+                        <input type="checkbox" id="body-sans" ${this.selectedBodyStyles.has("sans") ? "checked" : ""}>
+                        <label for="body-sans">Sans</label>
+                      </div>
+                      <div class="filter-option" data-style="serif">
+                        <input type="checkbox" id="body-serif" ${this.selectedBodyStyles.has("serif") ? "checked" : ""}>
+                        <label for="body-serif">Serif</label>
+                      </div>
+                      <div class="filter-option" data-style="display">
+                        <input type="checkbox" id="body-display" ${this.selectedBodyStyles.has("display")
+            ? "checked"
+            : ""}>
+                        <label for="body-display">Display</label>
+                      </div>
+                      <div class="filter-option" data-style="mono">
+                        <input type="checkbox" id="body-mono" ${this.selectedBodyStyles.has("mono") ? "checked" : ""}>
+                        <label for="body-mono">Mono</label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1314,7 +1445,7 @@ export class ThemeForseen extends HTMLElement {
         // Filter by tags if any are selected
         if (this.selectedTags.size > 0) {
             const themeTags = theme.tags || [];
-            const hasMatchingTag = Array.from(this.selectedTags).some(tag => themeTags.includes(tag));
+            const hasMatchingTag = Array.from(this.selectedTags).some((tag) => themeTags.includes(tag));
             if (!hasMatchingTag)
                 return false;
         }
@@ -1335,10 +1466,10 @@ export class ThemeForseen extends HTMLElement {
                 colors.background,
                 colors.cardBackground,
                 colors.text,
-                colors.extra
+                colors.extra,
             ];
-            return colorValues.some(color => color.toLowerCase().includes(search) ||
-                color.toLowerCase().replace('#', '').includes(search.replace('#', '')));
+            return colorValues.some((color) => color.toLowerCase().includes(search) ||
+                color.toLowerCase().replace("#", "").includes(search.replace("#", "")));
         }
         return true;
     }
@@ -1346,14 +1477,14 @@ export class ThemeForseen extends HTMLElement {
         const themesList = this.shadowRoot?.querySelector(".themes-list");
         if (!themesList)
             return;
-        const filteredThemes = colorThemes.filter(theme => this.filterTheme(theme));
+        const filteredThemes = colorThemes.filter((theme) => this.filterTheme(theme));
         themesList.innerHTML = filteredThemes
             .map((theme, _) => {
             const index = colorThemes.indexOf(theme);
             const colors = this.isDarkMode ? theme.dark : theme.light;
-            const isActive = this.activeThemeIndex === index;
+            // Selection classes added by updateThemeSelection()
             return `
-        <div class="theme-item ${isActive ? 'active' : ''}" data-index="${index}">
+        <div class="theme-item" data-index="${index}">
           <div class="theme-name">${theme.name}</div>
           <div class="theme-colors">
             <div class="color-swatch" style="background-color: ${colors.primary}" title="Primary"></div>
@@ -1375,29 +1506,35 @@ export class ThemeForseen extends HTMLElement {
         this.restoreThemeFavorites();
     }
     restoreThemeFavorites() {
-        // Restore starred themes for current mode
-        const starredSet = this.isDarkMode ? this.starredDarkThemes : this.starredLightThemes;
-        starredSet.forEach((index) => {
-            const star = this.shadowRoot?.querySelector(`.star[data-type="theme"][data-index="${index}"]`);
+        // Restore starred theme for current mode (single)
+        const starredIndex = this.isDarkMode
+            ? this.starredDarkTheme
+            : this.starredLightTheme;
+        if (starredIndex !== null) {
+            const star = this.shadowRoot?.querySelector(`.star[data-type="theme"][data-index="${starredIndex}"]`);
             star?.classList.add("starred");
-        });
-        // Restore loved theme for current mode
-        const lovedIndex = this.isDarkMode ? this.lovedDarkTheme : this.lovedLightTheme;
-        if (lovedIndex !== null) {
-            const heart = this.shadowRoot?.querySelector(`.heart[data-type="theme"][data-index="${lovedIndex}"]`);
-            heart?.classList.add("loved");
         }
+        // Restore loved themes for current mode (multiple)
+        const lovedSet = this.isDarkMode
+            ? this.lovedDarkThemes
+            : this.lovedLightThemes;
+        lovedSet.forEach((index) => {
+            const heart = this.shadowRoot?.querySelector(`.heart[data-type="theme"][data-index="${index}"]`);
+            heart?.classList.add("loved");
+        });
+        // Attach click handlers to icons
+        this.attachIconHandlers("theme");
     }
     filterFontPairing(pairing) {
         // Filter by heading styles if any are selected
         if (this.selectedHeadingStyles.size > 0) {
-            const hasMatchingHeadingStyle = pairing.headingStyle.some(style => this.selectedHeadingStyles.has(style));
+            const hasMatchingHeadingStyle = pairing.headingStyle.some((style) => this.selectedHeadingStyles.has(style));
             if (!hasMatchingHeadingStyle)
                 return false;
         }
         // Filter by body styles if any are selected
         if (this.selectedBodyStyles.size > 0) {
-            const hasMatchingBodyStyle = pairing.bodyStyle.some(style => this.selectedBodyStyles.has(style));
+            const hasMatchingBodyStyle = pairing.bodyStyle.some((style) => this.selectedBodyStyles.has(style));
             if (!hasMatchingBodyStyle)
                 return false;
         }
@@ -1407,13 +1544,13 @@ export class ThemeForseen extends HTMLElement {
         const fontsList = this.shadowRoot?.querySelector(".fonts-list");
         if (!fontsList)
             return;
-        const filteredPairings = fontPairings.filter(pairing => this.filterFontPairing(pairing));
+        const filteredPairings = fontPairings.filter((pairing) => this.filterFontPairing(pairing));
         fontsList.innerHTML = filteredPairings
             .map((pairing, _) => {
             const index = fontPairings.indexOf(pairing);
             const isActive = this.activeFontIndex === index;
             return `
-        <div class="font-item ${isActive ? 'active' : ''}" data-index="${index}">
+        <div class="font-item ${isActive ? "active" : ""}" data-index="${index}">
           <div class="font-name">${pairing.name}</div>
           <div class="font-preview">
             <span class="individual-font heading-font" data-font="${pairing.heading}" data-type="heading">
@@ -1437,16 +1574,22 @@ export class ThemeForseen extends HTMLElement {
         this.restoreFontFavorites();
     }
     restoreFontFavorites() {
-        // Restore starred fonts
-        this.starredFonts.forEach((index) => {
-            const star = this.shadowRoot?.querySelector(`.star[data-type="font"][data-index="${index}"]`);
+        // Restore starred font (single)
+        if (this.starredFont !== null) {
+            const star = this.shadowRoot?.querySelector(`.star[data-type="font"][data-index="${this.starredFont}"]`);
             star?.classList.add("starred");
-        });
-        // Restore loved font
-        if (this.lovedFont !== null) {
-            const heart = this.shadowRoot?.querySelector(`.heart[data-type="font"][data-index="${this.lovedFont}"]`);
-            heart?.classList.add("loved");
         }
+        // Restore loved fonts (multiple)
+        this.lovedFonts.forEach((index) => {
+            const heart = this.shadowRoot?.querySelector(`.heart[data-type="font"][data-index="${index}"]`);
+            heart?.classList.add("loved");
+        });
+        // Attach click handlers to icons
+        this.attachIconHandlers("font");
+    }
+    attachIconHandlers(_type) {
+        // Icon click handling is done via event delegation on shadowRoot in attachEventListeners()
+        // This function is kept for compatibility but the actual handlers are centralized
     }
     attachFilterListeners() {
         // Filter input
@@ -1463,7 +1606,9 @@ export class ThemeForseen extends HTMLElement {
             filterDropdown?.classList.toggle("hidden");
         });
         // Filter checkboxes
-        this.shadowRoot?.querySelectorAll(".filter-container .filter-option input[type='checkbox']").forEach((checkbox) => {
+        this.shadowRoot
+            ?.querySelectorAll(".filter-container .filter-option input[type='checkbox']")
+            .forEach((checkbox) => {
             checkbox.addEventListener("change", (e) => {
                 const option = e.target.closest(".filter-option");
                 const tag = option?.getAttribute("data-tag");
@@ -1478,6 +1623,7 @@ export class ThemeForseen extends HTMLElement {
                     this.render();
                     this.attachEventListeners();
                     this.renderThemes();
+                    this.renderFonts();
                 }
             });
         });
@@ -1491,21 +1637,26 @@ export class ThemeForseen extends HTMLElement {
                     this.render();
                     this.attachEventListeners();
                     this.renderThemes();
+                    this.renderFonts();
                 }
             });
         });
     }
     updateFontFilterButtonText(filterType) {
-        const targetSet = filterType === "heading" ? this.selectedHeadingStyles : this.selectedBodyStyles;
+        const targetSet = filterType === "heading"
+            ? this.selectedHeadingStyles
+            : this.selectedBodyStyles;
         const btn = this.shadowRoot?.querySelector(`.font-filter-dropdown-btn[data-filter-type="${filterType}"]`);
         if (btn) {
-            const text = targetSet.size > 0 ? Array.from(targetSet).join(', ') : 'All styles';
+            const text = targetSet.size > 0 ? Array.from(targetSet).join(", ") : "All styles";
             btn.textContent = `${text} ▼`;
         }
     }
     attachFontFilterListeners() {
         // Font filter dropdown buttons
-        this.shadowRoot?.querySelectorAll(".font-filter-dropdown-btn").forEach((btn) => {
+        this.shadowRoot
+            ?.querySelectorAll(".font-filter-dropdown-btn")
+            .forEach((btn) => {
             btn.addEventListener("click", (e) => {
                 const filterType = e.currentTarget.getAttribute("data-filter-type");
                 const dropdown = this.shadowRoot?.querySelector(`.font-filter-dropdown[data-filter-type="${filterType}"]`);
@@ -1513,7 +1664,9 @@ export class ThemeForseen extends HTMLElement {
             });
         });
         // Font filter checkboxes
-        this.shadowRoot?.querySelectorAll(".font-filter-dropdown .filter-option input[type='checkbox']").forEach((checkbox) => {
+        this.shadowRoot
+            ?.querySelectorAll(".font-filter-dropdown .filter-option input[type='checkbox']")
+            .forEach((checkbox) => {
             checkbox.addEventListener("change", (e) => {
                 const input = e.target;
                 const option = input.closest(".filter-option");
@@ -1521,7 +1674,9 @@ export class ThemeForseen extends HTMLElement {
                 const dropdown = option?.closest(".font-filter-dropdown");
                 const filterType = dropdown?.getAttribute("data-filter-type");
                 if (style && filterType) {
-                    const targetSet = filterType === "heading" ? this.selectedHeadingStyles : this.selectedBodyStyles;
+                    const targetSet = filterType === "heading"
+                        ? this.selectedHeadingStyles
+                        : this.selectedBodyStyles;
                     if (input.checked) {
                         targetSet.add(style);
                     }
@@ -1542,23 +1697,30 @@ export class ThemeForseen extends HTMLElement {
         toggle?.addEventListener("click", () => this.toggleDrawer());
         closeBtn?.addEventListener("click", () => this.toggleDrawer());
         this.backdrop?.addEventListener("click", () => this.toggleDrawer());
-        // Prevent clicks inside the drawer from bubbling to backdrop
-        drawer?.addEventListener("click", (e) => {
-            e.stopPropagation();
-        });
+        // Note: Backdrop click handling works because backdrop is a sibling of drawer,
+        // not an ancestor, so clicks inside drawer don't bubble through backdrop anyway.
         // Theme items - using event delegation to survive re-renders
         const themesList = this.shadowRoot?.querySelector(".themes-list");
         themesList?.addEventListener("click", (e) => {
-            const themeItem = e.target.closest(".theme-item");
+            const target = e.target;
+            // Ignore clicks on favorite/activate icons - they have their own handlers
+            if (target.classList.contains("favorite-icon") ||
+                target.classList.contains("activate-icon")) {
+                return;
+            }
+            const themeItem = target.closest(".theme-item");
             if (themeItem) {
                 const index = parseInt(themeItem.dataset.index || "0");
+                console.log(`Theme clicked: index=${index}, isDarkMode=${this.isDarkMode}`);
                 this.activeThemeIndex = index;
                 this.focusedColumn = "themes";
                 if (this.isDarkMode) {
                     this.selectedDarkTheme = index;
+                    console.log(`Updated selectedDarkTheme to ${index}`);
                 }
                 else {
                     this.selectedLightTheme = index;
+                    console.log(`Updated selectedLightTheme to ${index}`);
                 }
                 this.applyTheme();
                 this.renderThemes(); // Re-render to show active state
@@ -1568,6 +1730,11 @@ export class ThemeForseen extends HTMLElement {
         const fontsList = this.shadowRoot?.querySelector(".fonts-list");
         fontsList?.addEventListener("click", (e) => {
             const target = e.target;
+            // Ignore clicks on favorite/activate icons - they have their own handlers
+            if (target.classList.contains("favorite-icon") ||
+                target.classList.contains("activate-icon")) {
+                return;
+            }
             // Check if clicking the switch button
             if (target.classList.contains("font-switch-icon")) {
                 e.stopPropagation();
@@ -1616,7 +1783,14 @@ export class ThemeForseen extends HTMLElement {
         this.shadowRoot?.querySelectorAll(".mode-btn").forEach((btn) => {
             btn.addEventListener("click", (e) => {
                 const mode = e.currentTarget.dataset.mode;
+                console.log(`Mode toggle clicked: ${mode}`);
+                console.log(`Before: isDarkMode=${this.isDarkMode}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`);
                 this.isDarkMode = mode === "dark";
+                // Sync activeThemeIndex with the new mode's selected theme
+                this.activeThemeIndex = this.isDarkMode
+                    ? this.selectedDarkTheme
+                    : this.selectedLightTheme;
+                console.log(`After: isDarkMode=${this.isDarkMode}, will apply theme index=${this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme}`);
                 this.applyTheme();
                 this.updateModeButtons();
                 this.renderThemes();
@@ -1626,7 +1800,8 @@ export class ThemeForseen extends HTMLElement {
         this.shadowRoot?.querySelectorAll(".collapse-btn").forEach((btn) => {
             btn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                const columnType = e.currentTarget.dataset.columnType;
+                const columnType = e.currentTarget.dataset
+                    .columnType;
                 this.toggleColumn(columnType);
             });
         });
@@ -1692,74 +1867,78 @@ export class ThemeForseen extends HTMLElement {
                 const isStar = target.classList.contains("star");
                 if (type === "theme") {
                     if (isStar) {
-                        // Stars are independent per mode (light/dark)
-                        const starredSet = this.isDarkMode ? this.starredDarkThemes : this.starredLightThemes;
-                        if (starredSet.has(index)) {
-                            starredSet.delete(index);
+                        // Stars: only one per mode (light/dark)
+                        const currentStarred = this.isDarkMode
+                            ? this.starredDarkTheme
+                            : this.starredLightTheme;
+                        if (currentStarred === index) {
+                            // Deselect current starred
+                            if (this.isDarkMode) {
+                                this.starredDarkTheme = null;
+                            }
+                            else {
+                                this.starredLightTheme = null;
+                            }
                             target.classList.remove("starred");
                         }
                         else {
-                            starredSet.add(index);
+                            // Remove previous starred
+                            if (currentStarred !== null) {
+                                const prevStar = this.shadowRoot?.querySelector(`.star[data-type="theme"][data-index="${currentStarred}"]`);
+                                prevStar?.classList.remove("starred");
+                            }
+                            // Set new starred
+                            if (this.isDarkMode) {
+                                this.starredDarkTheme = index;
+                            }
+                            else {
+                                this.starredLightTheme = index;
+                            }
                             target.classList.add("starred");
                         }
                     }
                     else {
-                        // Hearts: only one favorite per mode (light/dark)
-                        const currentFavorite = this.isDarkMode ? this.lovedDarkTheme : this.lovedLightTheme;
-                        if (currentFavorite === index) {
-                            // Deselect current favorite
-                            if (this.isDarkMode) {
-                                this.lovedDarkTheme = null;
-                            }
-                            else {
-                                this.lovedLightTheme = null;
-                            }
+                        // Hearts: multiple allowed per mode (light/dark)
+                        const lovedSet = this.isDarkMode
+                            ? this.lovedDarkThemes
+                            : this.lovedLightThemes;
+                        if (lovedSet.has(index)) {
+                            lovedSet.delete(index);
                             target.classList.remove("loved");
                         }
                         else {
-                            // Remove previous favorite's heart
-                            if (currentFavorite !== null) {
-                                const prevHeart = this.shadowRoot?.querySelector(`.heart[data-type="theme"][data-index="${currentFavorite}"]`);
-                                prevHeart?.classList.remove("loved");
-                            }
-                            // Set new favorite
-                            if (this.isDarkMode) {
-                                this.lovedDarkTheme = index;
-                            }
-                            else {
-                                this.lovedLightTheme = index;
-                            }
+                            lovedSet.add(index);
                             target.classList.add("loved");
                         }
                     }
                 }
                 else if (type === "font") {
                     if (isStar) {
-                        // Stars can have multiple selected
-                        if (this.starredFonts.has(index)) {
-                            this.starredFonts.delete(index);
+                        // Stars: only one selected
+                        if (this.starredFont === index) {
+                            // Deselect current starred
+                            this.starredFont = null;
                             target.classList.remove("starred");
                         }
                         else {
-                            this.starredFonts.add(index);
+                            // Remove previous starred
+                            if (this.starredFont !== null) {
+                                const prevStar = this.shadowRoot?.querySelector(`.star[data-type="font"][data-index="${this.starredFont}"]`);
+                                prevStar?.classList.remove("starred");
+                            }
+                            // Set new starred
+                            this.starredFont = index;
                             target.classList.add("starred");
                         }
                     }
                     else {
-                        // Hearts: only one favorite font
-                        if (this.lovedFont === index) {
-                            // Deselect current favorite
-                            this.lovedFont = null;
+                        // Hearts: multiple allowed
+                        if (this.lovedFonts.has(index)) {
+                            this.lovedFonts.delete(index);
                             target.classList.remove("loved");
                         }
                         else {
-                            // Remove previous favorite's heart
-                            if (this.lovedFont !== null) {
-                                const prevHeart = this.shadowRoot?.querySelector(`.heart[data-type="font"][data-index="${this.lovedFont}"]`);
-                                prevHeart?.classList.remove("loved");
-                            }
-                            // Set new favorite
-                            this.lovedFont = index;
+                            this.lovedFonts.add(index);
                             target.classList.add("loved");
                         }
                     }
@@ -1818,7 +1997,9 @@ export class ThemeForseen extends HTMLElement {
                     ? Math.min(this.selectedLightTheme + 1, colorThemes.length - 1)
                     : Math.max(this.selectedLightTheme - 1, 0);
             }
-            this.activeThemeIndex = this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme;
+            this.activeThemeIndex = this.isDarkMode
+                ? this.selectedDarkTheme
+                : this.selectedLightTheme;
             this.applyTheme();
             this.renderThemes(); // Re-render to show active state
             this.scrollToSelected(".theme-item");
@@ -1837,60 +2018,65 @@ export class ThemeForseen extends HTMLElement {
         if (this.focusedColumn === "themes" && this.activeThemeIndex !== null) {
             const index = this.activeThemeIndex;
             if (key === "s") {
-                // Toggle star
-                const starredSet = this.isDarkMode ? this.starredDarkThemes : this.starredLightThemes;
-                if (starredSet.has(index)) {
-                    starredSet.delete(index);
+                // Toggle star (only one allowed)
+                const currentStarred = this.isDarkMode
+                    ? this.starredDarkTheme
+                    : this.starredLightTheme;
+                if (currentStarred === index) {
+                    if (this.isDarkMode) {
+                        this.starredDarkTheme = null;
+                    }
+                    else {
+                        this.starredLightTheme = null;
+                    }
                 }
                 else {
-                    starredSet.add(index);
+                    if (this.isDarkMode) {
+                        this.starredDarkTheme = index;
+                    }
+                    else {
+                        this.starredLightTheme = index;
+                    }
                 }
                 this.saveToLocalStorage();
                 this.renderThemes();
             }
             else if (key === "h") {
-                // Toggle heart
-                const currentLoved = this.isDarkMode ? this.lovedDarkTheme : this.lovedLightTheme;
-                if (currentLoved === index) {
-                    if (this.isDarkMode) {
-                        this.lovedDarkTheme = null;
-                    }
-                    else {
-                        this.lovedLightTheme = null;
-                    }
+                // Toggle heart (multiple allowed)
+                const lovedSet = this.isDarkMode
+                    ? this.lovedDarkThemes
+                    : this.lovedLightThemes;
+                if (lovedSet.has(index)) {
+                    lovedSet.delete(index);
                 }
                 else {
-                    if (this.isDarkMode) {
-                        this.lovedDarkTheme = index;
-                    }
-                    else {
-                        this.lovedLightTheme = index;
-                    }
+                    lovedSet.add(index);
                 }
                 this.saveToLocalStorage();
                 this.renderThemes();
             }
         }
-        else if (this.focusedColumn === "fonts" && this.activeFontIndex !== null) {
+        else if (this.focusedColumn === "fonts" &&
+            this.activeFontIndex !== null) {
             const index = this.activeFontIndex;
             if (key === "s") {
-                // Toggle star
-                if (this.starredFonts.has(index)) {
-                    this.starredFonts.delete(index);
+                // Toggle star (only one allowed)
+                if (this.starredFont === index) {
+                    this.starredFont = null;
                 }
                 else {
-                    this.starredFonts.add(index);
+                    this.starredFont = index;
                 }
                 this.saveToLocalStorage();
                 this.renderFonts();
             }
             else if (key === "h") {
-                // Toggle heart
-                if (this.lovedFont === index) {
-                    this.lovedFont = null;
+                // Toggle heart (multiple allowed)
+                if (this.lovedFonts.has(index)) {
+                    this.lovedFonts.delete(index);
                 }
                 else {
-                    this.lovedFont = index;
+                    this.lovedFonts.add(index);
                 }
                 this.saveToLocalStorage();
                 this.renderFonts();
@@ -1912,16 +2098,24 @@ export class ThemeForseen extends HTMLElement {
         }
     }
     updateThemeSelection() {
-        this.shadowRoot?.querySelectorAll(".theme-item").forEach((item, index) => {
-            const selectedIndex = this.isDarkMode
-                ? this.selectedDarkTheme
-                : this.selectedLightTheme;
-            if (index === selectedIndex) {
-                item.classList.add("selected");
+        this.shadowRoot?.querySelectorAll(".theme-item").forEach((item) => {
+            const itemIndex = parseInt(item.dataset.index || "0");
+            // Light mode selection - blue
+            if (itemIndex === this.selectedLightTheme) {
+                item.classList.add("selected-light");
             }
             else {
-                item.classList.remove("selected");
+                item.classList.remove("selected-light");
             }
+            // Dark mode selection - green
+            if (itemIndex === this.selectedDarkTheme) {
+                item.classList.add("selected-dark");
+            }
+            else {
+                item.classList.remove("selected-dark");
+            }
+            // Remove old classes
+            item.classList.remove("selected", "active");
         });
     }
     updateFontSelection() {
@@ -1984,8 +2178,34 @@ export class ThemeForseen extends HTMLElement {
             this.fontsColumnCollapsed = !this.fontsColumnCollapsed;
             localStorage.setItem("fontsColumnCollapsed", JSON.stringify(this.fontsColumnCollapsed));
         }
-        this.render();
-        this.attachEventListeners();
+        // Update classes on existing elements for smooth animation
+        const column = this.shadowRoot?.querySelector(`[data-column="${columnType}"]`);
+        const collapseBtn = column?.querySelector(".collapse-btn");
+        const headerContent = this.shadowRoot?.querySelector(".drawer-header-content");
+        if (column) {
+            if (columnType === "themes") {
+                column.classList.toggle("collapsed", this.themesColumnCollapsed);
+                if (collapseBtn) {
+                    collapseBtn.innerHTML = this.themesColumnCollapsed ? "«" : "»";
+                    collapseBtn.title = this.themesColumnCollapsed
+                        ? "Expand"
+                        : "Collapse";
+                }
+            }
+            else {
+                column.classList.toggle("collapsed", this.fontsColumnCollapsed);
+                if (collapseBtn) {
+                    collapseBtn.innerHTML = this.fontsColumnCollapsed ? "«" : "»";
+                    collapseBtn.title = this.fontsColumnCollapsed ? "Expand" : "Collapse";
+                }
+            }
+        }
+        // Update header content visibility
+        if (headerContent) {
+            headerContent.classList.toggle("logo-hidden", this.themesColumnCollapsed || this.fontsColumnCollapsed);
+        }
+        // Save to localStorage
+        this.saveToLocalStorage();
     }
     handleActivate(type, index) {
         const modal = this.shadowRoot?.querySelector(".activation-modal");
@@ -2083,7 +2303,7 @@ export default {
         const generatedCode = saveBtn._generatedCode;
         const targetFilename = saveBtn._targetFilename;
         // Check if File System Access API is supported
-        if ('showSaveFilePicker' in window) {
+        if ("showSaveFilePicker" in window) {
             try {
                 const suggestedName = targetFilename.includes("tailwind")
                     ? "tailwind.config.js"
@@ -2092,10 +2312,10 @@ export default {
                     suggestedName: suggestedName,
                     types: [
                         {
-                            description: 'Code Files',
+                            description: "Code Files",
                             accept: targetFilename.includes("tailwind")
-                                ? { 'text/javascript': ['.js', '.ts', '.mjs'] }
-                                : { 'text/css': ['.css'] }
+                                ? { "text/javascript": [".js", ".ts", ".mjs"] }
+                                : { "text/css": [".css"] },
                         },
                     ],
                 });
@@ -2111,53 +2331,93 @@ export default {
                 }, 2000);
             }
             catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('Error saving file:', err);
-                    alert('Error saving file. Please copy the code manually.');
+                if (err.name !== "AbortError") {
+                    console.error("Error saving file:", err);
+                    alert("Error saving file. Please copy the code manually.");
                 }
             }
         }
         else {
-            alert('File System Access API is not supported in your browser. Please copy the code manually and paste it into your file.');
+            alert("File System Access API is not supported in your browser. Please copy the code manually and paste it into your file.");
         }
     }
-    applyTheme() {
-        const themeIndex = this.isDarkMode
-            ? this.selectedDarkTheme
-            : this.selectedLightTheme;
-        const theme = colorThemes[themeIndex];
-        const colors = this.isDarkMode ? theme.dark : theme.light;
-        // Set color-scheme on document root for proper light/dark mode
-        document.documentElement.style.colorScheme = this.isDarkMode ? "dark" : "light";
-        // Apply CSS variables to document root
-        document.documentElement.style.setProperty("--color-primary", colors.primary);
-        document.documentElement.style.setProperty("--color-primary-shadow", colors.primaryShadow);
-        document.documentElement.style.setProperty("--color-accent", colors.accent);
-        document.documentElement.style.setProperty("--color-accent-shadow", colors.accentShadow);
-        document.documentElement.style.setProperty("--color-bg", colors.background);
-        document.documentElement.style.setProperty("--color-card-bg", colors.cardBackground);
-        document.documentElement.style.setProperty("--color-text", colors.text);
-        document.documentElement.style.setProperty("--color-extra", colors.extra);
-        // Also explicitly set background and foreground colors
-        document.documentElement.style.setProperty("--background-color", colors.background);
-        document.documentElement.style.setProperty("--foreground-color", colors.text);
-        // Apply heading colors
-        const getColor = (colorKey) => {
-            switch (colorKey) {
-                case "primary":
-                    return colors.primary;
-                case "accent":
-                    return colors.accent;
-                case "text":
-                    return colors.text;
-                default:
-                    return colors.text;
-            }
-        };
-        document.documentElement.style.setProperty("--color-h1", getColor(colors.h1Color));
-        document.documentElement.style.setProperty("--color-h2", getColor(colors.h2Color));
-        document.documentElement.style.setProperty("--color-h3", getColor(colors.h3Color));
-        this.saveToLocalStorage();
+    loadGoogleFont(fontName) {
+        // Skip if already loaded
+        if (this.loadedFonts.has(fontName)) {
+            return;
+        }
+        // Create the Google Fonts URL
+        // Font name needs spaces replaced with + for URL
+        const fontNameForUrl = fontName.replace(/ /g, "+");
+        // Create link element
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = `https://fonts.googleapis.com/css2?family=${fontNameForUrl}:wght@400;500;600;700&display=swap`;
+        // Add to document head
+        document.head.appendChild(link);
+        // Track that we've loaded this font
+        this.loadedFonts.add(fontName);
+    }
+    applyTheme(force = false) {
+        // Prevent recursive calls from MutationObserver (static flag shared across all instances)
+        if (ThemeForseen.isApplyingTheme) {
+            console.log(`[${this.instanceId}] applyTheme skipped - another instance is applying`);
+            return;
+        }
+        // Only apply if this instance's drawer is open, OR if forced (initial load), OR if no drawer is open yet
+        if (!force && !this.isOpen && this.drawerElement) {
+            console.log(`[${this.instanceId}] applyTheme skipped - drawer not open`);
+            return;
+        }
+        ThemeForseen.isApplyingTheme = true;
+        try {
+            const themeIndex = this.isDarkMode
+                ? this.selectedDarkTheme
+                : this.selectedLightTheme;
+            console.log(`[${this.instanceId}] applyTheme called: isDarkMode=${this.isDarkMode}, themeIndex=${themeIndex}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`);
+            const theme = colorThemes[themeIndex];
+            console.log(`Applying theme: "${theme.name}" with ${this.isDarkMode ? "dark" : "light"} colors`);
+            const colors = this.isDarkMode ? theme.dark : theme.light;
+            // Set color-scheme on document root for proper light/dark mode
+            document.documentElement.style.colorScheme = this.isDarkMode
+                ? "dark"
+                : "light";
+            // Apply CSS variables to document root
+            document.documentElement.style.setProperty("--color-primary", colors.primary);
+            document.documentElement.style.setProperty("--color-primary-shadow", colors.primaryShadow);
+            document.documentElement.style.setProperty("--color-accent", colors.accent);
+            document.documentElement.style.setProperty("--color-accent-shadow", colors.accentShadow);
+            document.documentElement.style.setProperty("--color-bg", colors.background);
+            document.documentElement.style.setProperty("--color-card-bg", colors.cardBackground);
+            document.documentElement.style.setProperty("--color-text", colors.text);
+            document.documentElement.style.setProperty("--color-extra", colors.extra);
+            // Also explicitly set background and foreground colors
+            document.documentElement.style.setProperty("--background-color", colors.background);
+            document.documentElement.style.setProperty("--foreground-color", colors.text);
+            // Apply heading colors
+            const getColor = (colorKey) => {
+                switch (colorKey) {
+                    case "primary":
+                        return colors.primary;
+                    case "accent":
+                        return colors.accent;
+                    case "text":
+                        return colors.text;
+                    default:
+                        return colors.text;
+                }
+            };
+            document.documentElement.style.setProperty("--color-h1", getColor(colors.h1Color));
+            document.documentElement.style.setProperty("--color-h2", getColor(colors.h2Color));
+            document.documentElement.style.setProperty("--color-h3", getColor(colors.h3Color));
+            // General heading color (uses h1 color as default)
+            document.documentElement.style.setProperty("--color-heading", getColor(colors.h1Color));
+            this.saveToLocalStorage();
+        }
+        finally {
+            // Reset the guard flag (static, shared across all instances)
+            ThemeForseen.isApplyingTheme = false;
+        }
     }
     applyFonts() {
         // Determine which fonts to use: individual selections or pairing
@@ -2224,14 +2484,18 @@ export default {
                 ? `"${fontName}", Georgia, "Times New Roman", serif`
                 : `"${fontName}", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`;
         };
+        // Load Google Fonts before applying them
+        this.loadGoogleFont(headingFont);
+        this.loadGoogleFont(bodyFont);
         document.documentElement.style.setProperty("--font-heading", getHeadingFallback(headingFont));
         document.documentElement.style.setProperty("--font-body", getBodyFallback(bodyFont));
         this.saveToLocalStorage();
     }
 }
+// Static flag to prevent any instance from applying while another is applying
+ThemeForseen.isApplyingTheme = false;
 // Register the custom element
-if (typeof window !== "undefined" &&
-    !customElements.get("theme-forseen")) {
+if (typeof window !== "undefined" && !customElements.get("theme-forseen")) {
     customElements.define("theme-forseen", ThemeForseen);
 }
 //# sourceMappingURL=ThemeForseen.js.map

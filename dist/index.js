@@ -1,5 +1,7 @@
-export { ThemeForseen } from './ThemeForseen';
-export { colorThemes, fontPairings } from './themes';
+// Side-effect import to ensure custom element is registered
+import './ThemeForseen.js';
+export { ThemeForseen } from './ThemeForseen.js';
+export { colorThemes, fontPairings } from './themes.js';
 // Initialize function to add the drawer to the page
 export function initThemeForseen() {
     if (typeof window === 'undefined')
@@ -13,6 +15,9 @@ export function initThemeForseen() {
     }
 }
 function addDrawer() {
+    // Prevent duplicate drawers
+    if (document.querySelector('theme-forseen'))
+        return;
     const drawer = document.createElement('theme-forseen');
     document.body.appendChild(drawer);
 }

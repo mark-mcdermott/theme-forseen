@@ -1,16 +1,17 @@
 export declare class ThemeForseen extends HTMLElement {
+    private static isApplyingTheme;
     private isOpen;
     private selectedLightTheme;
     private selectedDarkTheme;
     private selectedFontPairing;
     private isDarkMode;
     private focusedColumn;
-    private starredLightThemes;
-    private starredDarkThemes;
-    private lovedLightTheme;
-    private lovedDarkTheme;
-    private starredFonts;
-    private lovedFont;
+    private starredLightTheme;
+    private starredDarkTheme;
+    private lovedLightThemes;
+    private lovedDarkThemes;
+    private starredFont;
+    private lovedFonts;
     private selectedHeadingFont;
     private selectedBodyFont;
     private selectedTags;
@@ -26,6 +27,8 @@ export declare class ThemeForseen extends HTMLElement {
     private backdrop;
     private themesColumn;
     private fontsColumn;
+    private loadedFonts;
+    private instanceId;
     constructor();
     connectedCallback(): void;
     private checkDarkMode;
@@ -40,6 +43,7 @@ export declare class ThemeForseen extends HTMLElement {
     private filterFontPairing;
     private renderFonts;
     private restoreFontFavorites;
+    private attachIconHandlers;
     private attachFilterListeners;
     private updateFontFilterButtonText;
     private attachFontFilterListeners;
@@ -56,6 +60,7 @@ export declare class ThemeForseen extends HTMLElement {
     private generateTailwindColorConfig;
     private generateFontCSS;
     private handleSaveToFile;
+    private loadGoogleFont;
     private applyTheme;
     private applyFonts;
 }

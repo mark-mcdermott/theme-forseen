@@ -1,3 +1,6 @@
+// Side-effect import to ensure custom element is registered
+import './ThemeForseen.js';
+
 export { ThemeForseen } from './ThemeForseen.js';
 export { colorThemes, fontPairings, type ColorTheme, type FontPairing } from './themes.js';
 

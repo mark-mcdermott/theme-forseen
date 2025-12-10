@@ -20,6 +20,7 @@ export declare class ThemeForseen extends HTMLElement {
     private selectedBodyStyles;
     private themesColumnCollapsed;
     private fontsColumnCollapsed;
+    private isMobile;
     private activeThemeIndex;
     private activeFontIndex;
     private drawerElement;
@@ -56,6 +57,7 @@ export declare class ThemeForseen extends HTMLElement {
     private updateModeButtons;
     private toggleDrawer;
     private toggleColumn;
+    private updateColumnUI;
     private handleActivate;
     private generateTailwindColorConfig;
     private generateFontCSS;

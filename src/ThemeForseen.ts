@@ -36,6 +36,11 @@ export class ThemeForseen extends HTMLElement {
   private themesColumnCollapsed = false;
   private fontsColumnCollapsed = false;
 
+  // Mobile detection
+  private isMobile(): boolean {
+    return window.innerWidth <= 768;
+  }
+
   // Active tile state for keyboard shortcuts
   private activeThemeIndex: number | null = null;
   private activeFontIndex: number | null = null;
@@ -269,6 +274,12 @@ export class ThemeForseen extends HTMLElement {
     }
     if (savedFontsCollapsed) {
       this.fontsColumnCollapsed = savedFontsCollapsed === "true";
+    }
+
+    // On mobile, ensure only one column is open (accordion behavior)
+    // If both are expanded, collapse fonts by default
+    if (this.isMobile() && !this.themesColumnCollapsed && !this.fontsColumnCollapsed) {
+      this.fontsColumnCollapsed = true;
     }
   }
 
@@ -2446,18 +2457,34 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private toggleColumn(columnType: "themes" | "fonts") {
+    const isExpanding = columnType === "themes"
+      ? this.themesColumnCollapsed
+      : this.fontsColumnCollapsed;
+
     if (columnType === "themes") {
       this.themesColumnCollapsed = !this.themesColumnCollapsed;
       localStorage.setItem(
         "themesColumnCollapsed",
         JSON.stringify(this.themesColumnCollapsed)
       );
+      // On mobile, collapse fonts when expanding themes (accordion behavior)
+      if (this.isMobile() && isExpanding && !this.fontsColumnCollapsed) {
+        this.fontsColumnCollapsed = true;
+        localStorage.setItem("fontsColumnCollapsed", JSON.stringify(true));
+        this.updateColumnUI("fonts");
+      }
     } else {
       this.fontsColumnCollapsed = !this.fontsColumnCollapsed;
       localStorage.setItem(
         "fontsColumnCollapsed",
         JSON.stringify(this.fontsColumnCollapsed)
       );
+      // On mobile, collapse themes when expanding fonts (accordion behavior)
+      if (this.isMobile() && isExpanding && !this.themesColumnCollapsed) {
+        this.themesColumnCollapsed = true;
+        localStorage.setItem("themesColumnCollapsed", JSON.stringify(true));
+        this.updateColumnUI("themes");
+      }
     }
 
     // Update classes on existing elements for smooth animation
@@ -2499,6 +2526,39 @@ export class ThemeForseen extends HTMLElement {
 
     // Save to localStorage
     this.saveToLocalStorage();
+  }
+
+  // Helper to update just one column's UI (used for accordion behavior on mobile)
+  private updateColumnUI(columnType: "themes" | "fonts") {
+    const column = this.shadowRoot?.querySelector(
+      `[data-column="${columnType}"]`
+    );
+    const collapseBtn = column?.querySelector(
+      ".collapse-btn"
+    ) as HTMLButtonElement;
+    const headerContent = this.shadowRoot?.querySelector(
+      ".drawer-header-content"
+    );
+
+    if (column) {
+      const isCollapsed = columnType === "themes"
+        ? this.themesColumnCollapsed
+        : this.fontsColumnCollapsed;
+
+      column.classList.toggle("collapsed", isCollapsed);
+      if (collapseBtn) {
+        collapseBtn.innerHTML = isCollapsed ? "«" : "»";
+        collapseBtn.title = isCollapsed ? "Expand" : "Collapse";
+      }
+    }
+
+    // Update header content visibility
+    if (headerContent) {
+      headerContent.classList.toggle(
+        "logo-hidden",
+        this.themesColumnCollapsed || this.fontsColumnCollapsed
+      );
+    }
   }
 
   private handleActivate(type: "theme" | "font", index: number) {

@@ -24,11 +24,29 @@ npm install theme-forseen
 
 The drawer auto-initializes when you import the module—no setup code needed.
 
-### Basic Usage (any framework)
+### With a Bundler (Vite, Webpack, Parcel, etc.)
 
 ```html
 <script type="module">
   import 'theme-forseen';
+</script>
+```
+
+### Without a Bundler (plain HTML)
+
+If you're serving static HTML files without a bundler, use the full path:
+
+```html
+<script type="module">
+  import '/node_modules/theme-forseen/dist/index.js';
+</script>
+```
+
+Or use a CDN:
+
+```html
+<script type="module">
+  import 'https://unpkg.com/theme-forseen/dist/index.js';
 </script>
 ```
 

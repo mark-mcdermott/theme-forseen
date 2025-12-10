@@ -23,7 +23,10 @@
     "tailwind",
     "css-variables"
   ],
-  "author": "",
+  "author": "Mark McDermott",
+  "repository": "github:mark-mcdermott/theme-forseen",
+  "homepage": "https://github.com/mark-mcdermott/theme-forseen",
+  "bugs": "https://github.com/mark-mcdermott/theme-forseen/issues",
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.3.3"

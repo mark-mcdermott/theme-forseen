@@ -2804,6 +2804,10 @@ export default {
       document.documentElement.style.setProperty("--color-text", colors.text);
       document.documentElement.style.setProperty("--color-extra", colors.extra);
 
+      // Also set aliases for common naming conventions
+      document.documentElement.style.setProperty("--primary-color", colors.primary);
+      document.documentElement.style.setProperty("--secondary-color", colors.accent);
+
       // Also explicitly set background and foreground colors
       document.documentElement.style.setProperty(
         "--background-color",
@@ -2931,6 +2935,15 @@ export default {
     );
     document.documentElement.style.setProperty(
       "--font-body",
+      getBodyFallback(bodyFont)
+    );
+    // Also set aliases for alternate naming conventions
+    document.documentElement.style.setProperty(
+      "--heading-font",
+      getHeadingFallback(headingFont)
+    );
+    document.documentElement.style.setProperty(
+      "--body-font",
       getBodyFallback(bodyFont)
     );
 

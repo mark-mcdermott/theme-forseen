@@ -43,3 +43,5 @@ package-lock.json
 
 # AI
 .claude
+.llm/
+CLAUDE.md

@@ -2435,6 +2435,9 @@ export default {
             document.documentElement.style.setProperty("--color-card-bg", colors.cardBackground);
             document.documentElement.style.setProperty("--color-text", colors.text);
             document.documentElement.style.setProperty("--color-extra", colors.extra);
+            // Also set aliases for common naming conventions
+            document.documentElement.style.setProperty("--primary-color", colors.primary);
+            document.documentElement.style.setProperty("--secondary-color", colors.accent);
             // Also explicitly set background and foreground colors
             document.documentElement.style.setProperty("--background-color", colors.background);
             document.documentElement.style.setProperty("--foreground-color", colors.text);
@@ -2533,6 +2536,9 @@ export default {
         this.loadGoogleFont(bodyFont);
         document.documentElement.style.setProperty("--font-heading", getHeadingFallback(headingFont));
         document.documentElement.style.setProperty("--font-body", getBodyFallback(bodyFont));
+        // Also set aliases for alternate naming conventions
+        document.documentElement.style.setProperty("--heading-font", getHeadingFallback(headingFont));
+        document.documentElement.style.setProperty("--body-font", getBodyFallback(bodyFont));
         this.saveToLocalStorage();
     }
 }

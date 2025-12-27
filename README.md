@@ -154,12 +154,16 @@ Then use in your markup:
 | `--color-extra` | Additional accent color |
 | `--color-h1`, `--color-h2`, `--color-h3` | Heading colors |
 | `--color-heading` | General heading color (same as h1) |
+| `--primary-color` | Alias for `--color-primary` |
+| `--secondary-color` | Alias for `--color-accent` |
 
 ### Fonts
 | Variable | Description |
 |----------|-------------|
 | `--font-heading` | Font family for headings |
 | `--font-body` | Font family for body text |
+| `--heading-font` | Alias for `--font-heading` |
+| `--body-font` | Alias for `--font-body` |
 
 ## Customization
 

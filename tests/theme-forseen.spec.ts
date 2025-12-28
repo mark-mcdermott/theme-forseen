@@ -35,7 +35,7 @@ function shadowLocator(page: Page, selector: string) {
 
 test.describe('CSS Variable Application', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -108,7 +108,7 @@ test.describe('CSS Variable Application', () => {
 
 test.describe('localStorage Persistence', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -202,7 +202,7 @@ test.describe('localStorage Persistence', () => {
 
 test.describe('Light/Dark Mode Isolation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -309,7 +309,7 @@ test.describe('Light/Dark Mode Isolation', () => {
 
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -406,7 +406,7 @@ test.describe('Keyboard Navigation', () => {
 
 test.describe('Drawer State', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -455,7 +455,7 @@ test.describe('Drawer State', () => {
 
 test.describe('Column Collapse', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -511,7 +511,7 @@ test.describe('Mobile Accordion Behavior', () => {
   test.beforeEach(async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -544,7 +544,7 @@ test.describe('Mobile Accordion Behavior', () => {
 
 test.describe('Only One Star Allowed', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -586,7 +586,7 @@ test.describe('Only One Star Allowed', () => {
 
 test.describe('Multiple Hearts Allowed', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
@@ -620,7 +620,7 @@ test.describe('Multiple Hearts Allowed', () => {
 
 test.describe('Individual Font Selection', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test/');
+    await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });

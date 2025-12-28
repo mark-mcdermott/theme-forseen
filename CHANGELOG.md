@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-28
+
 ### Added
 - Playwright test suite with 33 tests covering core functionality
+- GitHub Actions CI with required status checks for PRs
 - `darkmode-change` custom event listener for external dark mode integration
 
 ### Changed
@@ -20,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed 200ms polling interval for dark mode sync
 - Removed static `isApplyingTheme` flag (replaced with observer disconnect/reconnect)
 
-## [0.2.0] - 2024-12-28
+## [0.2.0] - 2025-12-27
 
 ### Added
 - CSS variable aliases (`--primary-color`, `--secondary-color`, `--heading-font`, `--body-font`)
@@ -48,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activation modal to export theme/font config
 - Works as vanilla Web Component (framework agnostic)
 
-[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mark-mcdermott/theme-forseen/releases/tag/v0.1.0

@@ -2,17 +2,19 @@
 
 A live color theme and font pairing preview drawer for websites. Browse and preview different color schemes and font combinations in real-time.
 
-Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) using the Custom Elements API, so it works with any framework (React, Vue, Svelte, Astro, plain HTML, etc.).
+**How it works:** ThemeForseen sets [CSS custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/--*) (CSS variables) on `<html>` when you select themes. Your CSS references these variables, so colors and fonts update instantly. Works with plain CSS, Tailwind, or any CSS framework.
+
+Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components), so it works with any framework (React, Vue, Svelte, Astro, plain HTML, etc.).
 
 ## Features
 
+- **CSS Variables** - Sets `--color-primary`, `--font-heading`, etc. on `<html>` for any CSS to consume
 - **Live Color Theme Preview** - Curated color palettes with instant visual feedback
 - **Font Pairing Preview** - Thoughtful, beautiful font combinations
 - **Light & Dark Mode Support** - Separate themes for each mode
 - **Keyboard Navigation** - Arrow keys to browse options
 - **Mouse Wheel Support** - Scroll through themes and fonts
-- **CSS Variables** - Uses CSS custom properties for seamless integration
-- **Framework Agnostic** - Works with any web framework
+- **Framework Agnostic** - Works with plain CSS, Tailwind, or any CSS framework
 
 ## Installation
 
@@ -68,9 +70,35 @@ function App() {
 }
 ```
 
-### Tailwind CSS Integration
+## Styling with CSS Variables
 
-ThemeForseen sets CSS variables on `<html>` at runtime when you select themes. You just need to tell Tailwind about them.
+ThemeForseen sets CSS variables on `<html>` at runtime. Use them in your CSS however you like.
+
+### Plain CSS
+
+No config needed. Just use the variables:
+
+```css
+h1 {
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+}
+
+body {
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-body);
+}
+
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-accent);
+}
+```
+
+### Tailwind CSS
+
+To use Tailwind utility classes, map the CSS variables in your config.
 
 #### Tailwind v4 (CSS-first config)
 
@@ -122,7 +150,7 @@ export default {
 };
 ```
 
-#### Using the classes
+#### Using Tailwind classes
 
 Then use in your markup:
 
@@ -130,6 +158,10 @@ Then use in your markup:
 <h1 class="font-heading text-primary">Hello World</h1>
 <p class="font-body text-text bg-bg">Body text</p>
 ```
+
+### Other CSS Frameworks
+
+Any CSS framework that supports CSS variables will work. Just reference the variables (see [CSS Variables Reference](#css-variables-reference) below).
 
 ## How to Use the Drawer
 

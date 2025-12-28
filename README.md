@@ -250,7 +250,15 @@ To test the drawer locally:
 npx serve . -l 3000
 ```
 
-Then open http://localhost:3000/test
+Then open http://localhost:3000/tests/fixtures
+
+### Running Tests
+
+```bash
+npm test           # Run all tests
+npm run test:ui    # Run with Playwright UI
+npm run test:headed # Run in headed browser
+```
 
 ## Contributing
 

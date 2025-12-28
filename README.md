@@ -242,6 +242,16 @@ npm run build
 npm run dev
 ```
 
+### Local Testing
+
+To test the drawer locally:
+
+```bash
+npx serve . -l 3000
+```
+
+Then open http://localhost:3000/test
+
 ## Contributing
 
 Contributions welcome! Open an issue or submit a PR at [GitHub](https://github.com/mark-mcdermott/theme-forseen).

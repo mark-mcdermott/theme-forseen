@@ -1,5 +1,7 @@
 # ThemeForseen
 
+![Tests](https://github.com/mark-mcdermott/theme-forseen/actions/workflows/test.yml/badge.svg)
+
 A live color theme and font pairing preview drawer for websites. Browse and preview different color schemes and font combinations in real-time.
 
 **How it works:** ThemeForseen sets [CSS custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/--*) (CSS variables) on `<html>` when you select themes. Your CSS references these variables, so colors and fonts update instantly. Works with plain CSS, Tailwind, or any CSS framework.

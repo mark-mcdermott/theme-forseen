@@ -262,7 +262,14 @@ npm run test:headed # Run in headed browser
 
 ## Contributing
 
-Contributions welcome! Open an issue or submit a PR at [GitHub](https://github.com/mark-mcdermott/theme-forseen).
+Contributions welcome!
+
+1. Fork the repo
+2. Create a feature branch
+3. Make your changes
+4. Open a PR to `main`
+
+PRs require all tests to pass before merging. Tests run automatically when you open a PR.
 
 ## License
 

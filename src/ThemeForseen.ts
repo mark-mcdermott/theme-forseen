@@ -21,42 +21,37 @@ import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
 import { showActivationModal, handleSaveToFile } from "./activationModal.js";
 
 export class ThemeForseen extends HTMLElement {
-  // Static flag to prevent any instance from applying while another is applying
-  private static isApplyingTheme = false;
-
   private isOpen = false;
-  private selectedLightTheme = 0;
-  private selectedDarkTheme = 0;
-  private selectedFontPairing = 0;
   private isDarkMode = false;
   private focusedColumn: "themes" | "fonts" = "themes";
-  private starredLightTheme: number | null = null;
-  private starredDarkTheme: number | null = null;
-  private lovedLightThemes = new Set<number>();
-  private lovedDarkThemes = new Set<number>();
+
+  private get mode(): "light" | "dark" {
+    return this.isDarkMode ? "dark" : "light";
+  }
+
+  private selectedTheme = { light: 0, dark: 0 };
+  private starredTheme: { light: number | null; dark: number | null } = { light: null, dark: null };
+  private lovedThemes = { light: new Set<number>(), dark: new Set<number>() };
+
+  private selectedFontPairing = 0;
   private starredFont: number | null = null;
   private lovedFonts = new Set<number>();
 
-  // Individual font selections
   private selectedHeadingFont: string | null = null;
   private selectedBodyFont: string | null = null;
 
-  // Filter state
   private selectedTags = new Set<string>();
   private searchText = "";
   private selectedHeadingStyles = new Set<string>();
   private selectedBodyStyles = new Set<string>();
 
-  // Column collapse state
   private themesColumnCollapsed = false;
   private fontsColumnCollapsed = false;
 
-  // Mobile detection
   private isMobile(): boolean {
     return window.innerWidth <= 768;
   }
 
-  // Active tile state for keyboard shortcuts
   private activeThemeIndex: number | null = null;
   private activeFontIndex: number | null = null;
 
@@ -65,6 +60,7 @@ export class ThemeForseen extends HTMLElement {
   private backdrop!: HTMLElement;
   private themesColumn!: HTMLElement;
   private fontsColumn!: HTMLElement;
+  private darkModeObserver: MutationObserver | null = null;
 
   constructor() {
     super();
@@ -101,7 +97,6 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private checkDarkMode() {
-    // Use saved preference if available, otherwise use system preference
     const saved = getBool(STORAGE_KEYS.DARK_MODE);
     if (saved !== null) {
       this.isDarkMode = saved;
@@ -111,7 +106,7 @@ export class ThemeForseen extends HTMLElement {
       ).matches;
     }
 
-    // Watch for system changes (but saved preference takes priority)
+    // Watch for system preference changes
     window
       .matchMedia("(prefers-color-scheme: dark)")
       .addEventListener("change", (e) => {
@@ -122,8 +117,8 @@ export class ThemeForseen extends HTMLElement {
         }
       });
 
-    // Helper function to check and sync dark mode
-    const syncDarkMode = () => {
+    // Watch for color-scheme changes from external sources via MutationObserver
+    this.darkModeObserver = new MutationObserver(() => {
       const currentColorScheme =
         document.documentElement.style.colorScheme ||
         getComputedStyle(document.documentElement).colorScheme;
@@ -135,82 +130,54 @@ export class ThemeForseen extends HTMLElement {
         this.updateModeButtons();
         this.renderThemes();
       }
-    };
-
-    // Watch for color-scheme changes from external sources (like the DarkMode component)
-    const observer = new MutationObserver(() => {
-      syncDarkMode();
     });
 
-    observer.observe(document.documentElement, {
+    this.darkModeObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["style", "class"],
+      attributeFilter: ["style"],
     });
 
-    // Also watch body element as some components might modify it
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ["style", "class"],
-    });
-
-    // Listen for storage events (in case DarkMode component uses localStorage)
-    window.addEventListener("storage", () => {
-      syncDarkMode();
-    });
-
-    // Listen for clicks on the document to catch dark mode toggle clicks
-    document.addEventListener("click", () => {
-      // Check immediately
-      syncDarkMode();
-      // Also check with delays to catch async updates
-      setTimeout(() => syncDarkMode(), 10);
-      setTimeout(() => syncDarkMode(), 50);
-      setTimeout(() => syncDarkMode(), 100);
-    });
-
-    // More frequent periodic check (every 200ms instead of 500ms)
-    setInterval(() => {
-      syncDarkMode();
-    }, 200);
+    // Listen for custom event from external dark mode toggles
+    window.addEventListener("darkmode-change", ((e: CustomEvent) => {
+      const shouldBeDark = e.detail?.dark ?? false;
+      if (this.isDarkMode !== shouldBeDark) {
+        this.isDarkMode = shouldBeDark;
+        this.applyTheme();
+        this.updateModeButtons();
+        this.renderThemes();
+      }
+    }) as EventListener);
   }
 
   private loadFromLocalStorage() {
-    // Load selections
     const lightTheme = getItem(STORAGE_KEYS.LIGHT_THEME);
     const darkTheme = getItem(STORAGE_KEYS.DARK_THEME);
     const font = getItem(STORAGE_KEYS.FONT);
-    if (lightTheme) this.selectedLightTheme = parseInt(lightTheme);
-    if (darkTheme) this.selectedDarkTheme = parseInt(darkTheme);
+    if (lightTheme) this.selectedTheme.light = parseInt(lightTheme);
+    if (darkTheme) this.selectedTheme.dark = parseInt(darkTheme);
     if (font) this.selectedFontPairing = parseInt(font);
 
-    // Load starred themes
     const starredLight = getItem(STORAGE_KEYS.STARRED_LIGHT);
     const starredDark = getItem(STORAGE_KEYS.STARRED_DARK);
-    if (starredLight) this.starredLightTheme = parseInt(starredLight);
-    if (starredDark) this.starredDarkTheme = parseInt(starredDark);
+    if (starredLight) this.starredTheme.light = parseInt(starredLight);
+    if (starredDark) this.starredTheme.dark = parseInt(starredDark);
 
-    // Load loved themes
-    this.lovedLightThemes = getSet(STORAGE_KEYS.LOVED_LIGHT);
-    this.lovedDarkThemes = getSet(STORAGE_KEYS.LOVED_DARK);
+    this.lovedThemes.light = getSet(STORAGE_KEYS.LOVED_LIGHT);
+    this.lovedThemes.dark = getSet(STORAGE_KEYS.LOVED_DARK);
 
-    // Load starred font
     const starredFont = getItem(STORAGE_KEYS.STARRED_FONT);
     if (starredFont) this.starredFont = parseInt(starredFont);
 
-    // Load loved fonts
     this.lovedFonts = getSet(STORAGE_KEYS.LOVED_FONTS);
 
-    // Load individual font selections
     this.selectedHeadingFont = getItem(STORAGE_KEYS.HEADING_FONT);
     this.selectedBodyFont = getItem(STORAGE_KEYS.BODY_FONT);
 
-    // Load filter state
     this.selectedTags = getSet(STORAGE_KEYS.FILTER_TAGS);
     this.searchText = getItem(STORAGE_KEYS.FILTER_SEARCH) || "";
     this.selectedHeadingStyles = getSet(STORAGE_KEYS.FILTER_HEADING_STYLES);
     this.selectedBodyStyles = getSet(STORAGE_KEYS.FILTER_BODY_STYLES);
 
-    // Load column collapse state
     const themesCollapsed = getBool(STORAGE_KEYS.THEMES_COLLAPSED);
     const fontsCollapsed = getBool(STORAGE_KEYS.FONTS_COLLAPSED);
     if (themesCollapsed !== null) this.themesColumnCollapsed = themesCollapsed;
@@ -230,7 +197,6 @@ export class ThemeForseen extends HTMLElement {
   private maybeHideInstructions() {
     const visitCount = getInt(STORAGE_KEYS.VISIT_COUNT);
     if (visitCount >= 10) {
-      // Hide both instruction boxes
       this.shadowRoot?.querySelectorAll(".instructions").forEach((el) => {
         (el as HTMLElement).classList.add("hidden");
       });
@@ -238,41 +204,34 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private saveToLocalStorage() {
-    // Save mode
     setBool(STORAGE_KEYS.DARK_MODE, this.isDarkMode);
 
-    // Save selections
-    setInt(STORAGE_KEYS.LIGHT_THEME, this.selectedLightTheme);
-    setInt(STORAGE_KEYS.DARK_THEME, this.selectedDarkTheme);
+    setInt(STORAGE_KEYS.LIGHT_THEME, this.selectedTheme.light);
+    setInt(STORAGE_KEYS.DARK_THEME, this.selectedTheme.dark);
     setInt(STORAGE_KEYS.FONT, this.selectedFontPairing);
 
-    // Save starred themes (single value per mode)
-    if (this.starredLightTheme !== null) {
-      setInt(STORAGE_KEYS.STARRED_LIGHT, this.starredLightTheme);
+    if (this.starredTheme.light !== null) {
+      setInt(STORAGE_KEYS.STARRED_LIGHT, this.starredTheme.light);
     } else {
       removeItem(STORAGE_KEYS.STARRED_LIGHT);
     }
-    if (this.starredDarkTheme !== null) {
-      setInt(STORAGE_KEYS.STARRED_DARK, this.starredDarkTheme);
+    if (this.starredTheme.dark !== null) {
+      setInt(STORAGE_KEYS.STARRED_DARK, this.starredTheme.dark);
     } else {
       removeItem(STORAGE_KEYS.STARRED_DARK);
     }
 
-    // Save loved themes (multiple per mode)
-    setSet(STORAGE_KEYS.LOVED_LIGHT, this.lovedLightThemes);
-    setSet(STORAGE_KEYS.LOVED_DARK, this.lovedDarkThemes);
+    setSet(STORAGE_KEYS.LOVED_LIGHT, this.lovedThemes.light);
+    setSet(STORAGE_KEYS.LOVED_DARK, this.lovedThemes.dark);
 
-    // Save starred font (single value)
     if (this.starredFont !== null) {
       setInt(STORAGE_KEYS.STARRED_FONT, this.starredFont);
     } else {
       removeItem(STORAGE_KEYS.STARRED_FONT);
     }
 
-    // Save loved fonts (multiple)
     setSet(STORAGE_KEYS.LOVED_FONTS, this.lovedFonts);
 
-    // Save individual font selections
     if (this.selectedHeadingFont) {
       setItem(STORAGE_KEYS.HEADING_FONT, this.selectedHeadingFont);
     } else {
@@ -284,13 +243,11 @@ export class ThemeForseen extends HTMLElement {
       removeItem(STORAGE_KEYS.BODY_FONT);
     }
 
-    // Save filter state
     setSet(STORAGE_KEYS.FILTER_TAGS, this.selectedTags);
     setItem(STORAGE_KEYS.FILTER_SEARCH, this.searchText);
     setSet(STORAGE_KEYS.FILTER_HEADING_STYLES, this.selectedHeadingStyles);
     setSet(STORAGE_KEYS.FILTER_BODY_STYLES, this.selectedBodyStyles);
 
-    // Save column collapse state
     setBool(STORAGE_KEYS.THEMES_COLLAPSED, this.themesColumnCollapsed);
     setBool(STORAGE_KEYS.FONTS_COLLAPSED, this.fontsColumnCollapsed);
   }
@@ -400,10 +357,7 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private restoreThemeFavorites() {
-    // Restore starred theme for current mode (single)
-    const starredIndex = this.isDarkMode
-      ? this.starredDarkTheme
-      : this.starredLightTheme;
+    const starredIndex = this.starredTheme[this.mode];
     if (starredIndex !== null) {
       const star = this.shadowRoot?.querySelector(
         `.star[data-type="theme"][data-index="${starredIndex}"]`
@@ -411,19 +365,12 @@ export class ThemeForseen extends HTMLElement {
       star?.classList.add("starred");
     }
 
-    // Restore loved themes for current mode (multiple)
-    const lovedSet = this.isDarkMode
-      ? this.lovedDarkThemes
-      : this.lovedLightThemes;
-    lovedSet.forEach((index) => {
+    this.lovedThemes[this.mode].forEach((index) => {
       const heart = this.shadowRoot?.querySelector(
         `.heart[data-type="theme"][data-index="${index}"]`
       );
       heart?.classList.add("loved");
     });
-
-    // Attach click handlers to icons
-    this.attachIconHandlers("theme");
   }
 
   private filterFontPairing(pairing: FontPairing): boolean {
@@ -491,7 +438,6 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private restoreFontFavorites() {
-    // Restore starred font (single)
     if (this.starredFont !== null) {
       const star = this.shadowRoot?.querySelector(
         `.star[data-type="font"][data-index="${this.starredFont}"]`
@@ -499,7 +445,6 @@ export class ThemeForseen extends HTMLElement {
       star?.classList.add("starred");
     }
 
-    // Restore loved fonts (multiple)
     this.lovedFonts.forEach((index) => {
       const heart = this.shadowRoot?.querySelector(
         `.heart[data-type="font"][data-index="${index}"]`
@@ -507,17 +452,9 @@ export class ThemeForseen extends HTMLElement {
       heart?.classList.add("loved");
     });
 
-    // Attach click handlers to icons
-    this.attachIconHandlers("font");
-  }
-
-  private attachIconHandlers(_type: "theme" | "font") {
-    // Icon click handling is done via event delegation on shadowRoot in attachEventListeners()
-    // This function is kept for compatibility but the actual handlers are centralized
   }
 
   private attachFilterListeners() {
-    // Filter input
     const filterInput = this.shadowRoot?.querySelector(
       ".filter-input"
     ) as HTMLInputElement;
@@ -527,7 +464,6 @@ export class ThemeForseen extends HTMLElement {
       this.renderThemes();
     });
 
-    // Filter dropdown button
     const filterDropdownBtn = this.shadowRoot?.querySelector(
       ".filter-dropdown-btn"
     );
@@ -536,7 +472,6 @@ export class ThemeForseen extends HTMLElement {
       filterDropdown?.classList.toggle("hidden");
     });
 
-    // Filter checkboxes
     this.shadowRoot
       ?.querySelectorAll(
         ".filter-container .filter-option input[type='checkbox']"
@@ -562,7 +497,6 @@ export class ThemeForseen extends HTMLElement {
         });
       });
 
-    // Filter tag remove buttons
     this.shadowRoot?.querySelectorAll(".filter-tag-remove").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const tag = (e.currentTarget as HTMLElement).getAttribute("data-tag");
@@ -594,7 +528,6 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private attachFontFilterListeners() {
-    // Font filter dropdown buttons
     this.shadowRoot
       ?.querySelectorAll(".font-filter-dropdown-btn")
       .forEach((btn) => {
@@ -609,7 +542,6 @@ export class ThemeForseen extends HTMLElement {
         });
       });
 
-    // Font filter checkboxes
     this.shadowRoot
       ?.querySelectorAll(
         ".font-filter-dropdown .filter-option input[type='checkbox']"
@@ -672,13 +604,9 @@ export class ThemeForseen extends HTMLElement {
         const index = parseInt((themeItem as HTMLElement).dataset.index || "0");
         this.activeThemeIndex = index;
         this.focusedColumn = "themes";
-        if (this.isDarkMode) {
-          this.selectedDarkTheme = index;
-        } else {
-          this.selectedLightTheme = index;
-        }
+        this.selectedTheme[this.mode] = index;
         this.applyTheme();
-        this.renderThemes(); // Re-render to show active state
+        this.renderThemes();
       }
     });
 
@@ -687,7 +615,6 @@ export class ThemeForseen extends HTMLElement {
     fontsList?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
 
-      // Ignore clicks on favorite/activate icons - they have their own handlers
       if (
         target.classList.contains("favorite-icon") ||
         target.classList.contains("activate-icon")
@@ -695,13 +622,11 @@ export class ThemeForseen extends HTMLElement {
         return;
       }
 
-      // Check if clicking the switch button
       if (target.classList.contains("font-switch-icon")) {
         e.stopPropagation();
         const index = parseInt(target.dataset.index || "0");
         const pairing = fontPairings[index];
 
-        // Swap the heading and body fonts
         this.selectedHeadingFont = pairing.body;
         this.selectedBodyFont = pairing.heading;
         this.selectedFontPairing = -1; // Clear pairing selection
@@ -711,7 +636,6 @@ export class ThemeForseen extends HTMLElement {
         return;
       }
 
-      // Check if clicking on an individual font
       if (target.classList.contains("individual-font")) {
         e.stopPropagation();
         const fontName = target.dataset.font || "";
@@ -748,35 +672,9 @@ export class ThemeForseen extends HTMLElement {
       }
     });
 
-    // Mode toggle
-    this.shadowRoot?.querySelectorAll(".mode-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const mode = (e.currentTarget as HTMLElement).dataset.mode;
-        this.isDarkMode = mode === "dark";
-        // Sync activeThemeIndex with the new mode's selected theme
-        this.activeThemeIndex = this.isDarkMode
-          ? this.selectedDarkTheme
-          : this.selectedLightTheme;
-        this.applyTheme();
-        this.updateModeButtons();
-        this.renderThemes();
-      });
-    });
-
-    // Column collapse buttons
-    this.shadowRoot?.querySelectorAll(".collapse-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const columnType = (e.currentTarget as HTMLElement).dataset
-          .columnType as "themes" | "fonts";
-        this.toggleColumn(columnType);
-      });
-    });
-
     this.attachFilterListeners();
     this.attachFontFilterListeners();
 
-    // Keyboard navigation
     document.addEventListener("keydown", (e) => {
       if (!this.isOpen) return;
 
@@ -792,7 +690,6 @@ export class ThemeForseen extends HTMLElement {
       }
     });
 
-    // Mouse wheel navigation
     const themesContent = this.shadowRoot?.querySelector(
       '[data-column="themes"] .column-content'
     );
@@ -818,7 +715,6 @@ export class ThemeForseen extends HTMLElement {
       }
     });
 
-    // Focus tracking
     themesContent?.addEventListener("mouseenter", () => {
       this.focusedColumn = "themes";
     });
@@ -827,22 +723,48 @@ export class ThemeForseen extends HTMLElement {
       this.focusedColumn = "fonts";
     });
 
-    // Instructions close buttons
-    this.shadowRoot?.querySelectorAll(".instructions-close").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+    // Delegated click handler for buttons (mode, collapse, instructions close, favorites, activate)
+    this.shadowRoot?.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+
+      // Mode toggle buttons
+      if (target.classList.contains("mode-btn")) {
+        this.isDarkMode = target.dataset.mode === "dark";
+        this.activeThemeIndex = this.selectedTheme[this.mode];
+        this.applyTheme();
+        this.updateModeButtons();
+        this.renderThemes();
+        return;
+      }
+
+      // Collapse buttons
+      if (target.classList.contains("collapse-btn")) {
         e.stopPropagation();
-        const instructionsDiv = (e.target as HTMLElement).closest(
-          ".instructions"
-        );
+        const columnType = target.dataset.columnType as "themes" | "fonts";
+        this.toggleColumn(columnType);
+        return;
+      }
+
+      // Instructions close buttons
+      if (target.classList.contains("instructions-close")) {
+        e.stopPropagation();
+        const instructionsDiv = target.closest(".instructions");
         if (instructionsDiv) {
           instructionsDiv.classList.add("hidden");
         }
-      });
-    });
+        return;
+      }
 
-    // Favorite icons (star and heart)
-    this.shadowRoot?.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
+      // Activate icons
+      if (target.classList.contains("activate-icon")) {
+        e.stopPropagation();
+        const type = target.dataset.type as "theme" | "font";
+        const index = parseInt(target.dataset.index || "0");
+        this.handleActivate(type, index);
+        return;
+      }
+
+      // Favorite icons (star and heart)
       if (target.classList.contains("favorite-icon")) {
         e.stopPropagation();
         const type = target.dataset.type as "theme" | "font";
@@ -851,41 +773,23 @@ export class ThemeForseen extends HTMLElement {
 
         if (type === "theme") {
           if (isStar) {
-            // Stars: only one per mode (light/dark)
-            const currentStarred = this.isDarkMode
-              ? this.starredDarkTheme
-              : this.starredLightTheme;
+            const currentStarred = this.starredTheme[this.mode];
 
             if (currentStarred === index) {
-              // Deselect current starred
-              if (this.isDarkMode) {
-                this.starredDarkTheme = null;
-              } else {
-                this.starredLightTheme = null;
-              }
+              this.starredTheme[this.mode] = null;
               target.classList.remove("starred");
             } else {
-              // Remove previous starred
               if (currentStarred !== null) {
                 const prevStar = this.shadowRoot?.querySelector(
                   `.star[data-type="theme"][data-index="${currentStarred}"]`
                 );
                 prevStar?.classList.remove("starred");
               }
-
-              // Set new starred
-              if (this.isDarkMode) {
-                this.starredDarkTheme = index;
-              } else {
-                this.starredLightTheme = index;
-              }
+              this.starredTheme[this.mode] = index;
               target.classList.add("starred");
             }
           } else {
-            // Hearts: multiple allowed per mode (light/dark)
-            const lovedSet = this.isDarkMode
-              ? this.lovedDarkThemes
-              : this.lovedLightThemes;
+            const lovedSet = this.lovedThemes[this.mode];
 
             if (lovedSet.has(index)) {
               lovedSet.delete(index);
@@ -897,13 +801,10 @@ export class ThemeForseen extends HTMLElement {
           }
         } else if (type === "font") {
           if (isStar) {
-            // Stars: only one selected
             if (this.starredFont === index) {
-              // Deselect current starred
               this.starredFont = null;
               target.classList.remove("starred");
             } else {
-              // Remove previous starred
               if (this.starredFont !== null) {
                 const prevStar = this.shadowRoot?.querySelector(
                   `.star[data-type="font"][data-index="${this.starredFont}"]`
@@ -911,12 +812,10 @@ export class ThemeForseen extends HTMLElement {
                 prevStar?.classList.remove("starred");
               }
 
-              // Set new starred
               this.starredFont = index;
               target.classList.add("starred");
             }
           } else {
-            // Hearts: multiple allowed
             if (this.lovedFonts.has(index)) {
               this.lovedFonts.delete(index);
               target.classList.remove("loved");
@@ -927,19 +826,8 @@ export class ThemeForseen extends HTMLElement {
           }
         }
 
-        // Save all favorites to localStorage
         this.saveToLocalStorage();
-      }
-    });
-
-    // Activate icons
-    this.shadowRoot?.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains("activate-icon")) {
-        e.stopPropagation();
-        const type = target.dataset.type as "theme" | "font";
-        const index = parseInt(target.dataset.index || "0");
-        this.handleActivate(type, index);
+        return;
       }
     });
 
@@ -986,20 +874,13 @@ export class ThemeForseen extends HTMLElement {
 
   private handleArrowKey(isDown: boolean) {
     if (this.focusedColumn === "themes") {
-      if (this.isDarkMode) {
-        this.selectedDarkTheme = isDown
-          ? Math.min(this.selectedDarkTheme + 1, colorThemes.length - 1)
-          : Math.max(this.selectedDarkTheme - 1, 0);
-      } else {
-        this.selectedLightTheme = isDown
-          ? Math.min(this.selectedLightTheme + 1, colorThemes.length - 1)
-          : Math.max(this.selectedLightTheme - 1, 0);
-      }
-      this.activeThemeIndex = this.isDarkMode
-        ? this.selectedDarkTheme
-        : this.selectedLightTheme;
+      const current = this.selectedTheme[this.mode];
+      this.selectedTheme[this.mode] = isDown
+        ? Math.min(current + 1, colorThemes.length - 1)
+        : Math.max(current - 1, 0);
+      this.activeThemeIndex = this.selectedTheme[this.mode];
       this.applyTheme();
-      this.renderThemes(); // Re-render to show active state
+      this.renderThemes();
       this.scrollToSelected(".theme-item");
     } else {
       this.selectedFontPairing = isDown
@@ -1016,30 +897,12 @@ export class ThemeForseen extends HTMLElement {
     if (this.focusedColumn === "themes" && this.activeThemeIndex !== null) {
       const index = this.activeThemeIndex;
       if (key === "s") {
-        // Toggle star (only one allowed)
-        const currentStarred = this.isDarkMode
-          ? this.starredDarkTheme
-          : this.starredLightTheme;
-        if (currentStarred === index) {
-          if (this.isDarkMode) {
-            this.starredDarkTheme = null;
-          } else {
-            this.starredLightTheme = null;
-          }
-        } else {
-          if (this.isDarkMode) {
-            this.starredDarkTheme = index;
-          } else {
-            this.starredLightTheme = index;
-          }
-        }
+        const currentStarred = this.starredTheme[this.mode];
+        this.starredTheme[this.mode] = currentStarred === index ? null : index;
         this.saveToLocalStorage();
         this.renderThemes();
       } else if (key === "h") {
-        // Toggle heart (multiple allowed)
-        const lovedSet = this.isDarkMode
-          ? this.lovedDarkThemes
-          : this.lovedLightThemes;
+        const lovedSet = this.lovedThemes[this.mode];
         if (lovedSet.has(index)) {
           lovedSet.delete(index);
         } else {
@@ -1082,9 +945,7 @@ export class ThemeForseen extends HTMLElement {
     const items = column.querySelectorAll(selector);
     const selectedIndex =
       this.focusedColumn === "themes"
-        ? this.isDarkMode
-          ? this.selectedDarkTheme
-          : this.selectedLightTheme
+        ? this.selectedTheme[this.mode]
         : this.selectedFontPairing;
 
     const selectedItem = items[selectedIndex] as HTMLElement;
@@ -1097,27 +958,13 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".theme-item").forEach((item) => {
       const itemIndex = parseInt((item as HTMLElement).dataset.index || "0");
 
-      // Light mode selection - blue
-      if (itemIndex === this.selectedLightTheme) {
-        item.classList.add("selected-light");
-      } else {
-        item.classList.remove("selected-light");
-      }
-
-      // Dark mode selection - green
-      if (itemIndex === this.selectedDarkTheme) {
-        item.classList.add("selected-dark");
-      } else {
-        item.classList.remove("selected-dark");
-      }
-
-      // Remove old classes
+      item.classList.toggle("selected-light", itemIndex === this.selectedTheme.light);
+      item.classList.toggle("selected-dark", itemIndex === this.selectedTheme.dark);
       item.classList.remove("selected", "active");
     });
   }
 
   private updateFontSelection() {
-    // Update font pairing card selection (only if no individual fonts selected)
     const hasIndividualSelection =
       this.selectedHeadingFont !== null || this.selectedBodyFont !== null;
 
@@ -1129,7 +976,6 @@ export class ThemeForseen extends HTMLElement {
       }
     });
 
-    // Update individual font selections
     this.shadowRoot?.querySelectorAll(".individual-font").forEach((element) => {
       const fontName = (element as HTMLElement).dataset.font;
       const fontType = (element as HTMLElement).dataset.type;
@@ -1221,7 +1067,6 @@ export class ThemeForseen extends HTMLElement {
       }
     }
 
-    // Update header content visibility
     if (headerContent) {
       headerContent.classList.toggle(
         "logo-hidden",
@@ -1229,7 +1074,6 @@ export class ThemeForseen extends HTMLElement {
       );
     }
 
-    // Save to localStorage
     this.saveToLocalStorage();
   }
 
@@ -1257,7 +1101,6 @@ export class ThemeForseen extends HTMLElement {
       }
     }
 
-    // Update header content visibility
     if (headerContent) {
       headerContent.classList.toggle(
         "logo-hidden",
@@ -1282,30 +1125,23 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private applyTheme(force = false) {
-    // Prevent recursive calls from MutationObserver (static flag shared across all instances)
-    if (ThemeForseen.isApplyingTheme) {
-      return;
-    }
-
-    // Only apply if this instance's drawer is open, OR if forced (initial load), OR if no drawer is open yet
     if (!force && !this.isOpen && this.drawerElement) {
       return;
     }
 
-    ThemeForseen.isApplyingTheme = true;
+    this.darkModeObserver?.disconnect();
 
     try {
-      const themeIndex = this.isDarkMode
-        ? this.selectedDarkTheme
-        : this.selectedLightTheme;
-      const theme = colorThemes[themeIndex];
-      const colors = this.isDarkMode ? theme.dark : theme.light;
+      const theme = colorThemes[this.selectedTheme[this.mode]];
+      const colors = theme[this.mode];
 
       applyThemeColors(colors, this.isDarkMode);
       this.saveToLocalStorage();
     } finally {
-      // Reset the guard flag (static, shared across all instances)
-      ThemeForseen.isApplyingTheme = false;
+      this.darkModeObserver?.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
     }
   }
 
@@ -1339,7 +1175,6 @@ export class ThemeForseen extends HTMLElement {
   }
 }
 
-// Register the custom element
 if (typeof window !== "undefined" && !customElements.get("theme-forseen")) {
   customElements.define("theme-forseen", ThemeForseen);
 }

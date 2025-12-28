@@ -13,7 +13,10 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
   },
   "keywords": [
     "theme",
@@ -30,6 +33,8 @@
   "bugs": "https://github.com/mark-mcdermott/theme-forseen/issues",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "serve": "^14.2.0",
     "typescript": "^5.3.3"
   }
 }

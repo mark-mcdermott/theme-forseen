@@ -4,6 +4,21 @@ import {
   type ColorTheme,
   type FontPairing,
 } from "./themes.js";
+import { getTemplate } from "./template.js";
+import {
+  STORAGE_KEYS,
+  getItem,
+  setItem,
+  getInt,
+  setInt,
+  getBool,
+  setBool,
+  getSet,
+  setSet,
+  removeItem,
+} from "./storage.js";
+import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
+import { showActivationModal, handleSaveToFile } from "./activationModal.js";
 
 export class ThemeForseen extends HTMLElement {
   // Static flag to prevent any instance from applying while another is applying
@@ -51,16 +66,9 @@ export class ThemeForseen extends HTMLElement {
   private themesColumn!: HTMLElement;
   private fontsColumn!: HTMLElement;
 
-  // Track loaded Google Fonts to avoid duplicate loading
-  private loadedFonts = new Set<string>();
-
-  // Instance ID for debugging
-  private instanceId = Math.random().toString(36).substring(7);
-
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    console.log(`ThemeForseen instance created: ${this.instanceId}`);
   }
 
   connectedCallback() {
@@ -94,9 +102,9 @@ export class ThemeForseen extends HTMLElement {
 
   private checkDarkMode() {
     // Use saved preference if available, otherwise use system preference
-    const saved = localStorage.getItem("themeforseen-darkmode");
+    const saved = getBool(STORAGE_KEYS.DARK_MODE);
     if (saved !== null) {
-      this.isDarkMode = saved === "true";
+      this.isDarkMode = saved;
     } else {
       this.isDarkMode = window.matchMedia(
         "(prefers-color-scheme: dark)"
@@ -107,7 +115,7 @@ export class ThemeForseen extends HTMLElement {
     window
       .matchMedia("(prefers-color-scheme: dark)")
       .addEventListener("change", (e) => {
-        if (localStorage.getItem("themeforseen-darkmode") === null) {
+        if (getBool(STORAGE_KEYS.DARK_MODE) === null) {
           this.isDarkMode = e.matches;
           this.applyTheme();
           this.updateModeButtons();
@@ -168,132 +176,59 @@ export class ThemeForseen extends HTMLElement {
 
   private loadFromLocalStorage() {
     // Load selections
-    const savedLightTheme = localStorage.getItem("themeforseen-lighttheme");
-    const savedDarkTheme = localStorage.getItem("themeforseen-darktheme");
-    const savedFont = localStorage.getItem("themeforseen-font");
+    const lightTheme = getItem(STORAGE_KEYS.LIGHT_THEME);
+    const darkTheme = getItem(STORAGE_KEYS.DARK_THEME);
+    const font = getItem(STORAGE_KEYS.FONT);
+    if (lightTheme) this.selectedLightTheme = parseInt(lightTheme);
+    if (darkTheme) this.selectedDarkTheme = parseInt(darkTheme);
+    if (font) this.selectedFontPairing = parseInt(font);
 
-    if (savedLightTheme) this.selectedLightTheme = parseInt(savedLightTheme);
-    if (savedDarkTheme) this.selectedDarkTheme = parseInt(savedDarkTheme);
-    if (savedFont) this.selectedFontPairing = parseInt(savedFont);
+    // Load starred themes
+    const starredLight = getItem(STORAGE_KEYS.STARRED_LIGHT);
+    const starredDark = getItem(STORAGE_KEYS.STARRED_DARK);
+    if (starredLight) this.starredLightTheme = parseInt(starredLight);
+    if (starredDark) this.starredDarkTheme = parseInt(starredDark);
 
-    // Load starred themes (single value per mode)
-    const savedStarredLight = localStorage.getItem(
-      "themeforseen-starred-light"
-    );
-    const savedStarredDark = localStorage.getItem("themeforseen-starred-dark");
-    if (savedStarredLight) this.starredLightTheme = parseInt(savedStarredLight);
-    if (savedStarredDark) this.starredDarkTheme = parseInt(savedStarredDark);
+    // Load loved themes
+    this.lovedLightThemes = getSet(STORAGE_KEYS.LOVED_LIGHT);
+    this.lovedDarkThemes = getSet(STORAGE_KEYS.LOVED_DARK);
 
-    // Load loved themes (multiple per mode)
-    const savedLovedLight = localStorage.getItem("themeforseen-loved-light");
-    const savedLovedDark = localStorage.getItem("themeforseen-loved-dark");
-    if (savedLovedLight) {
-      try {
-        const parsed = JSON.parse(savedLovedLight);
-        if (Array.isArray(parsed)) this.lovedLightThemes = new Set(parsed);
-      } catch (e) {
-        /* ignore corrupted data */
-      }
-    }
-    if (savedLovedDark) {
-      try {
-        const parsed = JSON.parse(savedLovedDark);
-        if (Array.isArray(parsed)) this.lovedDarkThemes = new Set(parsed);
-      } catch (e) {
-        /* ignore corrupted data */
-      }
-    }
+    // Load starred font
+    const starredFont = getItem(STORAGE_KEYS.STARRED_FONT);
+    if (starredFont) this.starredFont = parseInt(starredFont);
 
-    // Load starred font (single value)
-    const savedStarredFont = localStorage.getItem("themeforseen-starred-font");
-    if (savedStarredFont) this.starredFont = parseInt(savedStarredFont);
-
-    // Load loved fonts (multiple)
-    const savedLovedFonts = localStorage.getItem("themeforseen-loved-fonts");
-    if (savedLovedFonts) {
-      try {
-        const parsed = JSON.parse(savedLovedFonts);
-        if (Array.isArray(parsed)) this.lovedFonts = new Set(parsed);
-      } catch (e) {
-        /* ignore corrupted data */
-      }
-    }
+    // Load loved fonts
+    this.lovedFonts = getSet(STORAGE_KEYS.LOVED_FONTS);
 
     // Load individual font selections
-    const savedHeadingFont = localStorage.getItem("themeforseen-heading-font");
-    const savedBodyFont = localStorage.getItem("themeforseen-body-font");
-    if (savedHeadingFont) this.selectedHeadingFont = savedHeadingFont;
-    if (savedBodyFont) this.selectedBodyFont = savedBodyFont;
+    this.selectedHeadingFont = getItem(STORAGE_KEYS.HEADING_FONT);
+    this.selectedBodyFont = getItem(STORAGE_KEYS.BODY_FONT);
 
     // Load filter state
-    const savedTags = localStorage.getItem("themeforseen-filter-tags");
-    const savedSearch = localStorage.getItem("themeforseen-filter-search");
-    const savedHeadingStyles = localStorage.getItem(
-      "themeforseen-filter-heading-styles"
-    );
-    const savedBodyStyles = localStorage.getItem(
-      "themeforseen-filter-body-styles"
-    );
-    if (savedTags) {
-      try {
-        const parsed = JSON.parse(savedTags);
-        if (Array.isArray(parsed)) this.selectedTags = new Set(parsed);
-      } catch (e) {
-        /* ignore corrupted data */
-      }
-    }
-    if (savedSearch) {
-      this.searchText = savedSearch;
-    }
-    if (savedHeadingStyles) {
-      try {
-        const parsed = JSON.parse(savedHeadingStyles);
-        if (Array.isArray(parsed)) this.selectedHeadingStyles = new Set(parsed);
-      } catch (e) {
-        /* ignore corrupted data */
-      }
-    }
-    if (savedBodyStyles) {
-      try {
-        const parsed = JSON.parse(savedBodyStyles);
-        if (Array.isArray(parsed)) this.selectedBodyStyles = new Set(parsed);
-      } catch (e) {
-        /* ignore corrupted data */
-      }
-    }
+    this.selectedTags = getSet(STORAGE_KEYS.FILTER_TAGS);
+    this.searchText = getItem(STORAGE_KEYS.FILTER_SEARCH) || "";
+    this.selectedHeadingStyles = getSet(STORAGE_KEYS.FILTER_HEADING_STYLES);
+    this.selectedBodyStyles = getSet(STORAGE_KEYS.FILTER_BODY_STYLES);
 
     // Load column collapse state
-    const savedThemesCollapsed = localStorage.getItem(
-      "themeforseen-themes-collapsed"
-    );
-    const savedFontsCollapsed = localStorage.getItem(
-      "themeforseen-fonts-collapsed"
-    );
-    if (savedThemesCollapsed) {
-      this.themesColumnCollapsed = savedThemesCollapsed === "true";
-    }
-    if (savedFontsCollapsed) {
-      this.fontsColumnCollapsed = savedFontsCollapsed === "true";
-    }
+    const themesCollapsed = getBool(STORAGE_KEYS.THEMES_COLLAPSED);
+    const fontsCollapsed = getBool(STORAGE_KEYS.FONTS_COLLAPSED);
+    if (themesCollapsed !== null) this.themesColumnCollapsed = themesCollapsed;
+    if (fontsCollapsed !== null) this.fontsColumnCollapsed = fontsCollapsed;
 
     // On mobile, ensure only one column is open (accordion behavior)
-    // If both are expanded, collapse fonts by default
     if (this.isMobile() && !this.themesColumnCollapsed && !this.fontsColumnCollapsed) {
       this.fontsColumnCollapsed = true;
     }
   }
 
   private incrementVisitCounter() {
-    const visitCount = parseInt(
-      localStorage.getItem("themeforseen-visit-count") || "0"
-    );
-    localStorage.setItem("themeforseen-visit-count", String(visitCount + 1));
+    const visitCount = getInt(STORAGE_KEYS.VISIT_COUNT);
+    setInt(STORAGE_KEYS.VISIT_COUNT, visitCount + 1);
   }
 
   private maybeHideInstructions() {
-    const visitCount = parseInt(
-      localStorage.getItem("themeforseen-visit-count") || "0"
-    );
+    const visitCount = getInt(STORAGE_KEYS.VISIT_COUNT);
     if (visitCount >= 10) {
       // Hide both instruction boxes
       this.shadowRoot?.querySelectorAll(".instructions").forEach((el) => {
@@ -304,1280 +239,74 @@ export class ThemeForseen extends HTMLElement {
 
   private saveToLocalStorage() {
     // Save mode
-    localStorage.setItem("themeforseen-darkmode", String(this.isDarkMode));
+    setBool(STORAGE_KEYS.DARK_MODE, this.isDarkMode);
 
     // Save selections
-    localStorage.setItem(
-      "themeforseen-lighttheme",
-      String(this.selectedLightTheme)
-    );
-    localStorage.setItem(
-      "themeforseen-darktheme",
-      String(this.selectedDarkTheme)
-    );
-    localStorage.setItem("themeforseen-font", String(this.selectedFontPairing));
+    setInt(STORAGE_KEYS.LIGHT_THEME, this.selectedLightTheme);
+    setInt(STORAGE_KEYS.DARK_THEME, this.selectedDarkTheme);
+    setInt(STORAGE_KEYS.FONT, this.selectedFontPairing);
 
     // Save starred themes (single value per mode)
     if (this.starredLightTheme !== null) {
-      localStorage.setItem(
-        "themeforseen-starred-light",
-        String(this.starredLightTheme)
-      );
+      setInt(STORAGE_KEYS.STARRED_LIGHT, this.starredLightTheme);
     } else {
-      localStorage.removeItem("themeforseen-starred-light");
+      removeItem(STORAGE_KEYS.STARRED_LIGHT);
     }
     if (this.starredDarkTheme !== null) {
-      localStorage.setItem(
-        "themeforseen-starred-dark",
-        String(this.starredDarkTheme)
-      );
+      setInt(STORAGE_KEYS.STARRED_DARK, this.starredDarkTheme);
     } else {
-      localStorage.removeItem("themeforseen-starred-dark");
+      removeItem(STORAGE_KEYS.STARRED_DARK);
     }
 
     // Save loved themes (multiple per mode)
-    localStorage.setItem(
-      "themeforseen-loved-light",
-      JSON.stringify(Array.from(this.lovedLightThemes))
-    );
-    localStorage.setItem(
-      "themeforseen-loved-dark",
-      JSON.stringify(Array.from(this.lovedDarkThemes))
-    );
+    setSet(STORAGE_KEYS.LOVED_LIGHT, this.lovedLightThemes);
+    setSet(STORAGE_KEYS.LOVED_DARK, this.lovedDarkThemes);
 
     // Save starred font (single value)
     if (this.starredFont !== null) {
-      localStorage.setItem(
-        "themeforseen-starred-font",
-        String(this.starredFont)
-      );
+      setInt(STORAGE_KEYS.STARRED_FONT, this.starredFont);
     } else {
-      localStorage.removeItem("themeforseen-starred-font");
+      removeItem(STORAGE_KEYS.STARRED_FONT);
     }
 
     // Save loved fonts (multiple)
-    localStorage.setItem(
-      "themeforseen-loved-fonts",
-      JSON.stringify(Array.from(this.lovedFonts))
-    );
+    setSet(STORAGE_KEYS.LOVED_FONTS, this.lovedFonts);
 
     // Save individual font selections
     if (this.selectedHeadingFont) {
-      localStorage.setItem(
-        "themeforseen-heading-font",
-        this.selectedHeadingFont
-      );
+      setItem(STORAGE_KEYS.HEADING_FONT, this.selectedHeadingFont);
     } else {
-      localStorage.removeItem("themeforseen-heading-font");
+      removeItem(STORAGE_KEYS.HEADING_FONT);
     }
     if (this.selectedBodyFont) {
-      localStorage.setItem("themeforseen-body-font", this.selectedBodyFont);
+      setItem(STORAGE_KEYS.BODY_FONT, this.selectedBodyFont);
     } else {
-      localStorage.removeItem("themeforseen-body-font");
+      removeItem(STORAGE_KEYS.BODY_FONT);
     }
 
     // Save filter state
-    localStorage.setItem(
-      "themeforseen-filter-tags",
-      JSON.stringify(Array.from(this.selectedTags))
-    );
-    localStorage.setItem("themeforseen-filter-search", this.searchText);
-    localStorage.setItem(
-      "themeforseen-filter-heading-styles",
-      JSON.stringify(Array.from(this.selectedHeadingStyles))
-    );
-    localStorage.setItem(
-      "themeforseen-filter-body-styles",
-      JSON.stringify(Array.from(this.selectedBodyStyles))
-    );
+    setSet(STORAGE_KEYS.FILTER_TAGS, this.selectedTags);
+    setItem(STORAGE_KEYS.FILTER_SEARCH, this.searchText);
+    setSet(STORAGE_KEYS.FILTER_HEADING_STYLES, this.selectedHeadingStyles);
+    setSet(STORAGE_KEYS.FILTER_BODY_STYLES, this.selectedBodyStyles);
 
     // Save column collapse state
-    localStorage.setItem(
-      "themeforseen-themes-collapsed",
-      String(this.themesColumnCollapsed)
-    );
-    localStorage.setItem(
-      "themeforseen-fonts-collapsed",
-      String(this.fontsColumnCollapsed)
-    );
+    setBool(STORAGE_KEYS.THEMES_COLLAPSED, this.themesColumnCollapsed);
+    setBool(STORAGE_KEYS.FONTS_COLLAPSED, this.fontsColumnCollapsed);
   }
 
   private render() {
     if (!this.shadowRoot) return;
 
-    this.shadowRoot.innerHTML = `
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600&display=swap');
-
-        * {
-          box-sizing: border-box;
-        }
-
-        :host {
-          position: fixed;
-          top: 0;
-          right: 0;
-          height: 100vh;
-          z-index: 999999;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        .drawer-toggle {
-          position: fixed;
-          right: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 48px;
-          height: 120px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-          background-size: 200% 200%;
-          animation: shimmer 3s ease-in-out infinite;
-          border: none;
-          border-radius: 12px 0 0 12px;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 16px 8px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          z-index: 999998;
-          box-shadow:
-            -4px 0 20px rgba(102, 126, 234, 0.4),
-            -2px 0 8px rgba(0, 0, 0, 0.1);
-          overflow: hidden;
-        }
-
-        .drawer-toggle::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: linear-gradient(
-            45deg,
-            transparent 30%,
-            rgba(255, 255, 255, 0.15) 50%,
-            transparent 70%
-          );
-          animation: sparkle 4s ease-in-out infinite;
-          pointer-events: none;
-        }
-
-        @keyframes shimmer {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        @keyframes sparkle {
-          0% { transform: translateX(-100%) rotate(45deg); }
-          100% { transform: translateX(100%) rotate(45deg); }
-        }
-
-        .drawer-toggle:hover {
-          width: 54px;
-          background: linear-gradient(135deg, #764ba2 0%, #667eea 50%, #764ba2 100%);
-          background-size: 200% 200%;
-          box-shadow:
-            -6px 0 30px rgba(102, 126, 234, 0.6),
-            -2px 0 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .drawer-toggle:active {
-          transform: translateY(-50%) scale(0.98);
-        }
-
-        .drawer-toggle .toggle-icon {
-          width: 24px;
-          height: 24px;
-          color: white;
-          opacity: 0.95;
-        }
-
-        .drawer-toggle .toggle-text {
-          writing-mode: vertical-rl;
-          text-orientation: mixed;
-          transform: rotate(180deg);
-          font-size: 11px;
-          font-weight: 600;
-          color: white;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          opacity: 0.9;
-        }
-
-        .drawer-toggle.hidden {
-          opacity: 0;
-          pointer-events: none;
-          transform: translateY(-50%) translateX(100%);
-        }
-
-        @keyframes jiggle {
-          0%, 100% { transform: translateY(-50%) rotate(0deg); }
-          25% { transform: translateY(-50%) rotate(-2deg) scale(1.02); }
-          50% { transform: translateY(-50%) rotate(2deg) scale(1.02); }
-          75% { transform: translateY(-50%) rotate(-1deg); }
-        }
-
-        .drawer-toggle.jiggle {
-          animation: jiggle 0.5s ease-in-out;
-        }
-
-        .backdrop {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: transparent;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s ease;
-          z-index: 999997;
-        }
-
-        .backdrop.visible {
-          opacity: 1;
-          pointer-events: all;
-        }
-
-        .drawer {
-          position: fixed;
-          right: 0;
-          top: 0;
-          height: 100vh;
-          width: auto;
-          max-width: 90vw;
-          background: light-dark(white, #1a1a1a);
-          color: light-dark(#333, #e0e0e0);
-          box-shadow: -2px 0 10px rgba(0,0,0,0.2);
-          transition: transform 0.3s ease, width 0.3s ease;
-          overflow: hidden;
-          transform: translateX(100%);
-          display: flex;
-          flex-direction: column;
-          z-index: 999999;
-        }
-
-        .drawer.open {
-          transform: translateX(0);
-        }
-
-        .drawer-header {
-          padding: 20px;
-          background: light-dark(#f5f5f5, #2a2a2a);
-          border-bottom: 2px solid light-dark(#ddd, #444);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .drawer-header-content {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .drawer-header-logo {
-          width: 64px;
-          height: auto;
-        }
-
-        .drawer-header-content.logo-hidden .drawer-header-logo,
-        .drawer-header-content.logo-hidden h2 {
-          display: none;
-        }
-
-        .drawer-header h2 {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 600;
-          color: light-dark(#333, #e0e0e0);
-          font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 55px;
-          cursor: pointer;
-          color: light-dark(#666, #aaa);
-          padding: 0;
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .close-btn:hover {
-          color: light-dark(#333, #fff);
-        }
-
-        .drawer-content {
-          display: flex;
-          flex: 1;
-          overflow: hidden;
-          width: fit-content;
-        }
-
-        .column {
-          width: 300px;
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          border-right: 1px solid light-dark(#ddd, #444);
-          overflow: hidden;
-          transition: width 0.3s ease;
-        }
-
-        .column:last-child {
-          border-right: none;
-        }
-
-        .column-header {
-          padding: 15px;
-          background: light-dark(#fafafa, #252525);
-          border-bottom: 1px solid light-dark(#ddd, #444);
-          font-weight: 600;
-          font-size: 14px;
-          color: light-dark(#333, #e0e0e0);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .column-title {
-          flex: 1;
-        }
-
-        .collapse-btn {
-          background: transparent;
-          border: 1px solid light-dark(#ccc, #555);
-          color: light-dark(#333, #e0e0e0);
-          cursor: pointer;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 14px;
-          transition: all 0.2s ease;
-        }
-
-        .collapse-btn:hover {
-          background: light-dark(#e0e0e0, #333);
-        }
-
-        .column.collapsed {
-          width: 40px;
-          min-width: 40px;
-        }
-
-        .column.collapsed .column-header {
-          writing-mode: vertical-lr;
-          text-align: center;
-          padding: 15px 5px;
-          gap: 12px;
-          height: 140px;
-          box-sizing: border-box;
-        }
-
-        .column.collapsed .column-title {
-          transform: rotate(180deg);
-        }
-
-        .column.collapsed .collapse-btn {
-          writing-mode: horizontal-tb;
-        }
-
-        .column.collapsed .column-content {
-          display: none;
-        }
-
-        .column-content {
-          flex: 1;
-          overflow-y: auto;
-          padding: 10px;
-        }
-
-        .column-controls {
-          position: sticky;
-          top: -10px;
-          z-index: 100;
-          background: light-dark(#f5f5f5, #1e1e1e);
-          margin: -10px -10px 10px -10px;
-          padding: 10px;
-          border-bottom: 1px solid light-dark(#ddd, #444);
-        }
-
-        .themes-list, .fonts-list {
-          position: relative;
-          z-index: 1;
-        }
-
-        .column-content::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .column-content::-webkit-scrollbar-track {
-          background: light-dark(#f1f1f1, #2a2a2a);
-        }
-
-        .column-content::-webkit-scrollbar-thumb {
-          background: light-dark(#888, #555);
-          border-radius: 4px;
-        }
-
-        .column-content::-webkit-scrollbar-thumb:hover {
-          background: light-dark(#555, #777);
-        }
-
-        .theme-item, .font-item {
-          padding: 12px;
-          padding-right: 40px;
-          margin: 5px 0;
-          border: 2px solid light-dark(#ddd, #444);
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          background: light-dark(white, #2a2a2a);
-          position: relative;
-        }
-
-        .theme-item:hover, .font-item:hover {
-          border-color: light-dark(#666, #888);
-          transform: translateX(2px);
-        }
-
-        .theme-item.selected, .font-item.selected {
-          border: 2px solid light-dark(#4CAF50, #81C784);
-          background: light-dark(rgba(76,175,80,0.1), rgba(129,199,132,0.1));
-          font-weight: 600;
-        }
-
-        .theme-item.active, .font-item.active {
-          outline: 3px solid light-dark(#2196F3, #64B5F6);
-          outline-offset: 2px;
-        }
-
-        /* Light mode selection - blue */
-        .theme-item.selected-light {
-          border: 2px solid light-dark(#2196F3, #64B5F6);
-          background: light-dark(rgba(33,150,243,0.1), rgba(100,181,246,0.1));
-        }
-
-        /* Dark mode selection - green */
-        .theme-item.selected-dark {
-          border: 2px solid light-dark(#4CAF50, #81C784);
-          background: light-dark(rgba(76,175,80,0.1), rgba(129,199,132,0.1));
-        }
-
-        /* Both selected - show both colors */
-        .theme-item.selected-light.selected-dark {
-          border: 2px solid light-dark(#4CAF50, #81C784);
-          outline: 3px solid light-dark(#2196F3, #64B5F6);
-          outline-offset: -1px;
-          background: light-dark(
-            linear-gradient(135deg, rgba(33,150,243,0.1) 50%, rgba(76,175,80,0.1) 50%),
-            linear-gradient(135deg, rgba(100,181,246,0.1) 50%, rgba(129,199,132,0.1) 50%)
-          );
-        }
-
-        .theme-item .theme-name, .font-item .font-name {
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: light-dark(#333, #e0e0e0);
-        }
-
-        .theme-colors {
-          display: flex;
-          gap: 4px;
-          margin-top: 8px;
-        }
-
-        .color-swatch {
-          width: 24px;
-          height: 24px;
-          border-radius: 4px;
-          border: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .font-preview {
-          font-size: 12px;
-          color: light-dark(#666, #aaa);
-          margin-top: 4px;
-        }
-
-        .individual-font {
-          cursor: pointer;
-          padding: 2px 6px;
-          border-radius: 4px;
-          display: inline-block;
-          transition: all 0.2s ease;
-          border: 2px solid transparent;
-        }
-
-        .individual-font:hover {
-          background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.05));
-        }
-
-        .individual-font.selected {
-          border: 2px solid light-dark(#4CAF50, #81C784);
-          background: light-dark(rgba(76,175,80,0.1), rgba(129,199,132,0.1));
-        }
-
-        .favorites {
-          position: absolute;
-          right: 8px;
-          top: 8px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          z-index: 10;
-        }
-
-        [data-column="themes"] .favorites {
-          gap: 5px;
-        }
-
-        .favorite-icon {
-          width: 20px;
-          height: 20px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          color: #716122;
-          font-size: 16px;
-          line-height: 1;
-          user-select: none;
-        }
-
-        .favorite-icon:hover {
-          transform: scale(1.2);
-          color: #A79032;
-        }
-
-        .favorite-icon.starred {
-          color: #f5c518;
-        }
-
-        .favorite-icon.starred:hover {
-          color: #ffd700;
-        }
-
-        .favorite-icon.loved {
-          color: #e57373;
-        }
-
-        .favorite-icon.loved:hover {
-          color: #ef5350;
-        }
-
-        .activate-icon {
-          width: 20px;
-          height: 20px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-size: 16px;
-          line-height: 1;
-          user-select: none;
-          background: transparent;
-          border: none;
-          padding: 0;
-          margin: 0;
-          color: light-dark(#666, #999);
-        }
-
-        .activate-icon:hover {
-          transform: scale(1.3);
-          color: light-dark(#FFB800, #FFC700);
-          filter: drop-shadow(0 0 4px light-dark(#FFB800, #FFC700));
-        }
-
-        .font-switch-icon {
-          position: absolute;
-          right: 45px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: light-dark(#f0f0f0, #3a3a3a);
-          border: 1px solid light-dark(#ccc, #555);
-          color: light-dark(#333, #e0e0e0);
-          cursor: pointer;
-          padding: 6px 10px;
-          border-radius: 4px;
-          font-size: 16px;
-          transition: all 0.2s ease;
-          z-index: 10;
-        }
-
-        .font-switch-icon:hover {
-          background: light-dark(#e0e0e0, #444);
-          transform: translateY(-50%) scale(1.1);
-        }
-
-        .mode-toggle {
-          display: flex;
-          gap: 10px;
-          margin-top: 10px;
-          padding: 10px;
-          background: light-dark(#f9f9f9, #2a2a2a);
-          border-radius: 6px;
-        }
-
-        .mode-btn {
-          flex: 1;
-          padding: 8px;
-          border: 2px solid light-dark(#ddd, #444);
-          background: light-dark(white, #333);
-          color: light-dark(#333, #e0e0e0);
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          transition: all 0.2s ease;
-        }
-
-        .mode-btn.active {
-          border-color: light-dark(#333, #aaa);
-          background: light-dark(#f0f0f0, #444);
-          font-weight: 600;
-        }
-
-        .instructions {
-          padding: 12px;
-          padding-right: 30px;
-          background: light-dark(#fff3cd, #3a3418);
-          border: 1px solid light-dark(#ffc107, #665500);
-          border-radius: 6px;
-          font-size: 11px;
-          color: light-dark(#856404, #ffdb99);
-          margin-bottom: 10px;
-          position: relative;
-          transition: all 0.3s ease;
-        }
-
-        .instructions.hidden {
-          display: none;
-        }
-
-        .instructions-close {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          background: none;
-          border: none;
-          color: light-dark(#856404, #ffdb99);
-          font-size: 16px;
-          cursor: pointer;
-          padding: 0;
-          width: 16px;
-          height: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          line-height: 1;
-          opacity: 0.6;
-        }
-
-        .instructions-close:hover {
-          opacity: 1;
-        }
-
-        .filter-container {
-          margin-bottom: 10px;
-        }
-
-        .filter-input-wrapper {
-          position: relative;
-          display: flex;
-          gap: 0;
-        }
-
-        .filter-input {
-          flex: 1;
-          padding: 8px 30px 8px 10px;
-          border: 2px solid light-dark(#ddd, #444);
-          border-radius: 4px;
-          background: light-dark(white, #333);
-          color: light-dark(#333, #e0e0e0);
-          font-size: 12px;
-        }
-
-        .filter-input:focus {
-          outline: none;
-          border-color: light-dark(#4CAF50, #81C784);
-        }
-
-        .filter-dropdown-btn {
-          position: absolute;
-          right: 0;
-          top: 0;
-          bottom: 0;
-          width: 30px;
-          background: none;
-          border: none;
-          color: light-dark(#666, #aaa);
-          cursor: pointer;
-          font-size: 10px;
-          transition: all 0.2s ease;
-        }
-
-        .filter-dropdown-btn:hover {
-          color: light-dark(#333, #e0e0e0);
-        }
-
-        .filter-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin-top: 8px;
-          min-height: 0;
-        }
-
-        .filter-tag {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 4px 8px;
-          background: light-dark(#4CAF50, #81C784);
-          color: light-dark(white, #000);
-          border-radius: 12px;
-          font-size: 11px;
-          font-weight: 500;
-        }
-
-        .filter-tag-remove {
-          background: none;
-          border: none;
-          color: inherit;
-          cursor: pointer;
-          font-size: 14px;
-          padding: 0;
-          margin: 0;
-          line-height: 1;
-          opacity: 0.8;
-        }
-
-        .filter-tag-remove:hover {
-          opacity: 1;
-        }
-
-        .filter-dropdown {
-          margin-top: 8px;
-          padding: 8px;
-          background: light-dark(white, #333);
-          border: 2px solid light-dark(#ddd, #444);
-          border-radius: 4px;
-        }
-
-        .filter-dropdown.hidden {
-          display: none;
-        }
-
-        .filter-option {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px;
-          cursor: pointer;
-          border-radius: 4px;
-        }
-
-        .filter-option:hover {
-          background: light-dark(#f5f5f5, #444);
-        }
-
-        .filter-option input[type="checkbox"] {
-          cursor: pointer;
-        }
-
-        .filter-option label {
-          cursor: pointer;
-          font-size: 12px;
-          flex: 1;
-        }
-
-        .font-filters {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 10px;
-        }
-
-        .font-filter-group {
-          flex: 1;
-          position: relative;
-        }
-
-        .font-filter-label {
-          display: block;
-          font-size: 10px;
-          font-weight: 600;
-          margin-bottom: 4px;
-          color: light-dark(#666, #aaa);
-        }
-
-        .font-filter-dropdown-btn {
-          width: 100%;
-          padding: 8px 10px;
-          border: 2px solid light-dark(#ddd, #444);
-          border-radius: 4px;
-          background: light-dark(white, #333);
-          color: light-dark(#333, #e0e0e0);
-          font-size: 11px;
-          cursor: pointer;
-          text-align: left;
-          transition: all 0.2s ease;
-        }
-
-        .font-filter-dropdown-btn:hover {
-          border-color: light-dark(#4CAF50, #81C784);
-        }
-
-        .font-filter-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          margin-top: 4px;
-          padding: 8px;
-          background: light-dark(white, #333);
-          border: 2px solid light-dark(#ddd, #444);
-          border-radius: 4px;
-          z-index: 100;
-        }
-
-        .font-filter-dropdown.hidden {
-          display: none;
-        }
-
-        /* Activation Modal */
-        .activation-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.7);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 100000;
-          backdrop-filter: blur(4px);
-        }
-
-        .activation-modal.hidden {
-          display: none;
-        }
-
-        .activation-modal-content {
-          background: light-dark(#fff, #2a2a2a);
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          max-width: 800px;
-          width: 90%;
-          max-height: 80vh;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .activation-modal-header {
-          padding: 20px 24px;
-          border-bottom: 1px solid light-dark(#ddd, #444);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .activation-modal-header h3 {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 600;
-          color: light-dark(#333, #e0e0e0);
-        }
-
-        .activation-modal-close {
-          background: none;
-          border: none;
-          font-size: 32px;
-          cursor: pointer;
-          color: light-dark(#666, #aaa);
-          padding: 0;
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          line-height: 1;
-        }
-
-        .activation-modal-close:hover {
-          color: light-dark(#333, #fff);
-        }
-
-        .activation-modal-body {
-          padding: 24px;
-          overflow-y: auto;
-        }
-
-        .activation-instructions {
-          margin: 0 0 20px 0;
-          color: light-dark(#555, #ccc);
-          line-height: 1.6;
-        }
-
-        .activation-code-section {
-          margin-bottom: 20px;
-        }
-
-        .activation-code-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-
-        .activation-code-filename {
-          font-family: 'Courier New', monospace;
-          font-weight: 600;
-          color: light-dark(#333, #e0e0e0);
-          font-size: 14px;
-        }
-
-        .activation-copy-btn {
-          background: light-dark(#f0f0f0, #3a3a3a);
-          border: 1px solid light-dark(#ccc, #555);
-          color: light-dark(#333, #e0e0e0);
-          padding: 6px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 13px;
-          transition: all 0.2s ease;
-        }
-
-        .activation-copy-btn:hover {
-          background: light-dark(#e0e0e0, #444);
-        }
-
-        .activation-copy-btn.copied {
-          background: light-dark(#4CAF50, #81C784);
-          color: white;
-          border-color: light-dark(#4CAF50, #81C784);
-        }
-
-        .activation-code-block {
-          background: light-dark(#f5f5f5, #1a1a1a);
-          border: 1px solid light-dark(#ddd, #444);
-          border-radius: 6px;
-          padding: 16px;
-          overflow-x: auto;
-          margin: 0;
-        }
-
-        .activation-code {
-          font-family: 'Courier New', Consolas, monospace;
-          font-size: 13px;
-          line-height: 1.5;
-          color: light-dark(#333, #e0e0e0);
-          white-space: pre;
-        }
-
-        .activation-buttons {
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-          margin-top: 20px;
-        }
-
-        .activation-save-btn,
-        .activation-cancel-btn {
-          padding: 10px 20px;
-          border-radius: 6px;
-          border: none;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-        }
-
-        .activation-save-btn {
-          background: light-dark(#4CAF50, #81C784);
-          color: white;
-        }
-
-        .activation-save-btn:hover {
-          background: light-dark(#45a049, #66bb6a);
-        }
-
-        .activation-save-btn:disabled {
-          background: light-dark(#ccc, #555);
-          cursor: not-allowed;
-        }
-
-        .activation-cancel-btn {
-          background: light-dark(#f0f0f0, #3a3a3a);
-          color: light-dark(#333, #e0e0e0);
-          border: 1px solid light-dark(#ccc, #555);
-        }
-
-        .activation-cancel-btn:hover {
-          background: light-dark(#e0e0e0, #444);
-        }
-      </style>
-
-      <div class="backdrop"></div>
-
-      <button class="drawer-toggle" title="Open Theme Picker">
-        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
-        </svg>
-        <span class="toggle-text">Theme</span>
-      </button>
-
-      <div class="drawer">
-        <div class="drawer-header">
-          <div class="drawer-header-content ${
-            this.themesColumnCollapsed || this.fontsColumnCollapsed
-              ? "logo-hidden"
-              : ""
-          }">
-            <svg class="drawer-header-logo" viewBox="0 0 97.6 56.38" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <style>
-                  .cls-1{fill:#010101;}
-                  .cls-2{fill:#eeea55;}
-                  .cls-2,.cls-3,.cls-4,.cls-5,.cls-6{stroke:#010101;stroke-linecap:round;stroke-linejoin:round;}
-                  .cls-2,.cls-3,.cls-6{stroke-width:3.1px;}
-                  .cls-3,.cls-7{fill:#fff;}
-                  .cls-4,.cls-5{stroke-width:2.8px;}
-                  .cls-4,.cls-6{fill:#5fccf5;}
-                  .cls-5{fill:none;}
-                </style>
-              </defs>
-              <line class="cls-5" x1="87.35" y1="8.38" x2="75.71" y2="8.38"/>
-              <path class="cls-1" d="M7.49,6.7c0,2.07-1.68,3.75-3.75,3.75s-3.75-1.68-3.75-3.75,1.68-3.75,3.75-3.75,3.75,1.68,3.75,3.75Z"/>
-              <path class="cls-4" d="M35.28,10.45c0,2.07-1.68,3.75-3.75,3.75s-3.75-1.68-3.75-3.75,1.68-3.75,3.75-3.75,3.75,1.68,3.75,3.75Z"/>
-              <polyline class="cls-2" points="45.97 18.89 56.24 1.55 66.27 19.35"/>
-              <path class="cls-3" d="M87.35,33.43c-21.38-21.36-42.75-21.1-64.13,0"/>
-              <path class="cls-3" d="M23.22,33.43c12.92,16.52,43.02,22.82,64.13,0"/>
-              <path class="cls-6" d="M66.24,29.75c0,6.08-4.93,11.01-11.01,11.01s-11.01-4.93-11.01-11.01,4.93-11.01,11.01-11.01,11.01,4.93,11.01,11.01Z"/>
-              <path class="cls-2" d="M78.49,41.04c1.26-.65,3.24,5.28,7.77,13.79H24.67l7.77-13.12c5.5,3.54,13.53,6.55,22.9,6.58s17.83-4.51,23.15-7.25Z"/>
-              <path class="cls-1" d="M61.54,29.75c0,3.49-2.83,6.31-6.31,6.31s-6.31-2.83-6.31-6.31,2.83-6.31,6.31-6.31,6.31,2.83,6.31,6.31Z"/>
-              <path class="cls-1" d="M19.51,45.15s.08-.04.12-.05c.78-.34,1.29-1.16,1.19-2.05-.1-.9-.79-1.58-1.63-1.73-.03,0-.06-.02-.09-.02-.32-.05-1.91-.38-2.25-2.33,0-.02,0-.03-.01-.04-.02-.08-.04-.15-.06-.22-.02-.05-.03-.11-.05-.16-.03-.06-.06-.12-.09-.18-.03-.05-.06-.11-.09-.16-.04-.05-.08-.1-.12-.15-.04-.05-.08-.1-.12-.14-.05-.05-.1-.09-.15-.13-.05-.04-.09-.08-.14-.11-.05-.04-.12-.07-.17-.1-.06-.03-.11-.06-.17-.09-.05-.02-.11-.04-.17-.06-.07-.02-.14-.04-.21-.06-.02,0-.03,0-.05-.01-.04,0-.09,0-.13,0-.07,0-.14-.02-.21-.02-.07,0-.14,0-.21.01-.05,0-.09,0-.14.01-.02,0-.03.01-.05.01-.07.01-.13.04-.2.06-.06.02-.13.04-.19.06-.05.02-.1.05-.15.08-.07.03-.13.07-.19.11-.04.03-.08.06-.12.1-.06.05-.12.09-.17.15-.04.04-.07.09-.11.13-.04.05-.09.11-.13.16-.03.05-.06.1-.09.16-.03.06-.07.12-.1.19-.02.05-.04.11-.05.16-.02.07-.05.14-.06.22,0,.01,0,.03-.01.04-.34,1.94-1.92,2.28-2.25,2.33-.04,0-.08.02-.12.03-.08.01-.15.03-.23.05-.06.02-.12.05-.18.07-.05.02-.11.04-.16.07-.08.04-.15.09-.22.15-.02.02-.05.03-.07.05-.52.42-.83,1.08-.75,1.79.11.92.81,1.61,1.68,1.74.02,0,.03,0,.04.01.32.05,1.91.38,2.25,2.33,0,.02,0,.03.01.05.01.06.03.11.04.17.02.07.04.13.07.2.02.05.04.09.07.14.03.06.07.13.11.19.03.04.06.08.09.12.04.06.09.11.14.17.04.04.07.07.11.11.05.05.11.09.17.13.04.03.08.06.12.09.07.04.14.08.21.11.04.02.07.04.11.05.22.09.46.13.71.13h0c.25,0,.49-.05.71-.13.04-.02.08-.04.12-.05.07-.03.14-.07.21-.11.04-.03.09-.06.13-.09.06-.04.11-.08.17-.13.04-.04.08-.07.11-.11.05-.05.1-.11.14-.16.03-.04.06-.08.09-.12.04-.06.07-.12.11-.19.02-.05.05-.09.07-.14.03-.06.05-.13.07-.19.02-.06.03-.11.04-.17,0-.02.01-.03.01-.05.34-1.94,1.92-2.28,2.25-2.33.02,0,.03,0,.05-.01.07-.01.14-.03.21-.05.06-.01.11-.03.17-.05Z"/>
-              <line class="cls-5" x1="81.53" y1="14.2" x2="81.53" y2="2.55"/>
-              <path class="cls-1" d="M97.6,47.91c0,2.07-1.68,3.75-3.75,3.75s-3.75-1.68-3.75-3.75,1.68-3.75,3.75-3.75,3.75,1.68,3.75,3.75Z"/>
-              <circle class="cls-7" cx="57.12" cy="26.22" r="2.33"/>
-            </svg>
-            <h2>ThemeForseen</h2>
-          </div>
-          <button class="close-btn" title="Close">&times;</button>
-        </div>
-
-        <div class="drawer-content">
-          <!-- Themes Column -->
-          <div class="column ${
-            this.themesColumnCollapsed ? "collapsed" : ""
-          }" data-column="themes">
-            <div class="column-header">
-              <span class="column-title">${
-                this.themesColumnCollapsed ? "Themes Color" : "Color Themes"
-              }</span>
-              <button class="collapse-btn" data-column-type="themes" title="${
-                this.themesColumnCollapsed ? "Expand" : "Collapse"
-              }">
-                ${this.themesColumnCollapsed ? "«" : "»"}
-              </button>
-            </div>
-            <div class="column-content">
-              <div class="column-controls">
-                <div class="instructions" data-instructions="themes">
-                  <button class="instructions-close" aria-label="Close">&times;</button>
-                  Use ↑/↓ arrow keys or mouse wheel to browse themes. Themes apply in real-time!
-                </div>
-                <div class="filter-container">
-                  <div class="filter-input-wrapper">
-                    <input
-                      type="text"
-                      class="filter-input"
-                      placeholder="Search or select tags..."
-                      value="${this.searchText}"
-                    />
-                    <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
-                  </div>
-                  <div class="filter-tags">
-                    ${Array.from(this.selectedTags)
-                      .map(
-                        (tag) => `
-                      <span class="filter-tag" data-tag="${tag}">
-                        ${tag}
-                        <button class="filter-tag-remove" data-tag="${tag}">&times;</button>
-                      </span>
-                    `
-                      )
-                      .join("")}
-                  </div>
-                  <div class="filter-dropdown hidden">
-                    <div class="filter-option" data-tag="corporate">
-                      <input type="checkbox" id="tag-corporate" ${
-                        this.selectedTags.has("corporate") ? "checked" : ""
-                      }>
-                      <label for="tag-corporate">Corporate</label>
-                    </div>
-                    <div class="filter-option" data-tag="funky">
-                      <input type="checkbox" id="tag-funky" ${
-                        this.selectedTags.has("funky") ? "checked" : ""
-                      }>
-                      <label for="tag-funky">Funky</label>
-                    </div>
-                  </div>
-                </div>
-                <div class="mode-toggle">
-                  <button class="mode-btn ${
-                    !this.isDarkMode ? "active" : ""
-                  }" data-mode="light">Light Mode</button>
-                  <button class="mode-btn ${
-                    this.isDarkMode ? "active" : ""
-                  }" data-mode="dark">Dark Mode</button>
-                </div>
-              </div>
-              <div class="themes-list"></div>
-            </div>
-          </div>
-
-          <!-- Fonts Column -->
-          <div class="column ${
-            this.fontsColumnCollapsed ? "collapsed" : ""
-          }" data-column="fonts">
-            <div class="column-header">
-              <span class="column-title">${
-                this.fontsColumnCollapsed ? "Pairings Font" : "Font Pairings"
-              }</span>
-              <button class="collapse-btn" data-column-type="fonts" title="${
-                this.fontsColumnCollapsed ? "Expand" : "Collapse"
-              }">
-                ${this.fontsColumnCollapsed ? "«" : "»"}
-              </button>
-            </div>
-            <div class="column-content">
-              <div class="column-controls">
-                <div class="instructions" data-instructions="fonts">
-                  <button class="instructions-close" aria-label="Close">&times;</button>
-                  Use ↑/↓ arrow keys or mouse wheel to browse fonts. Changes apply instantly!
-                </div>
-                <div class="font-filters">
-                  <div class="font-filter-group">
-                    <label class="font-filter-label">Heading</label>
-                    <button class="font-filter-dropdown-btn" data-filter-type="heading">
-                      ${
-                        this.selectedHeadingStyles.size > 0
-                          ? Array.from(this.selectedHeadingStyles).join(", ")
-                          : "All styles"
-                      } ▼
-                    </button>
-                    <div class="font-filter-dropdown hidden" data-filter-type="heading">
-                      <div class="filter-option" data-style="sans">
-                        <input type="checkbox" id="heading-sans" ${
-                          this.selectedHeadingStyles.has("sans")
-                            ? "checked"
-                            : ""
-                        }>
-                        <label for="heading-sans">Sans</label>
-                      </div>
-                      <div class="filter-option" data-style="serif">
-                        <input type="checkbox" id="heading-serif" ${
-                          this.selectedHeadingStyles.has("serif")
-                            ? "checked"
-                            : ""
-                        }>
-                        <label for="heading-serif">Serif</label>
-                      </div>
-                      <div class="filter-option" data-style="display">
-                        <input type="checkbox" id="heading-display" ${
-                          this.selectedHeadingStyles.has("display")
-                            ? "checked"
-                            : ""
-                        }>
-                        <label for="heading-display">Display</label>
-                      </div>
-                      <div class="filter-option" data-style="mono">
-                        <input type="checkbox" id="heading-mono" ${
-                          this.selectedHeadingStyles.has("mono")
-                            ? "checked"
-                            : ""
-                        }>
-                        <label for="heading-mono">Mono</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="font-filter-group">
-                    <label class="font-filter-label">Body</label>
-                    <button class="font-filter-dropdown-btn" data-filter-type="body">
-                      ${
-                        this.selectedBodyStyles.size > 0
-                          ? Array.from(this.selectedBodyStyles).join(", ")
-                          : "All styles"
-                      } ▼
-                    </button>
-                    <div class="font-filter-dropdown hidden" data-filter-type="body">
-                      <div class="filter-option" data-style="sans">
-                        <input type="checkbox" id="body-sans" ${
-                          this.selectedBodyStyles.has("sans") ? "checked" : ""
-                        }>
-                        <label for="body-sans">Sans</label>
-                      </div>
-                      <div class="filter-option" data-style="serif">
-                        <input type="checkbox" id="body-serif" ${
-                          this.selectedBodyStyles.has("serif") ? "checked" : ""
-                        }>
-                        <label for="body-serif">Serif</label>
-                      </div>
-                      <div class="filter-option" data-style="display">
-                        <input type="checkbox" id="body-display" ${
-                          this.selectedBodyStyles.has("display")
-                            ? "checked"
-                            : ""
-                        }>
-                        <label for="body-display">Display</label>
-                      </div>
-                      <div class="filter-option" data-style="mono">
-                        <input type="checkbox" id="body-mono" ${
-                          this.selectedBodyStyles.has("mono") ? "checked" : ""
-                        }>
-                        <label for="body-mono">Mono</label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="fonts-list"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Activation Modal -->
-      <div class="activation-modal hidden">
-        <div class="activation-modal-content">
-          <div class="activation-modal-header">
-            <h3>Activate Theme Configuration</h3>
-            <button class="activation-modal-close">&times;</button>
-          </div>
-          <div class="activation-modal-body">
-            <p class="activation-instructions"></p>
-            <div class="activation-code-section">
-              <div class="activation-code-header">
-                <span class="activation-code-filename"></span>
-                <button class="activation-copy-btn">Copy</button>
-              </div>
-              <pre class="activation-code-block"><code class="activation-code"></code></pre>
-            </div>
-            <div class="activation-buttons">
-              <button class="activation-save-btn">Save to File</button>
-              <button class="activation-cancel-btn">Cancel</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    this.shadowRoot.innerHTML = getTemplate({
+      themesColumnCollapsed: this.themesColumnCollapsed,
+      fontsColumnCollapsed: this.fontsColumnCollapsed,
+      isDarkMode: this.isDarkMode,
+      searchText: this.searchText,
+      selectedTags: this.selectedTags,
+      selectedHeadingStyles: this.selectedHeadingStyles,
+      selectedBodyStyles: this.selectedBodyStyles,
+    });
 
     this.drawerElement = this.shadowRoot.querySelector(".drawer")!;
     this.drawerToggle = this.shadowRoot.querySelector(".drawer-toggle")!;
@@ -1941,17 +670,12 @@ export class ThemeForseen extends HTMLElement {
       const themeItem = target.closest(".theme-item");
       if (themeItem) {
         const index = parseInt((themeItem as HTMLElement).dataset.index || "0");
-        console.log(
-          `Theme clicked: index=${index}, isDarkMode=${this.isDarkMode}`
-        );
         this.activeThemeIndex = index;
         this.focusedColumn = "themes";
         if (this.isDarkMode) {
           this.selectedDarkTheme = index;
-          console.log(`Updated selectedDarkTheme to ${index}`);
         } else {
           this.selectedLightTheme = index;
-          console.log(`Updated selectedLightTheme to ${index}`);
         }
         this.applyTheme();
         this.renderThemes(); // Re-render to show active state
@@ -2028,20 +752,11 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const mode = (e.currentTarget as HTMLElement).dataset.mode;
-        console.log(`Mode toggle clicked: ${mode}`);
-        console.log(
-          `Before: isDarkMode=${this.isDarkMode}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`
-        );
         this.isDarkMode = mode === "dark";
         // Sync activeThemeIndex with the new mode's selected theme
         this.activeThemeIndex = this.isDarkMode
           ? this.selectedDarkTheme
           : this.selectedLightTheme;
-        console.log(
-          `After: isDarkMode=${this.isDarkMode}, will apply theme index=${
-            this.isDarkMode ? this.selectedDarkTheme : this.selectedLightTheme
-          }`
-        );
         this.applyTheme();
         this.updateModeButtons();
         this.renderThemes();
@@ -2463,26 +1178,16 @@ export class ThemeForseen extends HTMLElement {
 
     if (columnType === "themes") {
       this.themesColumnCollapsed = !this.themesColumnCollapsed;
-      localStorage.setItem(
-        "themesColumnCollapsed",
-        JSON.stringify(this.themesColumnCollapsed)
-      );
       // On mobile, collapse fonts when expanding themes (accordion behavior)
       if (this.isMobile() && isExpanding && !this.fontsColumnCollapsed) {
         this.fontsColumnCollapsed = true;
-        localStorage.setItem("fontsColumnCollapsed", JSON.stringify(true));
         this.updateColumnUI("fonts");
       }
     } else {
       this.fontsColumnCollapsed = !this.fontsColumnCollapsed;
-      localStorage.setItem(
-        "fontsColumnCollapsed",
-        JSON.stringify(this.fontsColumnCollapsed)
-      );
       // On mobile, collapse themes when expanding fonts (accordion behavior)
       if (this.isMobile() && isExpanding && !this.themesColumnCollapsed) {
         this.themesColumnCollapsed = true;
-        localStorage.setItem("themesColumnCollapsed", JSON.stringify(true));
         this.updateColumnUI("themes");
       }
     }
@@ -2562,195 +1267,28 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private handleActivate(type: "theme" | "font", index: number) {
-    const modal = this.shadowRoot?.querySelector(".activation-modal");
-    const instructions = this.shadowRoot?.querySelector(
-      ".activation-instructions"
-    );
-    const filename = this.shadowRoot?.querySelector(
-      ".activation-code-filename"
-    );
-    const code = this.shadowRoot?.querySelector(".activation-code");
-    const saveBtn = this.shadowRoot?.querySelector(
-      ".activation-save-btn"
-    ) as HTMLButtonElement;
-
-    if (!modal || !instructions || !filename || !code || !saveBtn) return;
-
-    let generatedCode = "";
-    let targetFilename = "";
-    let instructionText = "";
-
-    if (type === "theme") {
-      // Generate Tailwind config for colors
-      const theme = colorThemes[index];
-      const colors = this.isDarkMode ? theme.dark : theme.light;
-
-      generatedCode = this.generateTailwindColorConfig(colors);
-      targetFilename = "tailwind.config.js (or .ts, .mjs)";
-      instructionText = `Add these color definitions to your Tailwind config file. If you don't have a tailwind.config.js file in your project root, please create one first. Click "Save to File" to select your config file, or copy the code and paste it manually.`;
-    } else {
-      // Generate CSS for fonts
-      const pairing = fontPairings[index];
-      const headingFont = this.selectedHeadingFont || pairing.heading;
-      const bodyFont = this.selectedBodyFont || pairing.body;
-
-      generatedCode = this.generateFontCSS(headingFont, bodyFont);
-      targetFilename = "src/styles/fonts.css (or your preferred location)";
-      instructionText = `Add these font definitions to a CSS file in your project. We recommend creating a file like src/styles/fonts.css. Make sure to import this file in your main layout or global styles. Click "Save to File" to save, or copy the code and paste it manually.`;
-    }
-
-    instructions.textContent = instructionText;
-    filename.textContent = targetFilename;
-    code.textContent = generatedCode;
-
-    // Store the generated code and filename for the save function
-    (saveBtn as any)._generatedCode = generatedCode;
-    (saveBtn as any)._targetFilename = targetFilename;
-
-    modal.classList.remove("hidden");
-  }
-
-  private generateTailwindColorConfig(colors: any): string {
-    return `// Add this to your tailwind.config.js (or .ts, .mjs) file
-// In the theme.extend.colors section
-
-export default {
-  theme: {
-    extend: {
-      colors: {
-        primary: '${colors.primary}',
-        'primary-shadow': '${colors.primaryShadow}',
-        accent: '${colors.accent}',
-        'accent-shadow': '${colors.accentShadow}',
-        bg: '${colors.background}',
-        'card-bg': '${colors.cardBackground}',
-        text: '${colors.text}',
-        extra: '${colors.extra}',
-      },
-    },
-  },
-};`;
-  }
-
-  private generateFontCSS(headingFont: string, bodyFont: string): string {
-    return `/* Add this to your CSS file (e.g., src/styles/fonts.css) */
-/* Then import it in your main layout or global styles */
-
-:root {
-  --font-heading: '${headingFont}', sans-serif;
-  --font-body: '${bodyFont}', sans-serif;
-}
-
-/* Optional: Apply directly to elements */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-}
-
-body, p, span {
-  font-family: var(--font-body);
-}
-
-/* For Tailwind users: Add this to tailwind.config.js */
-/*
-export default {
-  theme: {
-    extend: {
-      fontFamily: {
-        heading: ['var(--font-heading)', 'sans-serif'],
-        body: ['var(--font-body)', 'sans-serif'],
-      },
-    },
-  },
-};
-*/`;
+    if (!this.shadowRoot) return;
+    showActivationModal(type, index, {
+      shadowRoot: this.shadowRoot,
+      isDarkMode: this.isDarkMode,
+      selectedHeadingFont: this.selectedHeadingFont,
+      selectedBodyFont: this.selectedBodyFont,
+    });
   }
 
   private async handleSaveToFile() {
-    const saveBtn = this.shadowRoot?.querySelector(
-      ".activation-save-btn"
-    ) as any;
-    if (!saveBtn || !saveBtn._generatedCode) return;
-
-    const generatedCode = saveBtn._generatedCode;
-    const targetFilename = saveBtn._targetFilename;
-
-    // Check if File System Access API is supported
-    if ("showSaveFilePicker" in window) {
-      try {
-        const suggestedName = targetFilename.includes("tailwind")
-          ? "tailwind.config.js"
-          : "fonts.css";
-
-        const fileHandle = await (window as any).showSaveFilePicker({
-          suggestedName: suggestedName,
-          types: [
-            {
-              description: "Code Files",
-              accept: targetFilename.includes("tailwind")
-                ? { "text/javascript": [".js", ".ts", ".mjs"] }
-                : { "text/css": [".css"] },
-            },
-          ],
-        });
-
-        const writable = await fileHandle.createWritable();
-        await writable.write(generatedCode);
-        await writable.close();
-
-        // Show success message
-        saveBtn.textContent = "Saved!";
-        saveBtn.style.background = "#4CAF50";
-        setTimeout(() => {
-          saveBtn.textContent = "Save to File";
-          saveBtn.style.background = "";
-        }, 2000);
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          console.error("Error saving file:", err);
-          alert("Error saving file. Please copy the code manually.");
-        }
-      }
-    } else {
-      alert(
-        "File System Access API is not supported in your browser. Please copy the code manually and paste it into your file."
-      );
-    }
-  }
-
-  private loadGoogleFont(fontName: string) {
-    // Skip if already loaded
-    if (this.loadedFonts.has(fontName)) {
-      return;
-    }
-
-    // Create the Google Fonts URL
-    // Font name needs spaces replaced with + for URL
-    const fontNameForUrl = fontName.replace(/ /g, "+");
-
-    // Create link element
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?family=${fontNameForUrl}:wght@400;500;600;700&display=swap`;
-
-    // Add to document head
-    document.head.appendChild(link);
-
-    // Track that we've loaded this font
-    this.loadedFonts.add(fontName);
+    if (!this.shadowRoot) return;
+    await handleSaveToFile(this.shadowRoot);
   }
 
   private applyTheme(force = false) {
     // Prevent recursive calls from MutationObserver (static flag shared across all instances)
     if (ThemeForseen.isApplyingTheme) {
-      console.log(
-        `[${this.instanceId}] applyTheme skipped - another instance is applying`
-      );
       return;
     }
 
     // Only apply if this instance's drawer is open, OR if forced (initial load), OR if no drawer is open yet
     if (!force && !this.isOpen && this.drawerElement) {
-      console.log(`[${this.instanceId}] applyTheme skipped - drawer not open`);
       return;
     }
 
@@ -2760,96 +1298,10 @@ export default {
       const themeIndex = this.isDarkMode
         ? this.selectedDarkTheme
         : this.selectedLightTheme;
-      console.log(
-        `[${this.instanceId}] applyTheme called: isDarkMode=${this.isDarkMode}, themeIndex=${themeIndex}, selectedLight=${this.selectedLightTheme}, selectedDark=${this.selectedDarkTheme}`
-      );
       const theme = colorThemes[themeIndex];
-      console.log(
-        `Applying theme: "${theme.name}" with ${
-          this.isDarkMode ? "dark" : "light"
-        } colors`
-      );
       const colors = this.isDarkMode ? theme.dark : theme.light;
 
-      // Set color-scheme on document root for proper light/dark mode
-      document.documentElement.style.colorScheme = this.isDarkMode
-        ? "dark"
-        : "light";
-
-      // Apply CSS variables to document root
-      document.documentElement.style.setProperty(
-        "--color-primary",
-        colors.primary
-      );
-      document.documentElement.style.setProperty(
-        "--color-primary-shadow",
-        colors.primaryShadow
-      );
-      document.documentElement.style.setProperty(
-        "--color-accent",
-        colors.accent
-      );
-      document.documentElement.style.setProperty(
-        "--color-accent-shadow",
-        colors.accentShadow
-      );
-      document.documentElement.style.setProperty(
-        "--color-bg",
-        colors.background
-      );
-      document.documentElement.style.setProperty(
-        "--color-card-bg",
-        colors.cardBackground
-      );
-      document.documentElement.style.setProperty("--color-text", colors.text);
-      document.documentElement.style.setProperty("--color-extra", colors.extra);
-
-      // Also set aliases for common naming conventions
-      document.documentElement.style.setProperty("--primary-color", colors.primary);
-      document.documentElement.style.setProperty("--secondary-color", colors.accent);
-
-      // Also explicitly set background and foreground colors
-      document.documentElement.style.setProperty(
-        "--background-color",
-        colors.background
-      );
-      document.documentElement.style.setProperty(
-        "--foreground-color",
-        colors.text
-      );
-
-      // Apply heading colors
-      const getColor = (colorKey: string) => {
-        switch (colorKey) {
-          case "primary":
-            return colors.primary;
-          case "accent":
-            return colors.accent;
-          case "text":
-            return colors.text;
-          default:
-            return colors.text;
-        }
-      };
-
-      document.documentElement.style.setProperty(
-        "--color-h1",
-        getColor(colors.h1Color)
-      );
-      document.documentElement.style.setProperty(
-        "--color-h2",
-        getColor(colors.h2Color)
-      );
-      document.documentElement.style.setProperty(
-        "--color-h3",
-        getColor(colors.h3Color)
-      );
-      // General heading color (uses h1 color as default)
-      document.documentElement.style.setProperty(
-        "--color-heading",
-        getColor(colors.h1Color)
-      );
-
+      applyThemeColors(colors, this.isDarkMode);
       this.saveToLocalStorage();
     } finally {
       // Reset the guard flag (static, shared across all instances)
@@ -2868,16 +1320,13 @@ export default {
         headingFont = this.selectedHeadingFont;
         bodyFont = this.selectedBodyFont;
       } else if (this.selectedHeadingFont) {
-        // Only heading selected, use default for body
         headingFont = this.selectedHeadingFont;
-        bodyFont = fontPairings[0].body; // Default body font
+        bodyFont = fontPairings[0].body;
       } else {
-        // Only body selected, use default for heading
-        headingFont = fontPairings[0].heading; // Default heading font
+        headingFont = fontPairings[0].heading;
         bodyFont = this.selectedBodyFont!;
       }
     } else {
-      // Use pairing
       const pairingIndex =
         this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
       const pairing = fontPairings[pairingIndex];
@@ -2885,68 +1334,7 @@ export default {
       bodyFont = pairing.body;
     }
 
-    // Determine appropriate fallback based on font characteristics
-    const getHeadingFallback = (fontName: string): string => {
-      const serifFonts = [
-        "Playfair Display",
-        "Merriweather",
-        "Lora",
-        "DM Serif Display",
-        "Crimson Text",
-        "Abril Fatface",
-        "Libre Baskerville",
-        "Cormorant Garamond",
-        "Spectral",
-        "Yeseva One",
-        "Arvo",
-        "Vollkorn",
-        "Bitter",
-        "Cardo",
-      ];
-      return serifFonts.includes(fontName)
-        ? `"${fontName}", Georgia, "Times New Roman", serif`
-        : `"${fontName}", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`;
-    };
-
-    const getBodyFallback = (fontName: string): string => {
-      const serifFonts = [
-        "Lora",
-        "Merriweather",
-        "Libre Baskerville",
-        "Source Sans Pro",
-      ];
-      const monoFonts = ["Space Mono"];
-
-      if (monoFonts.includes(fontName)) {
-        return `"${fontName}", "Courier New", Courier, monospace`;
-      }
-      return serifFonts.includes(fontName)
-        ? `"${fontName}", Georgia, "Times New Roman", serif`
-        : `"${fontName}", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`;
-    };
-
-    // Load Google Fonts before applying them
-    this.loadGoogleFont(headingFont);
-    this.loadGoogleFont(bodyFont);
-
-    document.documentElement.style.setProperty(
-      "--font-heading",
-      getHeadingFallback(headingFont)
-    );
-    document.documentElement.style.setProperty(
-      "--font-body",
-      getBodyFallback(bodyFont)
-    );
-    // Also set aliases for alternate naming conventions
-    document.documentElement.style.setProperty(
-      "--heading-font",
-      getHeadingFallback(headingFont)
-    );
-    document.documentElement.style.setProperty(
-      "--body-font",
-      getBodyFallback(bodyFont)
-    );
-
+    applyFontStyles(headingFont, bodyFont);
     this.saveToLocalStorage();
   }
 }

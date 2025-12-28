@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepare": "npm run build"
   },
   "keywords": [
     "theme",
@@ -30,8 +31,5 @@
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "theme-forseen": "link:"
   }
 }

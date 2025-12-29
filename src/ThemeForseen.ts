@@ -941,7 +941,7 @@ export class ThemeForseen extends HTMLElement {
   private scrollToSelected(selector: string) {
     const column =
       this.focusedColumn === "themes" ? this.themesColumn : this.fontsColumn;
-    const content = column.querySelector(".column-content");
+    const content = column.querySelector(".column-content") as HTMLElement;
     const items = column.querySelectorAll(selector);
     const selectedIndex =
       this.focusedColumn === "themes"
@@ -950,7 +950,12 @@ export class ThemeForseen extends HTMLElement {
 
     const selectedItem = items[selectedIndex] as HTMLElement;
     if (selectedItem && content) {
-      selectedItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      // For first item, scroll to absolute top to avoid sticky header issues
+      if (selectedIndex === 0) {
+        content.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        selectedItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
     }
   }
 

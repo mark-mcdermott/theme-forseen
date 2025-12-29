@@ -289,15 +289,15 @@ export const styles = `
   .column-content {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
+    padding: 0 10px 10px 10px;
   }
 
   .column-controls {
     position: sticky;
-    top: -10px;
+    top: 0;
     z-index: 100;
     background: light-dark(#f5f5f5, #1e1e1e);
-    margin: -10px -10px 10px -10px;
+    margin: 0 -10px 10px -10px;
     padding: 10px;
     border-bottom: 1px solid light-dark(#ddd, #444);
   }

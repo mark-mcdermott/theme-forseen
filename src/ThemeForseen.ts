@@ -5,6 +5,7 @@ import {
   type FontPairing,
 } from "./themes.js";
 import { getTemplate } from "./template.js";
+import namer from "color-namer";
 import {
   STORAGE_KEYS,
   getItem,
@@ -19,6 +20,40 @@ import {
 } from "./storage.js";
 import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
 import { showActivationModal, handleSaveToFile } from "./activationModal.js";
+
+// Cache for color names to avoid repeated calculations
+const colorNameCache = new Map<string, string[]>();
+
+// Get all color names for a hex color (uses ntc list with 1500+ names)
+function getColorNames(hex: string): string[] {
+  const normalizedHex = hex.toUpperCase();
+  if (colorNameCache.has(normalizedHex)) {
+    return colorNameCache.get(normalizedHex)!;
+  }
+
+  try {
+    const result = namer(hex);
+    // Get names from multiple lists for better coverage
+    const names = [
+      ...result.ntc.slice(0, 3).map(c => c.name.toLowerCase()),
+      ...result.basic.slice(0, 2).map(c => c.name.toLowerCase()),
+      ...result.html.slice(0, 2).map(c => c.name.toLowerCase()),
+    ];
+    // Remove duplicates
+    const uniqueNames = [...new Set(names)];
+    colorNameCache.set(normalizedHex, uniqueNames);
+    return uniqueNames;
+  } catch {
+    colorNameCache.set(normalizedHex, []);
+    return [];
+  }
+}
+
+// Check if any color name matches the search term
+function colorMatchesSearch(hex: string, searchTerm: string): boolean {
+  const names = getColorNames(hex);
+  return names.some(name => name.includes(searchTerm));
+}
 
 export class ThemeForseen extends HTMLElement {
   private isOpen = false;
@@ -312,11 +347,18 @@ export class ThemeForseen extends HTMLElement {
         colors.extra,
       ];
 
-      return colorValues.some(
+      // Match by hex code
+      const hexMatch = colorValues.some(
         (color) =>
           color.toLowerCase().includes(search) ||
           color.toLowerCase().replace("#", "").includes(search.replace("#", ""))
       );
+      if (hexMatch) return true;
+
+      // Match by color name (e.g., "magenta", "teal", "coral")
+      // Only check main colors (primary, accent, extra) for performance
+      const mainColors = [colors.primary, colors.accent, colors.extra];
+      return mainColors.some((color) => colorMatchesSearch(color, search));
     }
 
     return true;
@@ -488,6 +530,11 @@ export class ThemeForseen extends HTMLElement {
     if (!this.clickOutsideHandlerAdded) {
       this.clickOutsideHandlerAdded = true;
       this.shadowRoot?.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        // Don't interfere with favorite/activate icon clicks
+        if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+          return;
+        }
         const currentFilterContainer = this.shadowRoot?.querySelector(".filter-container");
         const currentFilterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
         if (this.filterDropdownOpen && !currentFilterContainer?.contains(e.target as Node)) {

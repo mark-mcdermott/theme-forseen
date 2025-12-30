@@ -674,12 +674,20 @@ export class ThemeForseen extends HTMLElement {
       this.shadowRoot?.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
         // Don't interfere with favorite/activate icon clicks
-        if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+        if (
+          target.classList.contains("favorite-icon") ||
+          target.classList.contains("activate-icon")
+        ) {
           return;
         }
-        const currentFilterContainer = this.shadowRoot?.querySelector(".filter-container");
-        const currentFilterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
-        if (this.filterDropdownOpen && !currentFilterContainer?.contains(e.target as Node)) {
+        const currentFilterContainer =
+          this.shadowRoot?.querySelector(".filter-container");
+        const currentFilterDropdown =
+          this.shadowRoot?.querySelector(".filter-dropdown");
+        if (
+          this.filterDropdownOpen &&
+          !currentFilterContainer?.contains(e.target as Node)
+        ) {
           this.filterDropdownOpen = false;
           currentFilterDropdown?.classList.add("hidden");
         }

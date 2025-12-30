@@ -21,6 +21,112 @@ import {
 import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
 import { showActivationModal, handleSaveToFile } from "./activationModal.js";
 
+const DEV_SERVER_URL = "http://localhost:3847";
+const DEV_SERVER_TIMEOUT = 1000;
+
+interface DevServerResponse {
+  success: boolean;
+  message: string;
+  file?: string;
+  projectType?: string;
+  created?: boolean;
+  importInstruction?: string;
+}
+
+async function tryApplyViaServer(
+  type: "theme" | "font",
+  colors: ColorTheme["light"] | ColorTheme["dark"] | null,
+  fontFamily: string | null,
+  isDarkMode: boolean
+): Promise<DevServerResponse | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEV_SERVER_TIMEOUT);
+
+  try {
+    const body: Record<string, unknown> = { type };
+
+    if (type === "theme" && colors) {
+      body.data = {
+        colors: {
+          primary: colors.primary,
+          primaryShadow: colors.primaryShadow,
+          accent: colors.accent,
+          accentShadow: colors.accentShadow,
+          background: colors.background,
+          cardBackground: colors.cardBackground,
+          text: colors.text,
+          extra: colors.extra,
+        },
+        isDarkMode,
+      };
+    } else if (type === "font" && fontFamily) {
+      body.data = { font: fontFamily };
+    }
+
+    const response = await fetch(`${DEV_SERVER_URL}/api/apply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return await response.json();
+  } catch {
+    clearTimeout(timeoutId);
+    return null;
+  }
+}
+
+function showToast(shadowRoot: ShadowRoot, message: string, isSuccess: boolean): void {
+  // Remove existing toast if any
+  const existingToast = shadowRoot.querySelector(".theme-forseen-toast");
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "theme-forseen-toast";
+  toast.innerHTML = `
+    <span class="toast-icon">${isSuccess ? "✓" : "✕"}</span>
+    <span class="toast-message">${message}</span>
+  `;
+
+  // Style the toast
+  Object.assign(toast.style, {
+    position: "fixed",
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%) translateY(100px)",
+    padding: "12px 24px",
+    borderRadius: "8px",
+    backgroundColor: isSuccess ? "#10B981" : "#EF4444",
+    color: "white",
+    fontSize: "14px",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: "10001",
+    transition: "transform 0.3s ease",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  });
+
+  shadowRoot.appendChild(toast);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    toast.style.transform = "translateX(-50%) translateY(0)";
+  });
+
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    toast.style.transform = "translateX(-50%) translateY(100px)";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // Cache for color names to avoid repeated calculations
 const colorNameCache = new Map<string, string[]>();
 
@@ -1271,8 +1377,38 @@ export class ThemeForseen extends HTMLElement {
     }
   }
 
-  private handleActivate(type: "theme" | "font", index: number) {
+  private async handleActivate(type: "theme" | "font", index: number) {
     if (!this.shadowRoot) return;
+
+    // Try to apply via dev server first
+    let colors: ColorTheme["light"] | ColorTheme["dark"] | null = null;
+    let fontFamily: string | null = null;
+
+    if (type === "theme") {
+      const theme = colorThemes[index];
+      colors = this.isDarkMode ? theme.dark : theme.light;
+    } else {
+      const pairing = fontPairings[index];
+      fontFamily = this.selectedHeadingFont || pairing.heading;
+    }
+
+    const result = await tryApplyViaServer(type, colors, fontFamily, this.isDarkMode);
+
+    if (result?.success) {
+      // Show success toast with filename
+      const message = result.created
+        ? `Created ${result.file}`
+        : `Applied to ${result.file}`;
+      showToast(this.shadowRoot, message, true);
+
+      // If file was created, show import instruction in console
+      if (result.created && result.importInstruction) {
+        console.log(`[ThemeForseen] ${result.importInstruction}`);
+      }
+      return;
+    }
+
+    // Fall back to modal if server not available
     showActivationModal(type, index, {
       shadowRoot: this.shadowRoot,
       isDarkMode: this.isDarkMode,

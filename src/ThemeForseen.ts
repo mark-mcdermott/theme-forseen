@@ -35,9 +35,9 @@ function getColorNames(hex: string): string[] {
     const result = namer(hex);
     // Get names from multiple lists for better coverage
     const names = [
-      ...result.ntc.slice(0, 3).map(c => c.name.toLowerCase()),
-      ...result.basic.slice(0, 2).map(c => c.name.toLowerCase()),
-      ...result.html.slice(0, 2).map(c => c.name.toLowerCase()),
+      ...result.ntc.slice(0, 3).map((c) => c.name.toLowerCase()),
+      ...result.basic.slice(0, 2).map((c) => c.name.toLowerCase()),
+      ...result.html.slice(0, 2).map((c) => c.name.toLowerCase()),
     ];
     // Remove duplicates
     const uniqueNames = [...new Set(names)];
@@ -52,7 +52,7 @@ function getColorNames(hex: string): string[] {
 // Check if any color name matches the search term
 function colorMatchesSearch(hex: string, searchTerm: string): boolean {
   const names = getColorNames(hex);
-  return names.some(name => name.includes(searchTerm));
+  return names.some((name) => name.includes(searchTerm));
 }
 
 export class ThemeForseen extends HTMLElement {
@@ -65,7 +65,10 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private selectedTheme = { light: 0, dark: 0 };
-  private starredTheme: { light: number | null; dark: number | null } = { light: null, dark: null };
+  private starredTheme: { light: number | null; dark: number | null } = {
+    light: null,
+    dark: null,
+  };
   private lovedThemes = { light: new Set<number>(), dark: new Set<number>() };
 
   private selectedFontPairing = 0;
@@ -222,7 +225,11 @@ export class ThemeForseen extends HTMLElement {
     if (fontsCollapsed !== null) this.fontsColumnCollapsed = fontsCollapsed;
 
     // On mobile, ensure only one column is open (accordion behavior)
-    if (this.isMobile() && !this.themesColumnCollapsed && !this.fontsColumnCollapsed) {
+    if (
+      this.isMobile() &&
+      !this.themesColumnCollapsed &&
+      !this.fontsColumnCollapsed
+    ) {
       this.fontsColumnCollapsed = true;
     }
   }
@@ -496,7 +503,6 @@ export class ThemeForseen extends HTMLElement {
       );
       heart?.classList.add("loved");
     });
-
   }
 
   private attachFilterListeners() {
@@ -532,12 +538,20 @@ export class ThemeForseen extends HTMLElement {
       this.shadowRoot?.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
         // Don't interfere with favorite/activate icon clicks
-        if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+        if (
+          target.classList.contains("favorite-icon") ||
+          target.classList.contains("activate-icon")
+        ) {
           return;
         }
-        const currentFilterContainer = this.shadowRoot?.querySelector(".filter-container");
-        const currentFilterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
-        if (this.filterDropdownOpen && !currentFilterContainer?.contains(e.target as Node)) {
+        const currentFilterContainer =
+          this.shadowRoot?.querySelector(".filter-container");
+        const currentFilterDropdown =
+          this.shadowRoot?.querySelector(".filter-dropdown");
+        if (
+          this.filterDropdownOpen &&
+          !currentFilterContainer?.contains(e.target as Node)
+        ) {
           this.filterDropdownOpen = false;
           currentFilterDropdown?.classList.add("hidden");
         }
@@ -570,7 +584,9 @@ export class ThemeForseen extends HTMLElement {
               this.selectedTags.delete(tag);
             }
             // Save scroll position before re-render
-            const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+            const filterDropdown = this.shadowRoot?.querySelector(
+              ".filter-dropdown"
+            ) as HTMLElement | null;
             if (filterDropdown) {
               this.filterDropdownScrollTop = filterDropdown.scrollTop;
             }
@@ -768,8 +784,11 @@ export class ThemeForseen extends HTMLElement {
       if (!this.isOpen) return;
 
       // Check if user is typing in an input field
-      const activeElement = this.shadowRoot?.activeElement || document.activeElement;
-      const isTypingInInput = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+      const activeElement =
+        this.shadowRoot?.activeElement || document.activeElement;
+      const isTypingInInput =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA";
 
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         // Only prevent arrow keys if not in an input
@@ -780,7 +799,10 @@ export class ThemeForseen extends HTMLElement {
       }
 
       // Star/Heart keyboard shortcuts (only when not typing in input)
-      if (!isTypingInInput && (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")) {
+      if (
+        !isTypingInInput &&
+        (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")
+      ) {
         e.preventDefault();
         this.handleFavoriteShortcut(e.key.toLowerCase() as "s" | "h");
       }
@@ -1069,8 +1091,14 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".theme-item").forEach((item) => {
       const itemIndex = parseInt((item as HTMLElement).dataset.index || "0");
 
-      item.classList.toggle("selected-light", itemIndex === this.selectedTheme.light);
-      item.classList.toggle("selected-dark", itemIndex === this.selectedTheme.dark);
+      item.classList.toggle(
+        "selected-light",
+        itemIndex === this.selectedTheme.light
+      );
+      item.classList.toggle(
+        "selected-dark",
+        itemIndex === this.selectedTheme.dark
+      );
       item.classList.remove("selected", "active");
     });
   }
@@ -1133,7 +1161,9 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private applyFilterDropdownState() {
-    const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+    const filterDropdown = this.shadowRoot?.querySelector(
+      ".filter-dropdown"
+    ) as HTMLElement | null;
     if (this.filterDropdownOpen) {
       filterDropdown?.classList.remove("hidden");
       // Restore scroll position
@@ -1146,9 +1176,10 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private toggleColumn(columnType: "themes" | "fonts") {
-    const isExpanding = columnType === "themes"
-      ? this.themesColumnCollapsed
-      : this.fontsColumnCollapsed;
+    const isExpanding =
+      columnType === "themes"
+        ? this.themesColumnCollapsed
+        : this.fontsColumnCollapsed;
 
     if (columnType === "themes") {
       this.themesColumnCollapsed = !this.themesColumnCollapsed;
@@ -1218,9 +1249,10 @@ export class ThemeForseen extends HTMLElement {
     );
 
     if (column) {
-      const isCollapsed = columnType === "themes"
-        ? this.themesColumnCollapsed
-        : this.fontsColumnCollapsed;
+      const isCollapsed =
+        columnType === "themes"
+          ? this.themesColumnCollapsed
+          : this.fontsColumnCollapsed;
 
       column.classList.toggle("collapsed", isCollapsed);
       if (collapseBtn) {

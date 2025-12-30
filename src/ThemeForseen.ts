@@ -47,6 +47,9 @@ export class ThemeForseen extends HTMLElement {
 
   private themesColumnCollapsed = false;
   private fontsColumnCollapsed = false;
+  private filterDropdownOpen = false;
+  private filterDropdownScrollTop = 0;
+  private clickOutsideHandlerAdded = false;
 
   private isMobile(): boolean {
     return window.innerWidth <= 768;
@@ -468,9 +471,40 @@ export class ThemeForseen extends HTMLElement {
       ".filter-dropdown-btn"
     );
     const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
-    filterDropdownBtn?.addEventListener("click", () => {
+
+    // Show dropdown when clicking on input
+    filterInput?.addEventListener("click", () => {
+      this.filterDropdownOpen = true;
+      filterDropdown?.classList.remove("hidden");
+    });
+
+    filterDropdownBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.filterDropdownOpen = !this.filterDropdownOpen;
       filterDropdown?.classList.toggle("hidden");
     });
+
+    // Close dropdown when clicking outside (only add once since shadowRoot persists)
+    if (!this.clickOutsideHandlerAdded) {
+      this.clickOutsideHandlerAdded = true;
+      this.shadowRoot?.addEventListener("click", (e) => {
+        const currentFilterContainer = this.shadowRoot?.querySelector(".filter-container");
+        const currentFilterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
+        if (this.filterDropdownOpen && !currentFilterContainer?.contains(e.target as Node)) {
+          this.filterDropdownOpen = false;
+          currentFilterDropdown?.classList.add("hidden");
+        }
+      });
+    }
+
+    // Stop clicks on filter options from bubbling (user may click label, not just checkbox)
+    this.shadowRoot
+      ?.querySelectorAll(".filter-container .filter-option")
+      .forEach((option) => {
+        option.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      });
 
     this.shadowRoot
       ?.querySelectorAll(
@@ -488,8 +522,15 @@ export class ThemeForseen extends HTMLElement {
             } else {
               this.selectedTags.delete(tag);
             }
+            // Save scroll position before re-render
+            const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+            if (filterDropdown) {
+              this.filterDropdownScrollTop = filterDropdown.scrollTop;
+            }
             this.saveToLocalStorage();
             this.render();
+            this.applyDrawerState();
+            this.applyFilterDropdownState();
             this.attachEventListeners();
             this.renderThemes();
             this.renderFonts();
@@ -504,6 +545,7 @@ export class ThemeForseen extends HTMLElement {
           this.selectedTags.delete(tag);
           this.saveToLocalStorage();
           this.render();
+          this.applyDrawerState();
           this.attachEventListeners();
           this.renderThemes();
           this.renderFonts();
@@ -678,13 +720,20 @@ export class ThemeForseen extends HTMLElement {
     document.addEventListener("keydown", (e) => {
       if (!this.isOpen) return;
 
+      // Check if user is typing in an input field
+      const activeElement = this.shadowRoot?.activeElement || document.activeElement;
+      const isTypingInInput = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        e.preventDefault();
-        this.handleArrowKey(e.key === "ArrowDown");
+        // Only prevent arrow keys if not in an input
+        if (!isTypingInInput) {
+          e.preventDefault();
+          this.handleArrowKey(e.key === "ArrowDown");
+        }
       }
 
-      // Star/Heart keyboard shortcuts
-      if (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h") {
+      // Star/Heart keyboard shortcuts (only when not typing in input)
+      if (!isTypingInInput && (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")) {
         e.preventDefault();
         this.handleFavoriteShortcut(e.key.toLowerCase() as "s" | "h");
       }
@@ -698,6 +747,11 @@ export class ThemeForseen extends HTMLElement {
     );
 
     themesContent?.addEventListener("wheel", (e) => {
+      // Allow normal scrolling in filter dropdowns
+      const target = e.target as HTMLElement;
+      if (target.closest(".filter-dropdown")) {
+        return;
+      }
       e.preventDefault();
       const delta = (e as WheelEvent).deltaY;
       if (Math.abs(delta) > 10) {
@@ -707,6 +761,11 @@ export class ThemeForseen extends HTMLElement {
     });
 
     fontsContent?.addEventListener("wheel", (e) => {
+      // Allow normal scrolling in filter dropdowns
+      const target = e.target as HTMLElement;
+      if (target.closest(".font-filter-dropdown")) {
+        return;
+      }
       e.preventDefault();
       const delta = (e as WheelEvent).deltaY;
       if (Math.abs(delta) > 10) {
@@ -1011,6 +1070,10 @@ export class ThemeForseen extends HTMLElement {
 
   private toggleDrawer() {
     this.isOpen = !this.isOpen;
+    this.applyDrawerState();
+  }
+
+  private applyDrawerState() {
     if (this.isOpen) {
       this.drawerElement.classList.add("open");
       this.drawerToggle.classList.add("hidden");
@@ -1019,6 +1082,19 @@ export class ThemeForseen extends HTMLElement {
       this.drawerElement.classList.remove("open");
       this.drawerToggle.classList.remove("hidden");
       this.backdrop.classList.remove("visible");
+    }
+  }
+
+  private applyFilterDropdownState() {
+    const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+    if (this.filterDropdownOpen) {
+      filterDropdown?.classList.remove("hidden");
+      // Restore scroll position
+      if (filterDropdown) {
+        filterDropdown.scrollTop = this.filterDropdownScrollTop;
+      }
+    } else {
+      filterDropdown?.classList.add("hidden");
     }
   }
 

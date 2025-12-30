@@ -1,4 +1,5 @@
 import { styles } from "./styles.js";
+import { getAllThemeTags } from "./themes.js";
 
 export interface TemplateState {
   themesColumnCollapsed: boolean;
@@ -9,6 +10,8 @@ export interface TemplateState {
   selectedHeadingStyles: Set<string>;
   selectedBodyStyles: Set<string>;
 }
+
+const allTags = getAllThemeTags();
 
 export function getTemplate(state: TemplateState): string {
   return `
@@ -92,6 +95,16 @@ export function getTemplate(state: TemplateState): string {
                     value="${state.searchText}"
                   />
                   <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
+                  <div class="filter-dropdown hidden">
+                    ${allTags.map(tag => `
+                      <div class="filter-option" data-tag="${tag}">
+                        <input type="checkbox" id="tag-${tag}" ${
+                          state.selectedTags.has(tag) ? "checked" : ""
+                        }>
+                        <label for="tag-${tag}">${tag.charAt(0).toUpperCase() + tag.slice(1)}</label>
+                      </div>
+                    `).join("")}
+                  </div>
                 </div>
                 <div class="filter-tags">
                   ${Array.from(state.selectedTags)
@@ -104,20 +117,6 @@ export function getTemplate(state: TemplateState): string {
                   `
                     )
                     .join("")}
-                </div>
-                <div class="filter-dropdown hidden">
-                  <div class="filter-option" data-tag="corporate">
-                    <input type="checkbox" id="tag-corporate" ${
-                      state.selectedTags.has("corporate") ? "checked" : ""
-                    }>
-                    <label for="tag-corporate">Corporate</label>
-                  </div>
-                  <div class="filter-option" data-tag="funky">
-                    <input type="checkbox" id="tag-funky" ${
-                      state.selectedTags.has("funky") ? "checked" : ""
-                    }>
-                    <label for="tag-funky">Funky</label>
-                  </div>
                 </div>
               </div>
               <div class="mode-toggle">

@@ -146,9 +146,15 @@ function getColorNames(hex: string): string[] {
     const result = namer(hex);
     // Get names from multiple lists for better coverage
     const names = [
+<<<<<<< HEAD
       ...result.ntc.slice(0, 3).map((c) => c.name.toLowerCase()),
       ...result.basic.slice(0, 2).map((c) => c.name.toLowerCase()),
       ...result.html.slice(0, 2).map((c) => c.name.toLowerCase()),
+=======
+      ...result.ntc.slice(0, 3).map(c => c.name.toLowerCase()),
+      ...result.basic.slice(0, 2).map(c => c.name.toLowerCase()),
+      ...result.html.slice(0, 2).map(c => c.name.toLowerCase()),
+>>>>>>> b814497 (Fix favorites not working bug)
     ];
     // Remove duplicates
     const uniqueNames = [...new Set(names)];
@@ -163,7 +169,11 @@ function getColorNames(hex: string): string[] {
 // Check if any color name matches the search term
 function colorMatchesSearch(hex: string, searchTerm: string): boolean {
   const names = getColorNames(hex);
+<<<<<<< HEAD
   return names.some((name) => name.includes(searchTerm));
+=======
+  return names.some(name => name.includes(searchTerm));
+>>>>>>> b814497 (Fix favorites not working bug)
 }
 
 export class ThemeForseen extends HTMLElement {
@@ -684,20 +694,12 @@ export class ThemeForseen extends HTMLElement {
       this.shadowRoot?.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
         // Don't interfere with favorite/activate icon clicks
-        if (
-          target.classList.contains("favorite-icon") ||
-          target.classList.contains("activate-icon")
-        ) {
+        if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
           return;
         }
-        const currentFilterContainer =
-          this.shadowRoot?.querySelector(".filter-container");
-        const currentFilterDropdown =
-          this.shadowRoot?.querySelector(".filter-dropdown");
-        if (
-          this.filterDropdownOpen &&
-          !currentFilterContainer?.contains(e.target as Node)
-        ) {
+        const currentFilterContainer = this.shadowRoot?.querySelector(".filter-container");
+        const currentFilterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
+        if (this.filterDropdownOpen && !currentFilterContainer?.contains(e.target as Node)) {
           this.filterDropdownOpen = false;
           currentFilterDropdown?.classList.add("hidden");
         }

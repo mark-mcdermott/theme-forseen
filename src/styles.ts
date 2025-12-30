@@ -289,15 +289,15 @@ export const styles = `
   .column-content {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
+    padding: 0 10px 10px 10px;
   }
 
   .column-controls {
     position: sticky;
-    top: -10px;
+    top: 0;
     z-index: 100;
     background: light-dark(#f5f5f5, #1e1e1e);
-    margin: -10px -10px 10px -10px;
+    margin: 0 -10px 10px -10px;
     padding: 10px;
     border-bottom: 1px solid light-dark(#ddd, #444);
   }
@@ -422,7 +422,6 @@ export const styles = `
   .favorites {
     position: absolute;
     right: 8px;
-    top: 8px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -430,7 +429,12 @@ export const styles = `
   }
 
   [data-column="themes"] .favorites {
+    top: 5px;
     gap: 5px;
+  }
+
+  [data-column="fonts"] .favorites {
+    top: 13px;
   }
 
   .favorite-icon {
@@ -581,6 +585,7 @@ export const styles = `
   .filter-input-wrapper {
     position: relative;
     display: flex;
+    flex-wrap: wrap;
     gap: 0;
   }
 
@@ -654,11 +659,18 @@ export const styles = `
   }
 
   .filter-dropdown {
-    margin-top: 8px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
     padding: 8px;
     background: light-dark(white, #333);
     border: 2px solid light-dark(#ddd, #444);
     border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
   }
 
   .filter-dropdown.hidden {

@@ -14,6 +14,8 @@ Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/
 - **Live Color Theme Preview** - Curated color palettes with instant visual feedback
 - **Font Pairing Preview** - Thoughtful, beautiful font combinations
 - **Light & Dark Mode Support** - Separate themes for each mode
+- **Dev Server** - Write CSS variables directly to your project files with one click
+- **Smart Project Detection** - Auto-detects Next.js, Vite, Astro, and other frameworks
 - **Keyboard Navigation** - Arrow keys to browse options
 - **Mouse Wheel Support** - Scroll through themes and fonts
 - **Framework Agnostic** - Works with plain CSS, Tailwind, or any CSS framework
@@ -171,7 +173,79 @@ Any CSS framework that supports CSS variables will work. Just reference the vari
 2. **Browse Themes**: Click to apply, use arrow keys or mouse wheel to scroll
 3. **Toggle Mode**: Switch between Light and Dark mode
 4. **Browse Fonts**: Click any font pairing to apply it
-5. **Activate**: Click the lightning bolt icon to export config to your project
+5. **Activate**: Click the lightning bolt icon to apply the theme to your project (see [Dev Server](#dev-server) below)
+
+## Dev Server
+
+The dev server lets you write CSS variables directly to your project files with one click.
+
+### Quick Start
+
+```bash
+# In your project directory
+npx theme-forseen
+```
+
+This starts a local server that listens for theme activations. When you click the lightning bolt icon in the drawer, the CSS variables are written directly to your CSS file.
+
+### How It Works
+
+1. **Start the server** in your project directory
+2. **Browse themes** in the drawer as usual
+3. **Click the lightning bolt** - variables are written to your CSS file instantly
+4. **No server running?** Falls back to showing a modal with the CSS to copy
+
+### Smart Project Detection
+
+The server automatically detects your project type and finds the right CSS file:
+
+| Project Type | CSS File Location |
+|-------------|-------------------|
+| Next.js | `src/app/globals.css` or `app/globals.css` |
+| Vite | `src/index.css` or `src/style.css` |
+| Astro | `src/styles/global.css` |
+| SvelteKit | `src/app.css` |
+| Nuxt | `assets/css/main.css` |
+| Plain HTML | Parses `index.html` for stylesheet links |
+
+### Plain HTML Projects
+
+For plain HTML projects, the server is extra smart:
+
+- **One `<link rel="stylesheet">`** - Writes to that CSS file
+- **No stylesheet but has `<style>` tag** - Appends to the inline styles
+- **Multiple stylesheets** - Uses the first one (or looks for `main.css`, `style.css`, etc.)
+
+### Generated CSS
+
+The server writes CSS variables in this format:
+
+```css
+/* ThemeForseen Colors - Light Mode */
+:root {
+  --color-primary: #FF3366;
+  --color-primary-shadow: #CC2952;
+  --color-accent: #FFD600;
+  --color-accent-shadow: #CCAB00;
+  --color-bg: #FFFFFF;
+  --color-card-bg: #FFF8F0;
+  --color-text: #1A1A1A;
+  --color-extra: #FF6B00;
+}
+/* End ThemeForseen */
+```
+
+Subsequent activations update the existing block without duplicating.
+
+### Server Options
+
+```bash
+npx theme-forseen          # Start the server
+npx theme-forseen --help   # Show help
+npx theme-forseen -v       # Show version
+```
+
+The server runs on port 3847 by default.
 
 ## CSS Variables Reference
 

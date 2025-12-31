@@ -19,6 +19,7 @@ import {
   removeItem,
 } from "./storage.js";
 import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
+import { loadGoogleFont } from "./fontLoader.js";
 import { showActivationModal, handleSaveToFile } from "./activationModal.js";
 
 const DEV_SERVER_URL = "http://localhost:3847";
@@ -198,6 +199,8 @@ export class ThemeForseen extends HTMLElement {
   private searchText = "";
   private selectedHeadingStyles = new Set<string>();
   private selectedBodyStyles = new Set<string>();
+  private showHeartedOnly = false;
+  private showStarredOnly = false;
 
   private themesColumnCollapsed = false;
   private fontsColumnCollapsed = false;
@@ -335,6 +338,11 @@ export class ThemeForseen extends HTMLElement {
     this.selectedHeadingStyles = getSet(STORAGE_KEYS.FILTER_HEADING_STYLES);
     this.selectedBodyStyles = getSet(STORAGE_KEYS.FILTER_BODY_STYLES);
 
+    const heartedOnly = getBool(STORAGE_KEYS.FILTER_HEARTED_ONLY);
+    const starredOnly = getBool(STORAGE_KEYS.FILTER_STARRED_ONLY);
+    if (heartedOnly !== null) this.showHeartedOnly = heartedOnly;
+    if (starredOnly !== null) this.showStarredOnly = starredOnly;
+
     const themesCollapsed = getBool(STORAGE_KEYS.THEMES_COLLAPSED);
     const fontsCollapsed = getBool(STORAGE_KEYS.FONTS_COLLAPSED);
     if (themesCollapsed !== null) this.themesColumnCollapsed = themesCollapsed;
@@ -408,6 +416,8 @@ export class ThemeForseen extends HTMLElement {
     setItem(STORAGE_KEYS.FILTER_SEARCH, this.searchText);
     setSet(STORAGE_KEYS.FILTER_HEADING_STYLES, this.selectedHeadingStyles);
     setSet(STORAGE_KEYS.FILTER_BODY_STYLES, this.selectedBodyStyles);
+    setBool(STORAGE_KEYS.FILTER_HEARTED_ONLY, this.showHeartedOnly);
+    setBool(STORAGE_KEYS.FILTER_STARRED_ONLY, this.showStarredOnly);
 
     setBool(STORAGE_KEYS.THEMES_COLLAPSED, this.themesColumnCollapsed);
     setBool(STORAGE_KEYS.FONTS_COLLAPSED, this.fontsColumnCollapsed);
@@ -424,6 +434,8 @@ export class ThemeForseen extends HTMLElement {
       selectedTags: this.selectedTags,
       selectedHeadingStyles: this.selectedHeadingStyles,
       selectedBodyStyles: this.selectedBodyStyles,
+      showHeartedOnly: this.showHeartedOnly,
+      showStarredOnly: this.showStarredOnly,
     });
 
     this.drawerElement = this.shadowRoot.querySelector(".drawer")!;
@@ -438,7 +450,19 @@ export class ThemeForseen extends HTMLElement {
     this.renderFonts();
   }
 
-  private filterTheme(theme: ColorTheme): boolean {
+  private filterTheme(theme: ColorTheme, index: number): boolean {
+    // Filter by favorites if enabled (OR logic - show if hearted OR starred)
+    if (this.showHeartedOnly || this.showStarredOnly) {
+      const isHearted = this.lovedThemes[this.mode].has(index);
+      const isStarred = this.starredTheme[this.mode] === index;
+
+      let matchesFavorites = false;
+      if (this.showHeartedOnly && isHearted) matchesFavorites = true;
+      if (this.showStarredOnly && isStarred) matchesFavorites = true;
+
+      if (!matchesFavorites) return false;
+    }
+
     // Filter by tags if any are selected
     if (this.selectedTags.size > 0) {
       const themeTags = theme.tags || [];
@@ -491,8 +515,8 @@ export class ThemeForseen extends HTMLElement {
     const themesList = this.shadowRoot?.querySelector(".themes-list");
     if (!themesList) return;
 
-    const filteredThemes = colorThemes.filter((theme) =>
-      this.filterTheme(theme)
+    const filteredThemes = colorThemes.filter((theme, index) =>
+      this.filterTheme(theme, index)
     );
 
     themesList.innerHTML = filteredThemes
@@ -581,12 +605,12 @@ export class ThemeForseen extends HTMLElement {
           <div class="font-preview">
             <span class="individual-font heading-font" data-font="${
               pairing.heading
-            }" data-type="heading">
+            }" data-type="heading" style="font-family: '${pairing.heading}', sans-serif">
               Heading: ${pairing.heading}
             </span><br>
             <span class="individual-font body-font" data-font="${
               pairing.body
-            }" data-type="body">
+            }" data-type="body" style="font-family: '${pairing.body}', sans-serif">
               Body: ${pairing.body}
             </span>
           </div>
@@ -600,6 +624,12 @@ export class ThemeForseen extends HTMLElement {
       `;
       })
       .join("");
+
+    // Load fonts for all visible pairings
+    filteredPairings.forEach((pairing) => {
+      loadGoogleFont(pairing.heading);
+      loadGoogleFont(pairing.body);
+    });
 
     this.updateFontSelection();
     this.restoreFontFavorites();
@@ -684,6 +714,32 @@ export class ThemeForseen extends HTMLElement {
           const option = (e.target as HTMLInputElement).closest(
             ".filter-option"
           );
+
+          // Handle favorites filters
+          const favoritesType = option?.getAttribute("data-favorites");
+          if (favoritesType) {
+            const isChecked = (e.target as HTMLInputElement).checked;
+            if (favoritesType === "hearted") {
+              this.showHeartedOnly = isChecked;
+            } else if (favoritesType === "starred") {
+              this.showStarredOnly = isChecked;
+            }
+            // Save scroll position before re-render
+            const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+            if (filterDropdown) {
+              this.filterDropdownScrollTop = filterDropdown.scrollTop;
+            }
+            this.saveToLocalStorage();
+            this.render();
+            this.applyDrawerState();
+            this.applyFilterDropdownState();
+            this.attachEventListeners();
+            this.renderThemes();
+            this.renderFonts();
+            return;
+          }
+
+          // Handle tag filters
           const tag = option?.getAttribute("data-tag");
           if (tag) {
             if ((e.target as HTMLInputElement).checked) {
@@ -837,11 +893,13 @@ export class ThemeForseen extends HTMLElement {
 
       if (target.classList.contains("font-switch-icon")) {
         e.stopPropagation();
-        const index = parseInt(target.dataset.index || "0");
-        const pairing = fontPairings[index];
 
-        this.selectedHeadingFont = pairing.body;
-        this.selectedBodyFont = pairing.heading;
+        // Swap the current fonts (not the original pairing)
+        const currentHeading = this.selectedHeadingFont;
+        const currentBody = this.selectedBodyFont;
+
+        this.selectedHeadingFont = currentBody;
+        this.selectedBodyFont = currentHeading;
         this.selectedFontPairing = -1; // Clear pairing selection
 
         this.applyFonts();
@@ -1215,8 +1273,9 @@ export class ThemeForseen extends HTMLElement {
     const hasIndividualSelection =
       this.selectedHeadingFont !== null || this.selectedBodyFont !== null;
 
-    this.shadowRoot?.querySelectorAll(".font-item").forEach((item, index) => {
-      if (!hasIndividualSelection && index === this.selectedFontPairing) {
+    this.shadowRoot?.querySelectorAll(".font-item").forEach((item) => {
+      const itemIndex = parseInt((item as HTMLElement).dataset.index || "-1");
+      if (!hasIndividualSelection && itemIndex === this.selectedFontPairing) {
         item.classList.add("selected");
       } else {
         item.classList.remove("selected");

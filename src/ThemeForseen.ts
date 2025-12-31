@@ -19,7 +19,114 @@ import {
   removeItem,
 } from "./storage.js";
 import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
+import { loadGoogleFont } from "./fontLoader.js";
 import { showActivationModal, handleSaveToFile } from "./activationModal.js";
+
+const DEV_SERVER_URL = "http://localhost:3847";
+const DEV_SERVER_TIMEOUT = 1000;
+
+interface DevServerResponse {
+  success: boolean;
+  message: string;
+  file?: string;
+  projectType?: string;
+  created?: boolean;
+  importInstruction?: string;
+}
+
+async function tryApplyViaServer(
+  type: "theme" | "font",
+  colors: ColorTheme["light"] | ColorTheme["dark"] | null,
+  fontFamily: string | null,
+  isDarkMode: boolean
+): Promise<DevServerResponse | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEV_SERVER_TIMEOUT);
+
+  try {
+    const body: Record<string, unknown> = { type };
+
+    if (type === "theme" && colors) {
+      body.data = {
+        colors: {
+          primary: colors.primary,
+          primaryShadow: colors.primaryShadow,
+          accent: colors.accent,
+          accentShadow: colors.accentShadow,
+          background: colors.background,
+          cardBackground: colors.cardBackground,
+          text: colors.text,
+          extra: colors.extra,
+        },
+        isDarkMode,
+      };
+    } else if (type === "font" && fontFamily) {
+      body.data = { font: fontFamily };
+    }
+
+    const response = await fetch(`${DEV_SERVER_URL}/api/apply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return await response.json();
+  } catch {
+    clearTimeout(timeoutId);
+    return null;
+  }
+}
+
+function showToast(shadowRoot: ShadowRoot, message: string, isSuccess: boolean): void {
+  // Remove existing toast if any
+  const existingToast = shadowRoot.querySelector(".theme-forseen-toast");
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "theme-forseen-toast";
+  toast.innerHTML = `
+    <span class="toast-icon">${isSuccess ? "✓" : "✕"}</span>
+    <span class="toast-message">${message}</span>
+  `;
+
+  // Style the toast
+  Object.assign(toast.style, {
+    position: "fixed",
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%) translateY(100px)",
+    padding: "12px 24px",
+    borderRadius: "8px",
+    backgroundColor: isSuccess ? "#10B981" : "#EF4444",
+    color: "white",
+    fontSize: "14px",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: "10001",
+    transition: "transform 0.3s ease",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  });
+
+  shadowRoot.appendChild(toast);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    toast.style.transform = "translateX(-50%) translateY(0)";
+  });
+
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    toast.style.transform = "translateX(-50%) translateY(100px)";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
 
 // Cache for color names to avoid repeated calculations
 const colorNameCache = new Map<string, string[]>();
@@ -35,9 +142,9 @@ function getColorNames(hex: string): string[] {
     const result = namer(hex);
     // Get names from multiple lists for better coverage
     const names = [
-      ...result.ntc.slice(0, 3).map(c => c.name.toLowerCase()),
-      ...result.basic.slice(0, 2).map(c => c.name.toLowerCase()),
-      ...result.html.slice(0, 2).map(c => c.name.toLowerCase()),
+      ...result.ntc.slice(0, 3).map((c) => c.name.toLowerCase()),
+      ...result.basic.slice(0, 2).map((c) => c.name.toLowerCase()),
+      ...result.html.slice(0, 2).map((c) => c.name.toLowerCase()),
     ];
     // Remove duplicates
     const uniqueNames = [...new Set(names)];
@@ -52,7 +159,7 @@ function getColorNames(hex: string): string[] {
 // Check if any color name matches the search term
 function colorMatchesSearch(hex: string, searchTerm: string): boolean {
   const names = getColorNames(hex);
-  return names.some(name => name.includes(searchTerm));
+  return names.some((name) => name.includes(searchTerm));
 }
 
 export class ThemeForseen extends HTMLElement {
@@ -65,7 +172,10 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private selectedTheme = { light: 0, dark: 0 };
-  private starredTheme: { light: number | null; dark: number | null } = { light: null, dark: null };
+  private starredTheme: { light: number | null; dark: number | null } = {
+    light: null,
+    dark: null,
+  };
   private lovedThemes = { light: new Set<number>(), dark: new Set<number>() };
 
   private selectedFontPairing = 0;
@@ -79,6 +189,8 @@ export class ThemeForseen extends HTMLElement {
   private searchText = "";
   private selectedHeadingStyles = new Set<string>();
   private selectedBodyStyles = new Set<string>();
+  private showHeartedOnly = false;
+  private showStarredOnly = false;
 
   private themesColumnCollapsed = false;
   private fontsColumnCollapsed = false;
@@ -216,13 +328,22 @@ export class ThemeForseen extends HTMLElement {
     this.selectedHeadingStyles = getSet(STORAGE_KEYS.FILTER_HEADING_STYLES);
     this.selectedBodyStyles = getSet(STORAGE_KEYS.FILTER_BODY_STYLES);
 
+    const heartedOnly = getBool(STORAGE_KEYS.FILTER_HEARTED_ONLY);
+    const starredOnly = getBool(STORAGE_KEYS.FILTER_STARRED_ONLY);
+    if (heartedOnly !== null) this.showHeartedOnly = heartedOnly;
+    if (starredOnly !== null) this.showStarredOnly = starredOnly;
+
     const themesCollapsed = getBool(STORAGE_KEYS.THEMES_COLLAPSED);
     const fontsCollapsed = getBool(STORAGE_KEYS.FONTS_COLLAPSED);
     if (themesCollapsed !== null) this.themesColumnCollapsed = themesCollapsed;
     if (fontsCollapsed !== null) this.fontsColumnCollapsed = fontsCollapsed;
 
     // On mobile, ensure only one column is open (accordion behavior)
-    if (this.isMobile() && !this.themesColumnCollapsed && !this.fontsColumnCollapsed) {
+    if (
+      this.isMobile() &&
+      !this.themesColumnCollapsed &&
+      !this.fontsColumnCollapsed
+    ) {
       this.fontsColumnCollapsed = true;
     }
   }
@@ -285,6 +406,8 @@ export class ThemeForseen extends HTMLElement {
     setItem(STORAGE_KEYS.FILTER_SEARCH, this.searchText);
     setSet(STORAGE_KEYS.FILTER_HEADING_STYLES, this.selectedHeadingStyles);
     setSet(STORAGE_KEYS.FILTER_BODY_STYLES, this.selectedBodyStyles);
+    setBool(STORAGE_KEYS.FILTER_HEARTED_ONLY, this.showHeartedOnly);
+    setBool(STORAGE_KEYS.FILTER_STARRED_ONLY, this.showStarredOnly);
 
     setBool(STORAGE_KEYS.THEMES_COLLAPSED, this.themesColumnCollapsed);
     setBool(STORAGE_KEYS.FONTS_COLLAPSED, this.fontsColumnCollapsed);
@@ -301,6 +424,8 @@ export class ThemeForseen extends HTMLElement {
       selectedTags: this.selectedTags,
       selectedHeadingStyles: this.selectedHeadingStyles,
       selectedBodyStyles: this.selectedBodyStyles,
+      showHeartedOnly: this.showHeartedOnly,
+      showStarredOnly: this.showStarredOnly,
     });
 
     this.drawerElement = this.shadowRoot.querySelector(".drawer")!;
@@ -315,7 +440,19 @@ export class ThemeForseen extends HTMLElement {
     this.renderFonts();
   }
 
-  private filterTheme(theme: ColorTheme): boolean {
+  private filterTheme(theme: ColorTheme, index: number): boolean {
+    // Filter by favorites if enabled (OR logic - show if hearted OR starred)
+    if (this.showHeartedOnly || this.showStarredOnly) {
+      const isHearted = this.lovedThemes[this.mode].has(index);
+      const isStarred = this.starredTheme[this.mode] === index;
+
+      let matchesFavorites = false;
+      if (this.showHeartedOnly && isHearted) matchesFavorites = true;
+      if (this.showStarredOnly && isStarred) matchesFavorites = true;
+
+      if (!matchesFavorites) return false;
+    }
+
     // Filter by tags if any are selected
     if (this.selectedTags.size > 0) {
       const themeTags = theme.tags || [];
@@ -368,8 +505,8 @@ export class ThemeForseen extends HTMLElement {
     const themesList = this.shadowRoot?.querySelector(".themes-list");
     if (!themesList) return;
 
-    const filteredThemes = colorThemes.filter((theme) =>
-      this.filterTheme(theme)
+    const filteredThemes = colorThemes.filter((theme, index) =>
+      this.filterTheme(theme, index)
     );
 
     themesList.innerHTML = filteredThemes
@@ -458,12 +595,12 @@ export class ThemeForseen extends HTMLElement {
           <div class="font-preview">
             <span class="individual-font heading-font" data-font="${
               pairing.heading
-            }" data-type="heading">
+            }" data-type="heading" style="font-family: '${pairing.heading}', sans-serif">
               Heading: ${pairing.heading}
             </span><br>
             <span class="individual-font body-font" data-font="${
               pairing.body
-            }" data-type="body">
+            }" data-type="body" style="font-family: '${pairing.body}', sans-serif">
               Body: ${pairing.body}
             </span>
           </div>
@@ -477,6 +614,12 @@ export class ThemeForseen extends HTMLElement {
       `;
       })
       .join("");
+
+    // Load fonts for all visible pairings
+    filteredPairings.forEach((pairing) => {
+      loadGoogleFont(pairing.heading);
+      loadGoogleFont(pairing.body);
+    });
 
     this.updateFontSelection();
     this.restoreFontFavorites();
@@ -496,7 +639,6 @@ export class ThemeForseen extends HTMLElement {
       );
       heart?.classList.add("loved");
     });
-
   }
 
   private attachFilterListeners() {
@@ -562,6 +704,32 @@ export class ThemeForseen extends HTMLElement {
           const option = (e.target as HTMLInputElement).closest(
             ".filter-option"
           );
+
+          // Handle favorites filters
+          const favoritesType = option?.getAttribute("data-favorites");
+          if (favoritesType) {
+            const isChecked = (e.target as HTMLInputElement).checked;
+            if (favoritesType === "hearted") {
+              this.showHeartedOnly = isChecked;
+            } else if (favoritesType === "starred") {
+              this.showStarredOnly = isChecked;
+            }
+            // Save scroll position before re-render
+            const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+            if (filterDropdown) {
+              this.filterDropdownScrollTop = filterDropdown.scrollTop;
+            }
+            this.saveToLocalStorage();
+            this.render();
+            this.applyDrawerState();
+            this.applyFilterDropdownState();
+            this.attachEventListeners();
+            this.renderThemes();
+            this.renderFonts();
+            return;
+          }
+
+          // Handle tag filters
           const tag = option?.getAttribute("data-tag");
           if (tag) {
             if ((e.target as HTMLInputElement).checked) {
@@ -570,7 +738,9 @@ export class ThemeForseen extends HTMLElement {
               this.selectedTags.delete(tag);
             }
             // Save scroll position before re-render
-            const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+            const filterDropdown = this.shadowRoot?.querySelector(
+              ".filter-dropdown"
+            ) as HTMLElement | null;
             if (filterDropdown) {
               this.filterDropdownScrollTop = filterDropdown.scrollTop;
             }
@@ -713,11 +883,25 @@ export class ThemeForseen extends HTMLElement {
 
       if (target.classList.contains("font-switch-icon")) {
         e.stopPropagation();
-        const index = parseInt(target.dataset.index || "0");
-        const pairing = fontPairings[index];
 
-        this.selectedHeadingFont = pairing.body;
-        this.selectedBodyFont = pairing.heading;
+        // Get current fonts - either from individual selection or from pairing
+        let currentHeading: string;
+        let currentBody: string;
+
+        if (this.selectedHeadingFont || this.selectedBodyFont) {
+          // Use individual selections (with defaults from first pairing if one is missing)
+          currentHeading = this.selectedHeadingFont || fontPairings[0].heading;
+          currentBody = this.selectedBodyFont || fontPairings[0].body;
+        } else {
+          // Get from current pairing
+          const pairingIndex = this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
+          currentHeading = fontPairings[pairingIndex].heading;
+          currentBody = fontPairings[pairingIndex].body;
+        }
+
+        // Swap the fonts
+        this.selectedHeadingFont = currentBody;
+        this.selectedBodyFont = currentHeading;
         this.selectedFontPairing = -1; // Clear pairing selection
 
         this.applyFonts();
@@ -768,8 +952,11 @@ export class ThemeForseen extends HTMLElement {
       if (!this.isOpen) return;
 
       // Check if user is typing in an input field
-      const activeElement = this.shadowRoot?.activeElement || document.activeElement;
-      const isTypingInInput = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+      const activeElement =
+        this.shadowRoot?.activeElement || document.activeElement;
+      const isTypingInInput =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA";
 
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         // Only prevent arrow keys if not in an input
@@ -780,7 +967,10 @@ export class ThemeForseen extends HTMLElement {
       }
 
       // Star/Heart keyboard shortcuts (only when not typing in input)
-      if (!isTypingInInput && (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")) {
+      if (
+        !isTypingInInput &&
+        (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")
+      ) {
         e.preventDefault();
         this.handleFavoriteShortcut(e.key.toLowerCase() as "s" | "h");
       }
@@ -1069,8 +1259,14 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot?.querySelectorAll(".theme-item").forEach((item) => {
       const itemIndex = parseInt((item as HTMLElement).dataset.index || "0");
 
-      item.classList.toggle("selected-light", itemIndex === this.selectedTheme.light);
-      item.classList.toggle("selected-dark", itemIndex === this.selectedTheme.dark);
+      item.classList.toggle(
+        "selected-light",
+        itemIndex === this.selectedTheme.light
+      );
+      item.classList.toggle(
+        "selected-dark",
+        itemIndex === this.selectedTheme.dark
+      );
       item.classList.remove("selected", "active");
     });
   }
@@ -1079,8 +1275,9 @@ export class ThemeForseen extends HTMLElement {
     const hasIndividualSelection =
       this.selectedHeadingFont !== null || this.selectedBodyFont !== null;
 
-    this.shadowRoot?.querySelectorAll(".font-item").forEach((item, index) => {
-      if (!hasIndividualSelection && index === this.selectedFontPairing) {
+    this.shadowRoot?.querySelectorAll(".font-item").forEach((item) => {
+      const itemIndex = parseInt((item as HTMLElement).dataset.index || "-1");
+      if (!hasIndividualSelection && itemIndex === this.selectedFontPairing) {
         item.classList.add("selected");
       } else {
         item.classList.remove("selected");
@@ -1133,7 +1330,9 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private applyFilterDropdownState() {
-    const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+    const filterDropdown = this.shadowRoot?.querySelector(
+      ".filter-dropdown"
+    ) as HTMLElement | null;
     if (this.filterDropdownOpen) {
       filterDropdown?.classList.remove("hidden");
       // Restore scroll position
@@ -1146,9 +1345,10 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private toggleColumn(columnType: "themes" | "fonts") {
-    const isExpanding = columnType === "themes"
-      ? this.themesColumnCollapsed
-      : this.fontsColumnCollapsed;
+    const isExpanding =
+      columnType === "themes"
+        ? this.themesColumnCollapsed
+        : this.fontsColumnCollapsed;
 
     if (columnType === "themes") {
       this.themesColumnCollapsed = !this.themesColumnCollapsed;
@@ -1218,9 +1418,10 @@ export class ThemeForseen extends HTMLElement {
     );
 
     if (column) {
-      const isCollapsed = columnType === "themes"
-        ? this.themesColumnCollapsed
-        : this.fontsColumnCollapsed;
+      const isCollapsed =
+        columnType === "themes"
+          ? this.themesColumnCollapsed
+          : this.fontsColumnCollapsed;
 
       column.classList.toggle("collapsed", isCollapsed);
       if (collapseBtn) {
@@ -1237,8 +1438,38 @@ export class ThemeForseen extends HTMLElement {
     }
   }
 
-  private handleActivate(type: "theme" | "font", index: number) {
+  private async handleActivate(type: "theme" | "font", index: number) {
     if (!this.shadowRoot) return;
+
+    // Try to apply via dev server first
+    let colors: ColorTheme["light"] | ColorTheme["dark"] | null = null;
+    let fontFamily: string | null = null;
+
+    if (type === "theme") {
+      const theme = colorThemes[index];
+      colors = this.isDarkMode ? theme.dark : theme.light;
+    } else {
+      const pairing = fontPairings[index];
+      fontFamily = this.selectedHeadingFont || pairing.heading;
+    }
+
+    const result = await tryApplyViaServer(type, colors, fontFamily, this.isDarkMode);
+
+    if (result?.success) {
+      // Show success toast with filename
+      const message = result.created
+        ? `Created ${result.file}`
+        : `Applied to ${result.file}`;
+      showToast(this.shadowRoot, message, true);
+
+      // If file was created, show import instruction in console
+      if (result.created && result.importInstruction) {
+        console.log(`[ThemeForseen] ${result.importInstruction}`);
+      }
+      return;
+    }
+
+    // Fall back to modal if server not available
     showActivationModal(type, index, {
       shadowRoot: this.shadowRoot,
       isDarkMode: this.isDarkMode,

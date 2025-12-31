@@ -17,6 +17,8 @@ export const STORAGE_KEYS = {
   FILTER_SEARCH: `${STORAGE_PREFIX}filter-search`,
   FILTER_HEADING_STYLES: `${STORAGE_PREFIX}filter-heading-styles`,
   FILTER_BODY_STYLES: `${STORAGE_PREFIX}filter-body-styles`,
+  FILTER_HEARTED_ONLY: `${STORAGE_PREFIX}filter-hearted-only`,
+  FILTER_STARRED_ONLY: `${STORAGE_PREFIX}filter-starred-only`,
   THEMES_COLLAPSED: `${STORAGE_PREFIX}themes-collapsed`,
   FONTS_COLLAPSED: `${STORAGE_PREFIX}fonts-collapsed`,
   VISIT_COUNT: `${STORAGE_PREFIX}visit-count`,

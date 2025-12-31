@@ -142,15 +142,9 @@ function getColorNames(hex: string): string[] {
     const result = namer(hex);
     // Get names from multiple lists for better coverage
     const names = [
-<<<<<<< HEAD
       ...result.ntc.slice(0, 3).map((c) => c.name.toLowerCase()),
       ...result.basic.slice(0, 2).map((c) => c.name.toLowerCase()),
       ...result.html.slice(0, 2).map((c) => c.name.toLowerCase()),
-=======
-      ...result.ntc.slice(0, 3).map(c => c.name.toLowerCase()),
-      ...result.basic.slice(0, 2).map(c => c.name.toLowerCase()),
-      ...result.html.slice(0, 2).map(c => c.name.toLowerCase()),
->>>>>>> b814497 (Fix favorites not working bug)
     ];
     // Remove duplicates
     const uniqueNames = [...new Set(names)];
@@ -165,11 +159,7 @@ function getColorNames(hex: string): string[] {
 // Check if any color name matches the search term
 function colorMatchesSearch(hex: string, searchTerm: string): boolean {
   const names = getColorNames(hex);
-<<<<<<< HEAD
   return names.some((name) => name.includes(searchTerm));
-=======
-  return names.some(name => name.includes(searchTerm));
->>>>>>> b814497 (Fix favorites not working bug)
 }
 
 export class ThemeForseen extends HTMLElement {

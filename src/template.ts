@@ -9,6 +9,8 @@ export interface TemplateState {
   selectedTags: Set<string>;
   selectedHeadingStyles: Set<string>;
   selectedBodyStyles: Set<string>;
+  showHeartedOnly: boolean;
+  showStarredOnly: boolean;
 }
 
 const allTags = getAllThemeTags();
@@ -96,6 +98,19 @@ export function getTemplate(state: TemplateState): string {
                   />
                   <button class="filter-dropdown-btn" aria-label="Filter options">▼</button>
                   <div class="filter-dropdown hidden">
+                    <div class="filter-option favorites-filter" data-favorites="hearted">
+                      <input type="checkbox" id="filter-hearted" ${
+                        state.showHeartedOnly ? "checked" : ""
+                      }>
+                      <label for="filter-hearted"><span class="filter-heart-icon">♥</span> Hearted themes</label>
+                    </div>
+                    <div class="filter-option favorites-filter" data-favorites="starred">
+                      <input type="checkbox" id="filter-starred" ${
+                        state.showStarredOnly ? "checked" : ""
+                      }>
+                      <label for="filter-starred"><span class="filter-star-icon">★</span> Starred themes</label>
+                    </div>
+                    <div class="filter-separator"></div>
                     ${allTags.map(tag => `
                       <div class="filter-option" data-tag="${tag}">
                         <input type="checkbox" id="tag-${tag}" ${

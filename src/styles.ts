@@ -700,6 +700,19 @@ export const styles = `
     flex: 1;
   }
 
+  .filter-heart-icon {
+    color: #716122;
+  }
+
+  .filter-star-icon {
+    color: #716122;
+  }
+
+  .filter-separator {
+    border-top: 1px solid light-dark(#ddd, #444);
+    margin: 6px 0;
+  }
+
   .font-filters {
     display: flex;
     gap: 10px;

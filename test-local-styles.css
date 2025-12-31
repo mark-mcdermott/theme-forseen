@@ -1,0 +1,48 @@
+body {
+        color: var(--color-text);
+        background: var(--color-bg);
+        font-family: var(--font-body);
+      }
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--color-primary);
+        font-family: var(--font-heading);
+      }
+      a {
+        color: var(--color-primary);
+      }
+      a b, a strong, button, input[type="submit"] {
+        color: var(--color-bg);
+        background: var(--color-primary);
+        border-color: var(--color-primary-shadow);
+      }
+      a i {
+        background: var(--color-accent);
+        color: var(--color-bg);
+        border-color: var(--color-accent-shadow);
+      }
+      .logo path {
+        fill: var(--color-primary);
+      }
+      aside {
+        background: var(--color-card-bg);
+      }
+      table thead {
+        background: var(--color-primary);
+      }
+      table tr:nth-child(even) {
+        background: var(--color-card-bg);
+      }
+      code {
+        background: var(--color-card-bg);
+      }
+      article aside {
+        border-color: var(--color-primary);
+        background: var(--color-carg-bg);
+      }
+      sup {
+        background-color: var(--color-accent);
+        color: var(--color-text);
+      }
+      form {
+        background-color: var(--color-card-bg);
+      }

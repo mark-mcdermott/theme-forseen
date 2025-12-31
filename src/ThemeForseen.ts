@@ -894,10 +894,22 @@ export class ThemeForseen extends HTMLElement {
       if (target.classList.contains("font-switch-icon")) {
         e.stopPropagation();
 
-        // Swap the current fonts (not the original pairing)
-        const currentHeading = this.selectedHeadingFont;
-        const currentBody = this.selectedBodyFont;
+        // Get current fonts - either from individual selection or from pairing
+        let currentHeading: string;
+        let currentBody: string;
 
+        if (this.selectedHeadingFont || this.selectedBodyFont) {
+          // Use individual selections (with defaults from first pairing if one is missing)
+          currentHeading = this.selectedHeadingFont || fontPairings[0].heading;
+          currentBody = this.selectedBodyFont || fontPairings[0].body;
+        } else {
+          // Get from current pairing
+          const pairingIndex = this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
+          currentHeading = fontPairings[pairingIndex].heading;
+          currentBody = fontPairings[pairingIndex].body;
+        }
+
+        // Swap the fonts
         this.selectedHeadingFont = currentBody;
         this.selectedBodyFont = currentHeading;
         this.selectedFontPairing = -1; // Clear pairing selection

@@ -4,10 +4,6 @@
 
 A live color theme and font pairing preview drawer for websites. Browse and preview different color schemes and font combinations in real-time.
 
-**How it works:** ThemeForseen sets [CSS custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/--*) (CSS variables) on `<html>` when you select themes. Your CSS references these variables, so colors and fonts update instantly. Works with plain CSS, Tailwind, or any CSS framework.
-
-Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components), so it works with any framework (React, Vue, Svelte, Astro, plain HTML, etc.).
-
 ## Features
 
 - **CSS Variables** - Sets `--color-primary`, `--font-heading`, etc. on `<html>` for any CSS to consume
@@ -24,6 +20,52 @@ Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/
 
 ```bash
 npm install theme-forseen
+```
+
+## Setup
+
+Use these CSS variables in your stylesheets:
+
+```css
+var(--color-primary)
+var(--color-primary-shadow)
+var(--color-accent)
+var(--color-accent-shadow)
+var(--color-bg)
+var(--color-card-bg)
+var(--color-text)
+var(--color-extra)
+var(--font-heading)
+var(--font-body)
+```
+
+## Examples
+
+### CDN On Simple HTML Page
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My First Page</title>
+  </head>
+  <style>
+    body {
+      color: var(--color-text);
+      background: var(--color-bg);
+      font-family: var(--font-body);
+    }
+    h1 {
+      color: var(--color-primary);
+      font-family: var(--font-heading);
+    }
+  </style>
+  <script type="module" src="https://unpkg.com/theme-forseen"></script>
+  <body>
+    <h1>Hello World</h1>
+    <p>This is my first HTML page.</p>
+  </body>
+</html>
 ```
 
 ## Usage
@@ -346,6 +388,12 @@ Contributions welcome!
 4. Open a PR to `main`
 
 PRs require all tests to pass before merging. Tests run automatically when you open a PR.
+
+## How It Works
+
+ThemeForseen sets [CSS custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/--*) (CSS variables) on `<html>` when you select themes. Your CSS references these variables, so colors and fonts update instantly. Works with plain CSS, Tailwind, or any CSS framework.
+
+Built as a vanilla [Web Component](https://developer.mozilla.org/en-US/docs/Web/API/Web_components), so it works with any framework (React, Vue, Svelte, Astro, plain HTML, etc.).
 
 ## License
 

@@ -183,6 +183,7 @@ export class ThemeForseen extends HTMLElement {
   private lovedThemes = { light: new Set<number>(), dark: new Set<number>() };
 
   private selectedFontPairing = 0;
+  private lastSwappedIndex: number | null = null;
   private starredFont: number | null = null;
   private lovedFonts = new Set<number>();
 
@@ -602,12 +603,16 @@ export class ThemeForseen extends HTMLElement {
             <span class="individual-font heading-font" data-font="${
               pairing.heading
             }" data-type="heading">
-              Heading: <span class="font-name-preview" style="font-family: '${pairing.heading}', sans-serif">${pairing.heading}</span>
+              Heading: <span class="font-name-preview" style="font-family: '${
+                pairing.heading
+              }', sans-serif">${pairing.heading}</span>
             </span><br>
             <span class="individual-font body-font" data-font="${
               pairing.body
             }" data-type="body">
-              Body: <span class="font-name-preview" style="font-family: '${pairing.body}', sans-serif">${pairing.body}</span>
+              Body: <span class="font-name-preview" style="font-family: '${
+                pairing.body
+              }', sans-serif">${pairing.body}</span>
             </span>
           </div>
           <button class="font-switch-icon" data-index="${index}" title="Swap heading and body fonts">⇄</button>
@@ -978,10 +983,14 @@ export class ThemeForseen extends HTMLElement {
         });
 
         // Update the labels, styles, and highlight only the clicked item
-        const fontItem = this.shadowRoot?.querySelector(`.font-item[data-index="${index}"]`);
+        const fontItem = this.shadowRoot?.querySelector(
+          `.font-item[data-index="${index}"]`
+        );
         if (fontItem) {
-          const headingSpan = fontItem.querySelector('.heading-font') as HTMLElement;
-          const bodySpan = fontItem.querySelector('.body-font') as HTMLElement;
+          const headingSpan = fontItem.querySelector(
+            ".heading-font"
+          ) as HTMLElement;
+          const bodySpan = fontItem.querySelector(".body-font") as HTMLElement;
           if (headingSpan) {
             headingSpan.innerHTML = `Heading: <span class="font-name-preview" style="font-family: '${this.selectedHeadingFont}', sans-serif">${this.selectedHeadingFont}</span>`;
             headingSpan.dataset.font = this.selectedHeadingFont;

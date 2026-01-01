@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-01
+
+### Added
+- 1,000+ additional color palettes (now 1,500+ total)
+- Checkbox filters for color themes (filter by style/mood)
+- CLI dev server for writing CSS variables to project files
+- Additional font pairings
+
+### Changed
+- Improved font column UI/UX with better selection behavior
+- Enhanced color theme column with smoother scrolling
+
+### Fixed
+- Font swap button not working correctly
+- Favorites not persisting properly
+- Drawer items not showing when scrolling up
+- Various UI/UX bugs in both columns
+
 ## [0.3.0] - 2025-12-28
 
 ### Added
@@ -51,7 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activation modal to export theme/font config
 - Works as vanilla Web Component (framework agnostic)
 
-[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mark-mcdermott/theme-forseen/releases/tag/v0.1.0

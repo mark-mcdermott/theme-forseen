@@ -79,7 +79,11 @@ async function tryApplyViaServer(
   }
 }
 
-function showToast(shadowRoot: ShadowRoot, message: string, isSuccess: boolean): void {
+function showToast(
+  shadowRoot: ShadowRoot,
+  message: string,
+  isSuccess: boolean
+): void {
   // Remove existing toast if any
   const existingToast = shadowRoot.querySelector(".theme-forseen-toast");
   if (existingToast) {
@@ -179,6 +183,7 @@ export class ThemeForseen extends HTMLElement {
   private lovedThemes = { light: new Set<number>(), dark: new Set<number>() };
 
   private selectedFontPairing = 0;
+  private lastSwappedIndex: number | null = null;
   private starredFont: number | null = null;
   private lovedFonts = new Set<number>();
 
@@ -197,6 +202,7 @@ export class ThemeForseen extends HTMLElement {
   private filterDropdownOpen = false;
   private filterDropdownScrollTop = 0;
   private clickOutsideHandlerAdded = false;
+  private fontFilterClickOutsideHandlerAdded = false;
 
   private isMobile(): boolean {
     return window.innerWidth <= 768;
@@ -595,13 +601,17 @@ export class ThemeForseen extends HTMLElement {
           <div class="font-preview">
             <span class="individual-font heading-font" data-font="${
               pairing.heading
-            }" data-type="heading" style="font-family: '${pairing.heading}', sans-serif">
-              Heading: ${pairing.heading}
+            }" data-type="heading">
+              Heading: <span class="font-name-preview" style="font-family: '${
+                pairing.heading
+              }', sans-serif">${pairing.heading}</span>
             </span><br>
             <span class="individual-font body-font" data-font="${
               pairing.body
-            }" data-type="body" style="font-family: '${pairing.body}', sans-serif">
-              Body: ${pairing.body}
+            }" data-type="body">
+              Body: <span class="font-name-preview" style="font-family: '${
+                pairing.body
+              }', sans-serif">${pairing.body}</span>
             </span>
           </div>
           <button class="font-switch-icon" data-index="${index}" title="Swap heading and body fonts">⇄</button>
@@ -674,12 +684,20 @@ export class ThemeForseen extends HTMLElement {
       this.shadowRoot?.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
         // Don't interfere with favorite/activate icon clicks
-        if (target.classList.contains("favorite-icon") || target.classList.contains("activate-icon")) {
+        if (
+          target.classList.contains("favorite-icon") ||
+          target.classList.contains("activate-icon")
+        ) {
           return;
         }
-        const currentFilterContainer = this.shadowRoot?.querySelector(".filter-container");
-        const currentFilterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
-        if (this.filterDropdownOpen && !currentFilterContainer?.contains(e.target as Node)) {
+        const currentFilterContainer =
+          this.shadowRoot?.querySelector(".filter-container");
+        const currentFilterDropdown =
+          this.shadowRoot?.querySelector(".filter-dropdown");
+        if (
+          this.filterDropdownOpen &&
+          !currentFilterContainer?.contains(e.target as Node)
+        ) {
           this.filterDropdownOpen = false;
           currentFilterDropdown?.classList.add("hidden");
         }
@@ -715,7 +733,9 @@ export class ThemeForseen extends HTMLElement {
               this.showStarredOnly = isChecked;
             }
             // Save scroll position before re-render
-            const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown") as HTMLElement | null;
+            const filterDropdown = this.shadowRoot?.querySelector(
+              ".filter-dropdown"
+            ) as HTMLElement | null;
             if (filterDropdown) {
               this.filterDropdownScrollTop = filterDropdown.scrollTop;
             }
@@ -833,6 +853,25 @@ export class ThemeForseen extends HTMLElement {
           }
         });
       });
+
+    // Close font filter dropdowns when clicking outside
+    if (!this.fontFilterClickOutsideHandlerAdded) {
+      this.fontFilterClickOutsideHandlerAdded = true;
+      this.shadowRoot?.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        // Only keep dropdown open if clicking inside dropdown or on its button
+        const isInsideDropdown = target.closest(".font-filter-dropdown");
+        const isDropdownButton = target.closest(".font-filter-dropdown-btn");
+        if (!isInsideDropdown && !isDropdownButton) {
+          // Close all font filter dropdowns
+          this.shadowRoot
+            ?.querySelectorAll(".font-filter-dropdown")
+            .forEach((dropdown) => {
+              dropdown.classList.add("hidden");
+            });
+        }
+      });
+    }
   }
 
   private attachEventListeners() {
@@ -884,28 +923,86 @@ export class ThemeForseen extends HTMLElement {
       if (target.classList.contains("font-switch-icon")) {
         e.stopPropagation();
 
-        // Get current fonts - either from individual selection or from pairing
+        const index = parseInt(target.dataset.index || "0");
+        const pairing = fontPairings[index];
+
+        // Determine current fonts to swap
         let currentHeading: string;
         let currentBody: string;
 
-        if (this.selectedHeadingFont || this.selectedBodyFont) {
-          // Use individual selections (with defaults from first pairing if one is missing)
-          currentHeading = this.selectedHeadingFont || fontPairings[0].heading;
-          currentBody = this.selectedBodyFont || fontPairings[0].body;
+        if (
+          this.lastSwappedIndex === index &&
+          this.selectedHeadingFont &&
+          this.selectedBodyFont
+        ) {
+          // Clicking same item again - toggle by swapping current selection
+          currentHeading = this.selectedHeadingFont;
+          currentBody = this.selectedBodyFont;
         } else {
-          // Get from current pairing
-          const pairingIndex = this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
-          currentHeading = fontPairings[pairingIndex].heading;
-          currentBody = fontPairings[pairingIndex].body;
+          // Clicking a different item - reset the previous item's labels first
+          if (this.lastSwappedIndex !== null) {
+            const prevPairing = fontPairings[this.lastSwappedIndex];
+            const prevItem = this.shadowRoot?.querySelector(
+              `.font-item[data-index="${this.lastSwappedIndex}"]`
+            );
+            if (prevItem) {
+              const prevHeading = prevItem.querySelector(
+                ".heading-font"
+              ) as HTMLElement;
+              const prevBody = prevItem.querySelector(
+                ".body-font"
+              ) as HTMLElement;
+              if (prevHeading) {
+                prevHeading.innerHTML = `Heading: <span class="font-name-preview" style="font-family: '${prevPairing.heading}', sans-serif">${prevPairing.heading}</span>`;
+                prevHeading.dataset.font = prevPairing.heading;
+              }
+              if (prevBody) {
+                prevBody.innerHTML = `Body: <span class="font-name-preview" style="font-family: '${prevPairing.body}', sans-serif">${prevPairing.body}</span>`;
+                prevBody.dataset.font = prevPairing.body;
+              }
+            }
+          }
+          // Use the new item's pairing
+          currentHeading = pairing.heading;
+          currentBody = pairing.body;
         }
 
         // Swap the fonts
         this.selectedHeadingFont = currentBody;
         this.selectedBodyFont = currentHeading;
-        this.selectedFontPairing = -1; // Clear pairing selection
+        this.selectedFontPairing = -1;
+        this.lastSwappedIndex = index;
+
+        // Clear all selection states first
+        this.shadowRoot?.querySelectorAll(".font-item").forEach((item) => {
+          item.classList.remove("selected");
+        });
+        this.shadowRoot?.querySelectorAll(".individual-font").forEach((el) => {
+          el.classList.remove("selected");
+        });
+
+        // Update the labels, styles, and highlight only the clicked item
+        const fontItem = this.shadowRoot?.querySelector(
+          `.font-item[data-index="${index}"]`
+        );
+        if (fontItem) {
+          const headingSpan = fontItem.querySelector(
+            ".heading-font"
+          ) as HTMLElement;
+          const bodySpan = fontItem.querySelector(".body-font") as HTMLElement;
+          if (headingSpan) {
+            headingSpan.innerHTML = `Heading: <span class="font-name-preview" style="font-family: '${this.selectedHeadingFont}', sans-serif">${this.selectedHeadingFont}</span>`;
+            headingSpan.dataset.font = this.selectedHeadingFont;
+            headingSpan.classList.add("selected");
+          }
+          if (bodySpan) {
+            bodySpan.innerHTML = `Body: <span class="font-name-preview" style="font-family: '${this.selectedBodyFont}', sans-serif">${this.selectedBodyFont}</span>`;
+            bodySpan.dataset.font = this.selectedBodyFont;
+            bodySpan.classList.add("selected");
+          }
+        }
 
         this.applyFonts();
-        this.updateFontSelection();
         return;
       }
 
@@ -1170,21 +1267,57 @@ export class ThemeForseen extends HTMLElement {
 
   private handleArrowKey(isDown: boolean) {
     if (this.focusedColumn === "themes") {
+      // Get visible theme indices from DOM
+      const visibleThemeIndices: number[] = [];
+      this.shadowRoot?.querySelectorAll(".theme-item").forEach((item) => {
+        const idx = parseInt((item as HTMLElement).dataset.index || "-1");
+        if (idx >= 0) visibleThemeIndices.push(idx);
+      });
+
+      if (visibleThemeIndices.length === 0) return;
+
       const current = this.selectedTheme[this.mode];
-      this.selectedTheme[this.mode] = isDown
-        ? Math.min(current + 1, colorThemes.length - 1)
-        : Math.max(current - 1, 0);
+      const currentPos = visibleThemeIndices.indexOf(current);
+      let newPos: number;
+
+      if (currentPos === -1) {
+        newPos = isDown ? 0 : visibleThemeIndices.length - 1;
+      } else {
+        newPos = isDown
+          ? Math.min(currentPos + 1, visibleThemeIndices.length - 1)
+          : Math.max(currentPos - 1, 0);
+      }
+
+      this.selectedTheme[this.mode] = visibleThemeIndices[newPos];
       this.activeThemeIndex = this.selectedTheme[this.mode];
       this.applyTheme();
       this.renderThemes();
       this.scrollToSelected(".theme-item");
     } else {
-      this.selectedFontPairing = isDown
-        ? Math.min(this.selectedFontPairing + 1, fontPairings.length - 1)
-        : Math.max(this.selectedFontPairing - 1, 0);
+      // Get visible font indices from DOM
+      const visibleFontIndices: number[] = [];
+      this.shadowRoot?.querySelectorAll(".font-item").forEach((item) => {
+        const idx = parseInt((item as HTMLElement).dataset.index || "-1");
+        if (idx >= 0) visibleFontIndices.push(idx);
+      });
+
+      if (visibleFontIndices.length === 0) return;
+
+      const currentPos = visibleFontIndices.indexOf(this.selectedFontPairing);
+      let newPos: number;
+
+      if (currentPos === -1) {
+        newPos = isDown ? 0 : visibleFontIndices.length - 1;
+      } else {
+        newPos = isDown
+          ? Math.min(currentPos + 1, visibleFontIndices.length - 1)
+          : Math.max(currentPos - 1, 0);
+      }
+
+      this.selectedFontPairing = visibleFontIndices[newPos];
       this.activeFontIndex = this.selectedFontPairing;
       this.applyFonts();
-      this.renderFonts(); // Re-render to show active state
+      this.renderFonts();
       this.scrollToSelected(".font-item");
     }
   }
@@ -1453,7 +1586,12 @@ export class ThemeForseen extends HTMLElement {
       fontFamily = this.selectedHeadingFont || pairing.heading;
     }
 
-    const result = await tryApplyViaServer(type, colors, fontFamily, this.isDarkMode);
+    const result = await tryApplyViaServer(
+      type,
+      colors,
+      fontFamily,
+      this.isDarkMode
+    );
 
     if (result?.success) {
       // Show success toast with filename

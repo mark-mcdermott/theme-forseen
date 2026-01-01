@@ -203,7 +203,6 @@ export class ThemeForseen extends HTMLElement {
   private filterDropdownScrollTop = 0;
   private clickOutsideHandlerAdded = false;
   private fontFilterClickOutsideHandlerAdded = false;
-  private lastSwappedIndex: number | null = null;
 
   private isMobile(): boolean {
     return window.innerWidth <= 768;

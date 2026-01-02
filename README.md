@@ -105,10 +105,30 @@ h1 {
 
 ### Simple Tailwind v4 Example
 
-- `npm create vite@latest my-app -- --template vanilla`
+- Create a placeholder vite app:
+
+```
+npm create vite@latest my-app -- --template vanilla
+```
+
 - `cd my-app`
+  <<<<<<< HEAD
+- Delete the `src` folder. We don't need it for this simple demo.
+
+```
+rm -rf src
+```
+
+- Install the Tailwind and ThemeForseen packages:
+
+```
+npm install tailwindcss @tailwindcss/vite theme-forseen
+```
+
+- # Change the `index.html` page to this simple site which uses some Tailwind utility classes:
 - `npm install tailwindcss @tailwindcss/vite theme-forseen`
 - `index.html`:
+  > > > > > > > main
 
 ```html
 <!DOCTYPE html>
@@ -127,19 +147,29 @@ h1 {
 </html>
 ```
 
-- `touch vite.config.js`
-- `vite.config.js`:
+- Create a vite config file:
+
+```
+touch vite.config.js
+```
+
+- Paste this into the `vite.config.js`:
 
 ```js
 import tailwindcss from "@tailwindcss/vite";
 export default { plugins: [tailwindcss()] };
 ```
 
-- `touch style.css`
-- `style.css`:
+- Create a stylesheet:
+
+```
+touch style.css
+```
+
+- In the stylesheet, import Tailwind and setup some of the css variables ThemeForseen needs.
 
 ```css
-@import ~"tailwindcss";
+@import "tailwindcss";
 
 @theme inline {
   --color-primary: var(--color-primary);
@@ -149,6 +179,8 @@ export default { plugins: [tailwindcss()] };
   --font-body: var(--font-body);
 }
 ```
+
+- Defining cusom css variables in `@theme` like the above code does allows us to use special Tailwind generated classes based on our variable names. So when we define `--color-primary` we can then use the `text-primary` Tailwind class. The Tailwind docs explain that in [Extending the default theme](https://tailwindcss.com/docs/theme#extending-the-default-theme).
 
 - `npm run dev`
 

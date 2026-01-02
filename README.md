@@ -22,7 +22,7 @@ A live color theme and font pairing preview drawer for websites. Browse and prev
 npm install theme-forseen
 ```
 
-## Setup
+## Setup -- CSS variables
 
 Use these CSS variables in your stylesheets:
 
@@ -39,7 +39,7 @@ Use these CSS variables in your stylesheets:
 --font-body
 ```
 
-## Simple Examples
+## Setup -- Wiring this up in different systems
 
 ### CDN On Simple HTML Page
 
@@ -67,8 +67,9 @@ Use these CSS variables in your stylesheets:
 
 ### Simple npm install Example
 
-- `npm init my-app`
+- `mkdir my-app`
 - `cd my-app`
+- `npm init -y`
 - `npm install theme-forseen`
 - `touch style.css`
 - `style.css`:

@@ -108,28 +108,6 @@ h1 {
 - `npm create vite@latest my-app -- --template vanilla`
 - `cd my-app`
 - `npm install tailwindcss @tailwindcss/vite theme-forseen`
-
-- `vite.config.js`:
-
-```js
-import tailwindcss from "@tailwindcss/vite";
-export default { plugins: [tailwindcss()] };
-```
-
-- `style.css`:
-
-```css
-@import ~"tailwindcss";
-
-@theme inline {
-  --color-primary: var(--color-primary);
-  --color-bg: var(--color-bg);
-  --color-text: var(--color-text);
-  --font-heading: var(--font-heading);
-  --font-body: var(--font-body);
-}
-```
-
 - `index.html`:
 
 ```html
@@ -147,6 +125,29 @@ export default { plugins: [tailwindcss()] };
     <p>This is my first Tailwind page.</p>
   </body>
 </html>
+```
+
+- `touch vite.config.js`
+- `vite.config.js`:
+
+```js
+import tailwindcss from "@tailwindcss/vite";
+export default { plugins: [tailwindcss()] };
+```
+
+- `touch style.css`
+- `style.css`:
+
+```css
+@import ~"tailwindcss";
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-bg: var(--color-bg);
+  --color-text: var(--color-text);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
 ```
 
 - `npm run dev`

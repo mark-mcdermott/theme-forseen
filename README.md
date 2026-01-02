@@ -4,6 +4,10 @@
 
 A live color theme and font pairing preview drawer for websites. Browse and preview different color schemes and font combinations in real-time.
 
+![ThemeForseen Demo](preview.gif)
+
+More details on [YouTube](https://www.youtube.com/watch?v=h4MdlSp9Kg8).
+
 ## Features
 
 - **CSS Variables** - Sets `--color-primary`, `--font-heading`, etc. on `<html>` for any CSS to consume

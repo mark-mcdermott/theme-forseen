@@ -124,7 +124,7 @@ rm -rf src
 npm install tailwindcss @tailwindcss/vite theme-forseen
 ```
 
-- # Change the `index.html` page to this simple site which uses some Tailwind utility classes:
+- Change the `index.html` page to this simple site which uses some Tailwind utility classes:
 - `npm install tailwindcss @tailwindcss/vite theme-forseen`
 - `index.html`:
 

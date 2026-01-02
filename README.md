@@ -65,123 +65,90 @@ Use these CSS variables in your stylesheets:
 </html>
 ```
 
-### Simple npm install Example
+### Tailwind Vite App
 
-- `mkdir my-app`
-- `cd my-app`
-- `npm init -y`
-- `npm install theme-forseen`
-- `touch style.css`
-- `style.css`:
+- Create a Vite app:
 
-```css
-body {
-  color: var(--color-text);
-  background: var(--color-bg);
-  font-family: var(--font-body);
-}
-h1 {
-  color: var(--color-primary);
-  font-family: var(--font-heading);
-}
-```
-
-- `index.html`:
-
-```html
-<!DOCTYPE html>
-<html>
-  <link rel="stylesheet" href="style.css" />
-  <script type="module">
-    import "/node_modules/theme-forseen/dist/index.js";
-  </script>
-  <body>
-    <h1>Hello World</h1>
-    <p>This is my first HTML page.</p>
-  </body>
-</html>
-```
-
-- `npx serve .`
-
-### Simple Tailwind v4 Example
-
-- Create a placeholder vite app:
-
-```
+```bash
 npm create vite@latest my-app -- --template vanilla
+cd my-app
 ```
 
-- `cd my-app`
-- Delete the `src` folder. We don't need it for this simple demo.
+- Install Tailwind and ThemeForseen:
 
-```
-rm -rf src
-```
-
-- Install the Tailwind and ThemeForseen packages:
-
-```
+```bash
 npm install tailwindcss @tailwindcss/vite theme-forseen
 ```
 
-- Change the `index.html` page to this simple site which uses some Tailwind utility classes:
-- `npm install tailwindcss @tailwindcss/vite theme-forseen`
-- `index.html`:
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <link rel="stylesheet" href="style.css" />
-    <script
-      type="module"
-      src="/node_modules/theme-forseen/dist/index.js"
-    ></script>
-  </head>
-  <body class="bg-bg text-text font-body">
-    <h1 class="text-primary font-heading text-4xl">Hello World</h1>
-    <p>This is my first Tailwind page.</p>
-  </body>
-</html>
-```
-
-- Create a vite config file:
-
-```
-touch vite.config.js
-```
-
-- Paste this into the `vite.config.js`:
+- Create `vite.config.js`:
 
 ```js
 import tailwindcss from "@tailwindcss/vite";
 export default { plugins: [tailwindcss()] };
 ```
 
-- Create a stylesheet:
+- Replace `index.html`:
 
-```
-touch style.css
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>my-app</title>
+  </head>
+  <body class="bg-bg text-primary">
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
 ```
 
-- In the stylesheet, import Tailwind and setup some of the css variables ThemeForseen needs.
+- Replace `src/main.js`:
+
+```js
+import './style.css'
+import 'theme-forseen'
+
+document.querySelector('#app').innerHTML = `
+<div class="min-h-screen flex items-center justify-center p-8">
+  <div class="bg-card-bg rounded-2xl p-8 max-w-md shadow-xl">
+    <h1 class="font-heading text-4xl text-primary">Theme Forseen</h1>
+    <p class="font-body mt-4 text-text">Preview color themes and font pairings in real-time.</p>
+    <div class="mt-6 flex gap-3">
+      <button class="bg-primary text-bg px-4 py-2 rounded-lg font-semibold border-2 border-primary-shadow hover:brightness-95 hover:cursor-pointer">Get Started</button>
+      <button class="bg-accent text-bg px-4 py-2 rounded-lg font-semibold border-2 border-accent-shadow hover:brightness-95 hover:cursor-pointer">Learn More</button>
+    </div>
+  </div>
+</div>
+`
+```
+
+- Replace `src/style.css`:
 
 ```css
 @import "tailwindcss";
 
 @theme inline {
   --color-primary: var(--color-primary);
+  --color-primary-shadow: var(--color-primary-shadow);
+  --color-accent: var(--color-accent);
+  --color-accent-shadow: var(--color-accent-shadow);
   --color-bg: var(--color-bg);
+  --color-card-bg: var(--color-card-bg);
   --color-text: var(--color-text);
+  --color-extra: var(--color-extra);
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
 }
 ```
 
-- Defining cusom css variables in `@theme` like the above code does allows us to use special Tailwind generated classes based on our variable names. So when we define `--color-primary` we can then use the `text-primary` Tailwind class. The Tailwind docs explain that in [Extending the default theme](https://tailwindcss.com/docs/theme#extending-the-default-theme).
+- Run the dev server:
 
-- `npm run dev`
+```bash
+npm run dev
+```
 
 ## Usage
 

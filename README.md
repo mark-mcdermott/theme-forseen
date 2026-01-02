@@ -26,29 +26,26 @@ npm install theme-forseen
 
 Use these CSS variables in your stylesheets:
 
-```css
-var(--color-primary)
-var(--color-primary-shadow)
-var(--color-accent)
-var(--color-accent-shadow)
-var(--color-bg)
-var(--color-card-bg)
-var(--color-text)
-var(--color-extra)
-var(--font-heading)
-var(--font-body)
+```
+--color-primary
+--color-primary-shadow
+--color-accent
+--color-accent-shadow
+--color-bg
+--color-card-bg
+--color-text
+--color-extra
+--font-heading
+--font-body
 ```
 
-## Examples
+## Simple Examples
 
 ### CDN On Simple HTML Page
 
 ```html
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>My First Page</title>
-  </head>
   <style>
     body {
       color: var(--color-text);
@@ -68,6 +65,92 @@ var(--font-body)
 </html>
 ```
 
+### Simple npm install Example
+
+- `npm init my-app`
+- `cd my-app`
+- `npm install theme-forseen`
+- `touch style.css`
+- `style.css`:
+
+```css
+body {
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-body);
+}
+h1 {
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+}
+```
+
+- `index.html`:
+
+```html
+<!DOCTYPE html>
+<html>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module">
+    import "/node_modules/theme-forseen/dist/index.js";
+  </script>
+  <body>
+    <h1>Hello World</h1>
+    <p>This is my first HTML page.</p>
+  </body>
+</html>
+```
+
+- `npx serve .`
+
+### Simple Tailwind v4 Example
+
+- `npm create vite@latest my-app -- --template vanilla`
+- `cd my-app`
+- `npm install tailwindcss @tailwindcss/vite theme-forseen`
+
+- `vite.config.js`:
+
+```js
+import tailwindcss from "@tailwindcss/vite";
+export default { plugins: [tailwindcss()] };
+```
+
+- `style.css`:
+
+```css
+@import ~"tailwindcss";
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-bg: var(--color-bg);
+  --color-text: var(--color-text);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+```
+
+- `index.html`:
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+    <script
+      type="module"
+      src="/node_modules/theme-forseen/dist/index.js"
+    ></script>
+  </head>
+  <body class="bg-bg text-text font-body">
+    <h1 class="text-primary font-heading text-4xl">Hello World</h1>
+    <p>This is my first Tailwind page.</p>
+  </body>
+</html>
+```
+
+- `npm run dev`
+
 ## Usage
 
 The drawer auto-initializes when you import the module—no setup code needed.
@@ -76,7 +159,7 @@ The drawer auto-initializes when you import the module—no setup code needed.
 
 ```html
 <script type="module">
-  import 'theme-forseen';
+  import "theme-forseen";
 </script>
 ```
 
@@ -86,7 +169,7 @@ If you're serving static HTML files without a bundler, use the full path:
 
 ```html
 <script type="module">
-  import '/node_modules/theme-forseen/dist/index.js';
+  import "/node_modules/theme-forseen/dist/index.js";
 </script>
 ```
 
@@ -94,7 +177,7 @@ Or use a CDN:
 
 ```html
 <script type="module">
-  import 'https://unpkg.com/theme-forseen/dist/index.js';
+  import "https://unpkg.com/theme-forseen/dist/index.js";
 </script>
 ```
 
@@ -109,7 +192,7 @@ Or use a CDN:
 ### React
 
 ```jsx
-import 'theme-forseen';
+import "theme-forseen";
 
 function App() {
   return <div>Your app</div>;
@@ -178,19 +261,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--color-primary)',
-        'primary-shadow': 'var(--color-primary-shadow)',
-        accent: 'var(--color-accent)',
-        'accent-shadow': 'var(--color-accent-shadow)',
-        bg: 'var(--color-bg)',
-        'card-bg': 'var(--color-card-bg)',
-        text: 'var(--color-text)',
-        extra: 'var(--color-extra)',
+        primary: "var(--color-primary)",
+        "primary-shadow": "var(--color-primary-shadow)",
+        accent: "var(--color-accent)",
+        "accent-shadow": "var(--color-accent-shadow)",
+        bg: "var(--color-bg)",
+        "card-bg": "var(--color-card-bg)",
+        text: "var(--color-text)",
+        extra: "var(--color-extra)",
       },
     },
     fontFamily: {
-      heading: ['var(--font-heading)', 'sans-serif'],
-      body: ['var(--font-body)', 'sans-serif'],
+      heading: ["var(--font-heading)", "sans-serif"],
+      body: ["var(--font-body)", "sans-serif"],
     },
   },
 };
@@ -241,14 +324,14 @@ This starts a local server that listens for theme activations. When you click th
 
 The server automatically detects your project type and finds the right CSS file:
 
-| Project Type | CSS File Location |
-|-------------|-------------------|
-| Next.js | `src/app/globals.css` or `app/globals.css` |
-| Vite | `src/index.css` or `src/style.css` |
-| Astro | `src/styles/global.css` |
-| SvelteKit | `src/app.css` |
-| Nuxt | `assets/css/main.css` |
-| Plain HTML | Parses `index.html` for stylesheet links |
+| Project Type | CSS File Location                          |
+| ------------ | ------------------------------------------ |
+| Next.js      | `src/app/globals.css` or `app/globals.css` |
+| Vite         | `src/index.css` or `src/style.css`         |
+| Astro        | `src/styles/global.css`                    |
+| SvelteKit    | `src/app.css`                              |
+| Nuxt         | `assets/css/main.css`                      |
+| Plain HTML   | Parses `index.html` for stylesheet links   |
 
 ### Plain HTML Projects
 
@@ -265,14 +348,14 @@ The server writes CSS variables in this format:
 ```css
 /* ThemeForseen Colors - Light Mode */
 :root {
-  --color-primary: #FF3366;
-  --color-primary-shadow: #CC2952;
-  --color-accent: #FFD600;
-  --color-accent-shadow: #CCAB00;
-  --color-bg: #FFFFFF;
-  --color-card-bg: #FFF8F0;
-  --color-text: #1A1A1A;
-  --color-extra: #FF6B00;
+  --color-primary: #ff3366;
+  --color-primary-shadow: #cc2952;
+  --color-accent: #ffd600;
+  --color-accent-shadow: #ccab00;
+  --color-bg: #ffffff;
+  --color-card-bg: #fff8f0;
+  --color-text: #1a1a1a;
+  --color-extra: #ff6b00;
 }
 /* End ThemeForseen */
 ```
@@ -292,28 +375,30 @@ The server runs on port 3847 by default.
 ## CSS Variables Reference
 
 ### Colors
-| Variable | Description |
-|----------|-------------|
-| `--color-primary` | Primary brand color |
-| `--color-primary-shadow` | Darker shade of primary |
-| `--color-accent` | Accent/secondary color |
-| `--color-accent-shadow` | Darker shade of accent |
-| `--color-bg` | Background color |
-| `--color-card-bg` | Card/surface background |
-| `--color-text` | Main text color |
-| `--color-extra` | Additional accent color |
-| `--color-h1`, `--color-h2`, `--color-h3` | Heading colors |
-| `--color-heading` | General heading color (same as h1) |
-| `--primary-color` | Alias for `--color-primary` |
-| `--secondary-color` | Alias for `--color-accent` |
+
+| Variable                                 | Description                        |
+| ---------------------------------------- | ---------------------------------- |
+| `--color-primary`                        | Primary brand color                |
+| `--color-primary-shadow`                 | Darker shade of primary            |
+| `--color-accent`                         | Accent/secondary color             |
+| `--color-accent-shadow`                  | Darker shade of accent             |
+| `--color-bg`                             | Background color                   |
+| `--color-card-bg`                        | Card/surface background            |
+| `--color-text`                           | Main text color                    |
+| `--color-extra`                          | Additional accent color            |
+| `--color-h1`, `--color-h2`, `--color-h3` | Heading colors                     |
+| `--color-heading`                        | General heading color (same as h1) |
+| `--primary-color`                        | Alias for `--color-primary`        |
+| `--secondary-color`                      | Alias for `--color-accent`         |
 
 ### Fonts
-| Variable | Description |
-|----------|-------------|
-| `--font-heading` | Font family for headings |
-| `--font-body` | Font family for body text |
+
+| Variable         | Description                |
+| ---------------- | -------------------------- |
+| `--font-heading` | Font family for headings   |
+| `--font-body`    | Font family for body text  |
 | `--heading-font` | Alias for `--font-heading` |
-| `--body-font` | Alias for `--font-body` |
+| `--body-font`    | Alias for `--font-body`    |
 
 ## Customization
 
@@ -322,19 +407,19 @@ Add your own themes by editing `src/themes.ts`:
 ```typescript
 export const colorThemes: ColorTheme[] = [
   {
-    name: 'My Custom Theme',
+    name: "My Custom Theme",
     light: {
-      primary: '#FF0000',
-      primaryShadow: '#CC0000',
-      accent: '#00FF00',
-      accentShadow: '#00CC00',
-      background: '#FFFFFF',
-      cardBackground: '#F5F5F5',
-      text: '#333333',
-      extra: '#0000FF',
-      h1Color: 'primary',
-      h2Color: 'primary',
-      h3Color: 'accent',
+      primary: "#FF0000",
+      primaryShadow: "#CC0000",
+      accent: "#00FF00",
+      accentShadow: "#00CC00",
+      background: "#FFFFFF",
+      cardBackground: "#F5F5F5",
+      text: "#333333",
+      extra: "#0000FF",
+      h1Color: "primary",
+      h2Color: "primary",
+      h3Color: "accent",
     },
     dark: {
       // dark mode colors...

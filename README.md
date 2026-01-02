@@ -112,7 +112,6 @@ npm create vite@latest my-app -- --template vanilla
 ```
 
 - `cd my-app`
-  <<<<<<< HEAD
 - Delete the `src` folder. We don't need it for this simple demo.
 
 ```
@@ -128,7 +127,6 @@ npm install tailwindcss @tailwindcss/vite theme-forseen
 - # Change the `index.html` page to this simple site which uses some Tailwind utility classes:
 - `npm install tailwindcss @tailwindcss/vite theme-forseen`
 - `index.html`:
-  > > > > > > > main
 
 ```html
 <!DOCTYPE html>

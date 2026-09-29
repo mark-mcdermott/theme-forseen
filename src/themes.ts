@@ -61879,6 +61879,40 @@ export const colorThemes: ColorTheme[] = [
       h3Color: 'primary',
     },
   },
+
+  // Selections are stored by position, so new themes go below this line and nothing above it moves
+
+  // The TF-01 station at themeforseen.com
+  {
+    name: 'Weather Station',
+    tags: ['warm', 'retro', 'vintage', 'weather'],
+    light: {
+      primary: '#EB5526',
+      primaryShadow: '#C23F17',
+      accent: '#014C5C',
+      accentShadow: '#01343F',
+      background: '#ECDFC9',
+      cardBackground: '#F4EBDB',
+      text: '#0D0F0E',
+      extra: '#E38705',
+      h1Color: 'text',
+      h2Color: 'primary',
+      h3Color: 'accent',
+    },
+    dark: {
+      primary: '#F2673C',
+      primaryShadow: '#EB5526',
+      accent: '#3FC1B0',
+      accentShadow: '#1F8F84',
+      background: '#2B2722',
+      cardBackground: '#36312B',
+      text: '#EFE4D0',
+      extra: '#F0A630',
+      h1Color: 'text',
+      h2Color: 'primary',
+      h3Color: 'accent',
+    },
+  },
 ];
 
 // Font pairing definitions
@@ -63313,6 +63347,15 @@ export const fontPairings: FontPairing[] = [
     heading: 'g Gelem',
     headingStyle: ['sans', 'display'],
     body: 'Open Sans',
+    bodyStyle: ['sans'],
+  },
+
+  // Selections are stored by position, so new pairings go below this line and nothing above it moves
+  {
+    name: 'Geist & Inter',
+    heading: 'Geist',
+    headingStyle: ['sans'],
+    body: 'Inter',
     bodyStyle: ['sans'],
   },
 ];

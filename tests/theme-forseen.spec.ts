@@ -1,33 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
-
-// Helper to get CSS variable value from document root
-async function getCSSVar(page: Page, varName: string): Promise<string> {
-  return page.evaluate((name) => {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }, varName);
-}
-
-// Helper to open the drawer
-async function openDrawer(page: Page): Promise<void> {
-  await page.locator('theme-forseen').locator('.drawer-toggle').click();
-  await expect(page.locator('theme-forseen').locator('.drawer.open')).toBeVisible();
-}
-
-// Helper to clear localStorage before each test
-async function clearStorage(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('themeforseen-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  });
-}
-
-// Helper to get element inside shadow DOM
-function shadowLocator(page: Page, selector: string) {
-  return page.locator('theme-forseen').locator(selector);
-}
+import { test, expect } from '@playwright/test';
+import { clearStorage, getCSSVar, openDrawer, shadowLocator } from './helpers';
 
 // =============================================================================
 // HIGH VALUE TESTS - Core functionality that must not break

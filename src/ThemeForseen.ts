@@ -1,9 +1,5 @@
-import {
-  colorThemes,
-  fontPairings,
-  type ColorTheme,
-  type FontPairing,
-} from "./themes.js";
+import type { ColorTheme, FontPairing } from "./themes.js";
+import { indexOfName, loadCollection } from "./collection.js";
 import { getTemplate } from "./template.js";
 import namer from "color-namer";
 import {
@@ -166,7 +162,28 @@ function colorMatchesSearch(hex: string, searchTerm: string): boolean {
   return names.some((name) => name.includes(searchTerm));
 }
 
+export interface ThemeForseenState {
+  mode: "light" | "dark";
+  theme: { name: string; colors: ColorTheme["light"] };
+  fonts: { heading: string; body: string };
+  open: boolean;
+}
+
+export const CHANGE_EVENT = "themeforseen:change";
+
+const NOT_STORED = -1;
+
 export class ThemeForseen extends HTMLElement {
+  static observedAttributes = ["open"];
+
+  private colorThemes: ColorTheme[] = [];
+  private fontPairings: FontPairing[] = [];
+  private tags: string[] = [];
+  private defaultFontPairing = 0;
+  private isReady = false;
+  private lastAnnounced = "";
+  private fontRowObserver: IntersectionObserver | null = null;
+
   private isOpen = false;
   private isDarkMode = false;
   private focusedColumn: "themes" | "fonts" = "themes";
@@ -175,7 +192,7 @@ export class ThemeForseen extends HTMLElement {
     return this.isDarkMode ? "dark" : "light";
   }
 
-  private selectedTheme = { light: 0, dark: 0 };
+  private selectedTheme = { light: NOT_STORED, dark: NOT_STORED };
   private starredTheme: { light: number | null; dark: number | null } = {
     light: null,
     dark: null,
@@ -183,6 +200,7 @@ export class ThemeForseen extends HTMLElement {
   private lovedThemes = { light: new Set<number>(), dark: new Set<number>() };
 
   private selectedFontPairing = 0;
+  private hasStoredFontPairing = false;
   private lastSwappedIndex: number | null = null;
   private starredFont: number | null = null;
   private lovedFonts = new Set<number>();
@@ -227,17 +245,138 @@ export class ThemeForseen extends HTMLElement {
     this.loadFromLocalStorage();
     this.incrementVisitCounter();
     this.checkDarkMode(); // Must be before render() so isDarkMode is set correctly
+
+    this.start().catch((error) => {
+      console.error("[ThemeForseen] Could not load the collection.", error);
+    });
+  }
+
+  attributeChangedCallback(
+    name: string,
+    _previous: string | null,
+    value: string | null
+  ) {
+    if (name === "open") this.setOpen(value !== null);
+  }
+
+  /** What is applied to the page right now. Null until the collection has loaded. */
+  get state(): ThemeForseenState | null {
+    if (!this.isReady) return null;
+
+    const theme = this.colorThemes[this.selectedTheme[this.mode]];
+    return {
+      mode: this.mode,
+      theme: { name: theme.name, colors: { ...theme[this.mode] } },
+      fonts: this.currentFonts(),
+      open: this.isOpen,
+    };
+  }
+
+  open() {
+    this.setOpen(true);
+  }
+
+  close() {
+    this.setOpen(false);
+  }
+
+  toggle() {
+    this.setOpen(!this.isOpen);
+  }
+
+  private setOpen(open: boolean) {
+    if (this.isOpen === open) return;
+
+    this.isOpen = open;
+    this.toggleAttribute("open", open);
+
+    if (!this.isReady) return;
+    this.applyDrawerState();
+    this.announce();
+  }
+
+  private resolveSelections() {
+    const defaultTheme = this.indexOfDefault(this.colorThemes, "default-theme");
+    this.defaultFontPairing = this.indexOfDefault(
+      this.fontPairings,
+      "default-fonts"
+    );
+
+    for (const mode of ["light", "dark"] as const) {
+      if (!this.colorThemes[this.selectedTheme[mode]]) {
+        this.selectedTheme[mode] = defaultTheme;
+      }
+    }
+
+    const pairingIsMissing =
+      this.selectedFontPairing >= this.fontPairings.length;
+    if (!this.hasStoredFontPairing || pairingIsMissing) {
+      this.selectedFontPairing = this.defaultFontPairing;
+    }
+  }
+
+  private indexOfDefault(items: { name: string }[], attribute: string): number {
+    const name = this.getAttribute(attribute);
+    if (!name) return 0;
+
+    const index = indexOfName(items, name);
+    if (index >= 0) return index;
+
+    console.warn(
+      `[ThemeForseen] ${attribute}="${name}" is not in the collection. Using "${items[0].name}".`
+    );
+    return 0;
+  }
+
+  // The mode was changed from outside the drawer, so the page is repainted whether or not the drawer is open
+  private followMode(isDark: boolean) {
+    if (this.isDarkMode === isDark) return;
+
+    this.isDarkMode = isDark;
+    if (!this.isReady) return;
+
+    this.applyTheme(true);
+    this.updateModeButtons();
+    this.renderThemes();
+  }
+
+  private announce() {
+    const state = this.state;
+    if (!state) return;
+
+    const serialized = JSON.stringify(state);
+    if (serialized === this.lastAnnounced) return;
+    this.lastAnnounced = serialized;
+
+    this.dispatchEvent(
+      new CustomEvent<ThemeForseenState>(CHANGE_EVENT, {
+        detail: state,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private async start() {
+    const collection = await loadCollection();
+    if (!this.isConnected) return;
+
+    this.colorThemes = collection.colorThemes;
+    this.fontPairings = collection.fontPairings;
+    this.tags = collection.tags;
+    this.resolveSelections();
+
     this.render();
     this.attachEventListeners();
+    this.applyDrawerState();
     this.applyTheme(true); // Force on initial load
     this.applyFonts();
 
-    // Render theme and font lists (this also restores favorites)
-    this.renderThemes();
-    this.renderFonts();
-
     // Hide instructions if user has visited enough times
     this.maybeHideInstructions();
+
+    this.isReady = true;
+    this.announce();
 
     // Jiggle the bookmark after 7 seconds to attract attention
     setTimeout(() => {
@@ -267,9 +406,7 @@ export class ThemeForseen extends HTMLElement {
       .matchMedia("(prefers-color-scheme: dark)")
       .addEventListener("change", (e) => {
         if (getBool(STORAGE_KEYS.DARK_MODE) === null) {
-          this.isDarkMode = e.matches;
-          this.applyTheme();
-          this.updateModeButtons();
+          this.followMode(e.matches);
         }
       });
 
@@ -278,14 +415,7 @@ export class ThemeForseen extends HTMLElement {
       const currentColorScheme =
         document.documentElement.style.colorScheme ||
         getComputedStyle(document.documentElement).colorScheme;
-      const shouldBeDark = currentColorScheme === "dark";
-
-      if (this.isDarkMode !== shouldBeDark) {
-        this.isDarkMode = shouldBeDark;
-        this.applyTheme();
-        this.updateModeButtons();
-        this.renderThemes();
-      }
+      this.followMode(currentColorScheme === "dark");
     });
 
     this.darkModeObserver.observe(document.documentElement, {
@@ -295,13 +425,7 @@ export class ThemeForseen extends HTMLElement {
 
     // Listen for custom event from external dark mode toggles
     window.addEventListener("darkmode-change", ((e: CustomEvent) => {
-      const shouldBeDark = e.detail?.dark ?? false;
-      if (this.isDarkMode !== shouldBeDark) {
-        this.isDarkMode = shouldBeDark;
-        this.applyTheme();
-        this.updateModeButtons();
-        this.renderThemes();
-      }
+      this.followMode(e.detail?.dark ?? false);
     }) as EventListener);
   }
 
@@ -311,7 +435,10 @@ export class ThemeForseen extends HTMLElement {
     const font = getItem(STORAGE_KEYS.FONT);
     if (lightTheme) this.selectedTheme.light = parseInt(lightTheme);
     if (darkTheme) this.selectedTheme.dark = parseInt(darkTheme);
-    if (font) this.selectedFontPairing = parseInt(font);
+    if (font) {
+      this.selectedFontPairing = parseInt(font);
+      this.hasStoredFontPairing = true;
+    }
 
     const starredLight = getItem(STORAGE_KEYS.STARRED_LIGHT);
     const starredDark = getItem(STORAGE_KEYS.STARRED_DARK);
@@ -432,6 +559,7 @@ export class ThemeForseen extends HTMLElement {
       selectedBodyStyles: this.selectedBodyStyles,
       showHeartedOnly: this.showHeartedOnly,
       showStarredOnly: this.showStarredOnly,
+      tags: this.tags,
     });
 
     this.drawerElement = this.shadowRoot.querySelector(".drawer")!;
@@ -511,13 +639,13 @@ export class ThemeForseen extends HTMLElement {
     const themesList = this.shadowRoot?.querySelector(".themes-list");
     if (!themesList) return;
 
-    const filteredThemes = colorThemes.filter((theme, index) =>
+    const filteredThemes = this.colorThemes.filter((theme, index) =>
       this.filterTheme(theme, index)
     );
 
     themesList.innerHTML = filteredThemes
       .map((theme, _) => {
-        const index = colorThemes.indexOf(theme);
+        const index = this.colorThemes.indexOf(theme);
         const colors = this.isDarkMode ? theme.dark : theme.light;
         // Selection classes added by updateThemeSelection()
         return `
@@ -585,13 +713,13 @@ export class ThemeForseen extends HTMLElement {
     const fontsList = this.shadowRoot?.querySelector(".fonts-list");
     if (!fontsList) return;
 
-    const filteredPairings = fontPairings.filter((pairing) =>
+    const filteredPairings = this.fontPairings.filter((pairing) =>
       this.filterFontPairing(pairing)
     );
 
     fontsList.innerHTML = filteredPairings
       .map((pairing, _) => {
-        const index = fontPairings.indexOf(pairing);
+        const index = this.fontPairings.indexOf(pairing);
         const isActive = this.activeFontIndex === index;
         return `
         <div class="font-item ${
@@ -625,14 +753,41 @@ export class ThemeForseen extends HTMLElement {
       })
       .join("");
 
-    // Load fonts for all visible pairings
-    filteredPairings.forEach((pairing) => {
-      loadGoogleFont(pairing.heading);
-      loadGoogleFont(pairing.body);
-    });
-
+    this.watchFontRows();
     this.updateFontSelection();
     this.restoreFontFavorites();
+  }
+
+  // A pairing's faces are requested when its row comes into view, and only while the drawer is open
+  private watchFontRows() {
+    this.fontRowObserver?.disconnect();
+    this.fontRowObserver = null;
+    if (!this.isOpen) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+
+          const row = entry.target as HTMLElement;
+          const pairing = this.fontPairings[parseInt(row.dataset.index || "")];
+          observer.unobserve(row);
+          if (!pairing) continue;
+
+          loadGoogleFont(pairing.heading);
+          loadGoogleFont(pairing.body);
+        }
+      },
+      {
+        root: this.fontsColumn.querySelector(".column-content"),
+        rootMargin: "200px 0px",
+      }
+    );
+
+    this.fontsColumn
+      .querySelectorAll(".font-item")
+      .forEach((row) => observer.observe(row));
+    this.fontRowObserver = observer;
   }
 
   private restoreFontFavorites() {
@@ -879,9 +1034,9 @@ export class ThemeForseen extends HTMLElement {
     const closeBtn = this.shadowRoot?.querySelector(".close-btn");
     const drawer = this.shadowRoot?.querySelector(".drawer");
 
-    toggle?.addEventListener("click", () => this.toggleDrawer());
-    closeBtn?.addEventListener("click", () => this.toggleDrawer());
-    this.backdrop?.addEventListener("click", () => this.toggleDrawer());
+    toggle?.addEventListener("click", () => this.toggle());
+    closeBtn?.addEventListener("click", () => this.toggle());
+    this.backdrop?.addEventListener("click", () => this.toggle());
 
     // Note: Backdrop click handling works because backdrop is a sibling of drawer,
     // not an ancestor, so clicks inside drawer don't bubble through backdrop anyway.
@@ -924,7 +1079,7 @@ export class ThemeForseen extends HTMLElement {
         e.stopPropagation();
 
         const index = parseInt(target.dataset.index || "0");
-        const pairing = fontPairings[index];
+        const pairing = this.fontPairings[index];
 
         // Determine current fonts to swap
         let currentHeading: string;
@@ -941,7 +1096,7 @@ export class ThemeForseen extends HTMLElement {
         } else {
           // Clicking a different item - reset the previous item's labels first
           if (this.lastSwappedIndex !== null) {
-            const prevPairing = fontPairings[this.lastSwappedIndex];
+            const prevPairing = this.fontPairings[this.lastSwappedIndex];
             const prevItem = this.shadowRoot?.querySelector(
               `.font-item[data-index="${this.lastSwappedIndex}"]`
             );
@@ -1445,11 +1600,6 @@ export class ThemeForseen extends HTMLElement {
     });
   }
 
-  private toggleDrawer() {
-    this.isOpen = !this.isOpen;
-    this.applyDrawerState();
-  }
-
   private applyDrawerState() {
     if (this.isOpen) {
       this.drawerElement.classList.add("open");
@@ -1460,6 +1610,8 @@ export class ThemeForseen extends HTMLElement {
       this.drawerToggle.classList.remove("hidden");
       this.backdrop.classList.remove("visible");
     }
+
+    this.watchFontRows();
   }
 
   private applyFilterDropdownState() {
@@ -1579,10 +1731,10 @@ export class ThemeForseen extends HTMLElement {
     let fontFamily: string | null = null;
 
     if (type === "theme") {
-      const theme = colorThemes[index];
+      const theme = this.colorThemes[index];
       colors = this.isDarkMode ? theme.dark : theme.light;
     } else {
-      const pairing = fontPairings[index];
+      const pairing = this.fontPairings[index];
       fontFamily = this.selectedHeadingFont || pairing.heading;
     }
 
@@ -1613,6 +1765,8 @@ export class ThemeForseen extends HTMLElement {
       isDarkMode: this.isDarkMode,
       selectedHeadingFont: this.selectedHeadingFont,
       selectedBodyFont: this.selectedBodyFont,
+      colorThemes: this.colorThemes,
+      fontPairings: this.fontPairings,
     });
   }
 
@@ -1629,7 +1783,7 @@ export class ThemeForseen extends HTMLElement {
     this.darkModeObserver?.disconnect();
 
     try {
-      const theme = colorThemes[this.selectedTheme[this.mode]];
+      const theme = this.colorThemes[this.selectedTheme[this.mode]];
       const colors = theme[this.mode];
 
       applyThemeColors(colors, this.isDarkMode);
@@ -1640,38 +1794,46 @@ export class ThemeForseen extends HTMLElement {
         attributeFilter: ["style"],
       });
     }
+
+    this.announce();
+  }
+
+  // Individual selections win; whichever face has none comes from the pairing
+  private currentFonts(): ThemeForseenState["fonts"] {
+    const hasIndividualSelection = Boolean(
+      this.selectedHeadingFont || this.selectedBodyFont
+    );
+    const usesSelectedPairing =
+      !hasIndividualSelection && this.selectedFontPairing >= 0;
+    const pairing =
+      this.fontPairings[
+        usesSelectedPairing ? this.selectedFontPairing : this.defaultFontPairing
+      ];
+
+    return {
+      heading: this.selectedHeadingFont || pairing.heading,
+      body: this.selectedBodyFont || pairing.body,
+    };
   }
 
   private applyFonts() {
-    // Determine which fonts to use: individual selections or pairing
-    let headingFont: string;
-    let bodyFont: string;
+    const { heading, body } = this.currentFonts();
 
-    if (this.selectedHeadingFont || this.selectedBodyFont) {
-      // Use individual selections (with defaults if one isn't selected)
-      if (this.selectedHeadingFont && this.selectedBodyFont) {
-        headingFont = this.selectedHeadingFont;
-        bodyFont = this.selectedBodyFont;
-      } else if (this.selectedHeadingFont) {
-        headingFont = this.selectedHeadingFont;
-        bodyFont = fontPairings[0].body;
-      } else {
-        headingFont = fontPairings[0].heading;
-        bodyFont = this.selectedBodyFont!;
-      }
-    } else {
-      const pairingIndex =
-        this.selectedFontPairing >= 0 ? this.selectedFontPairing : 0;
-      const pairing = fontPairings[pairingIndex];
-      headingFont = pairing.heading;
-      bodyFont = pairing.body;
-    }
-
-    applyFontStyles(headingFont, bodyFont);
+    applyFontStyles(heading, body);
     this.saveToLocalStorage();
+    this.announce();
   }
 }
 
 if (typeof window !== "undefined" && !customElements.get("theme-forseen")) {
   customElements.define("theme-forseen", ThemeForseen);
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "theme-forseen": ThemeForseen;
+  }
+  interface HTMLElementEventMap {
+    "themeforseen:change": CustomEvent<ThemeForseenState>;
+  }
 }

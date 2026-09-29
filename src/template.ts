@@ -1,5 +1,4 @@
 import { styles } from "./styles.js";
-import { getAllThemeTags } from "./themes.js";
 
 export interface TemplateState {
   themesColumnCollapsed: boolean;
@@ -11,9 +10,8 @@ export interface TemplateState {
   selectedBodyStyles: Set<string>;
   showHeartedOnly: boolean;
   showStarredOnly: boolean;
+  tags: string[];
 }
-
-const allTags = getAllThemeTags();
 
 export function getTemplate(state: TemplateState): string {
   return `
@@ -111,7 +109,7 @@ export function getTemplate(state: TemplateState): string {
                       <label for="filter-starred"><span class="filter-star-icon">★</span> Starred themes</label>
                     </div>
                     <div class="filter-separator"></div>
-                    ${allTags.map(tag => `
+                    ${state.tags.map(tag => `
                       <div class="filter-option" data-tag="${tag}">
                         <input type="checkbox" id="tag-${tag}" ${
                           state.selectedTags.has(tag) ? "checked" : ""

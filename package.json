@@ -1,10 +1,22 @@
 {
   "name": "theme-forseen",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A live color theme and font pairing preview drawer for web applications",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./data": {
+      "types": "./dist/data.d.ts",
+      "default": "./dist/data.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
   "type": "module",
   "bin": {
     "theme-forseen": "./dist/cli/index.js"
@@ -14,7 +26,7 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --sourcemap && esbuild src/cli/index.ts --bundle --platform=node --format=esm --outfile=dist/cli/index.js --banner:js=\"#!/usr/bin/env node\"",
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts src/data.ts --bundle --splitting --format=esm --outdir=dist --sourcemap && esbuild src/cli/index.ts --bundle --platform=node --format=esm --outfile=dist/cli/index.js --banner:js=\"#!/usr/bin/env node\"",
     "dev": "tsc --watch",
     "prepare": "npm run build",
     "test": "playwright test",

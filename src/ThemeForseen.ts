@@ -1833,7 +1833,8 @@ declare global {
   interface HTMLElementTagNameMap {
     "theme-forseen": ThemeForseen;
   }
-  interface HTMLElementEventMap {
+  // The event bubbles, so it can be heard on the element, the document or the window
+  interface GlobalEventHandlersEventMap {
     "themeforseen:change": CustomEvent<ThemeForseenState>;
   }
 }

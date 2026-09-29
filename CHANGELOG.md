@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-29
+
+### Added
+- `themeforseen:change` event and a `state` getter reporting the mode, theme, fonts and whether the drawer is open
+- `open()`, `close()` and `toggle()` methods, and an `open` attribute kept in step with the drawer
+- `default-theme` and `default-fonts` attributes to name what a first visit gets
+- `theme-forseen/data` entry exposing the collection without the element
+- "Weather Station" theme and "Geist & Inter" font pairing (now 2,055 themes and 198 pairings)
+- Type declarations for the element and its event
+
+### Changed
+- The collection is loaded separately from the element's code
+- Font stylesheets are requested as pairings scroll into view in the open drawer, instead of all at page load
+- A mode change from the page repaints while the drawer is closed
+- `colorThemes` and `fontPairings` are exported from `theme-forseen/data` instead of `theme-forseen`
+
+### Fixed
+- A stored selection that is no longer in the collection falls back to the default instead of failing
+
 ## [0.5.0] - 2026-01-02
 
 ### Added
@@ -74,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activation modal to export theme/font config
 - Works as vanilla Web Component (framework agnostic)
 
-[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.2.0...v0.3.0

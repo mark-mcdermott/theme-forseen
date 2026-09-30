@@ -1,8 +1,8 @@
 // Side-effect import to ensure custom element is registered
 import './ThemeForseen.js';
 
-export { ThemeForseen } from './ThemeForseen.js';
-export { colorThemes, fontPairings, type ColorTheme, type FontPairing } from './themes.js';
+export { ThemeForseen, CHANGE_EVENT, type ThemeForseenState } from './ThemeForseen.js';
+export type { ColorTheme, FontPairing } from './themes.js';
 
 // Initialize function to add the drawer to the page
 export function initThemeForseen() {

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThemeForseen Test Page: named defaults</title>
+  <style>
+    body {
+      font-family: var(--font-body, system-ui, sans-serif);
+      background: var(--color-bg, #fff);
+      color: var(--color-text, #333);
+      padding: 2rem;
+    }
+    h1 {
+      font-family: var(--font-heading, system-ui, sans-serif);
+      color: var(--color-primary, #333);
+    }
+  </style>
+</head>
+<body>
+  <h1>ThemeForseen Test Page</h1>
+  <p>This page names its own default theme and font pairing.</p>
+
+  <theme-forseen default-theme="Weather Station" default-fonts="Geist &amp; Inter"></theme-forseen>
+
+  <script type="module">
+    import '../../dist/index.js';
+  </script>
+</body>
+</html>

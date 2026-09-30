@@ -1,4 +1,4 @@
-import { colorThemes, fontPairings, type ColorTheme } from "./themes.js";
+import type { ColorTheme, FontPairing } from "./themes.js";
 import { generateTailwindColorConfig, generateFontCSS } from "./codeGenerators.js";
 
 type ThemeColors = ColorTheme["light"] | ColorTheme["dark"];
@@ -8,6 +8,8 @@ export interface ActivationContext {
   isDarkMode: boolean;
   selectedHeadingFont: string | null;
   selectedBodyFont: string | null;
+  colorThemes: ColorTheme[];
+  fontPairings: FontPairing[];
 }
 
 export function showActivationModal(
@@ -15,7 +17,14 @@ export function showActivationModal(
   index: number,
   context: ActivationContext
 ): void {
-  const { shadowRoot, isDarkMode, selectedHeadingFont, selectedBodyFont } = context;
+  const {
+    shadowRoot,
+    isDarkMode,
+    selectedHeadingFont,
+    selectedBodyFont,
+    colorThemes,
+    fontPairings,
+  } = context;
 
   const modal = shadowRoot.querySelector(".activation-modal");
   const instructions = shadowRoot.querySelector(".activation-instructions");

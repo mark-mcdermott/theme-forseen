@@ -16,6 +16,7 @@ More details on [YouTube](https://www.youtube.com/watch?v=h4MdlSp9Kg8).
 - **Light & Dark Mode Support** - Separate themes for each mode
 - **Dev Server** - Write CSS variables directly to your project files with one click
 - **Smart Project Detection** - Auto-detects Next.js, Vite, Astro, and other frameworks
+- **Page API** - Open the drawer, set defaults and follow selections from your own code
 - **Keyboard Navigation** - Arrow keys to browse options
 - **Mouse Wheel Support** - Scroll through themes and fonts
 - **Framework Agnostic** - Works with plain CSS, Tailwind, or any CSS framework
@@ -303,6 +304,78 @@ Any CSS framework that supports CSS variables will work. Just reference the vari
 4. **Browse Fonts**: Click any font pairing to apply it
 5. **Activate**: Click the lightning bolt icon to apply the theme to your project (see [Dev Server](#dev-server) below)
 
+## Page API
+
+The drawer adds itself to the page when you import the module. To configure it, put the element in your markup yourself and the module will use that one.
+
+```html
+<theme-forseen default-theme="Golden Hour" default-fonts="Inter & Geist"></theme-forseen>
+```
+
+### Attributes
+
+| Attribute       | Description                                                                         |
+| --------------- | ----------------------------------------------------------------------------------- |
+| `default-theme` | Name of the theme to apply, in both modes, when the visitor has not selected one    |
+| `default-fonts` | Name of the font pairing to apply when the visitor has not selected one             |
+| `open`          | Present while the drawer is open. Add or remove it to open or close the drawer      |
+
+Names are matched without regard to case. A name that is not in the collection logs a warning and the first entry is used. Defaults are read once, when the element starts.
+
+### Methods
+
+```js
+const drawer = document.querySelector("theme-forseen");
+
+drawer.open();
+drawer.close();
+drawer.toggle();
+```
+
+### State
+
+`state` is what is applied to the page right now. It is `null` until the collection has loaded.
+
+```js
+drawer.state;
+// {
+//   mode: "light",
+//   theme: { name: "Golden Hour", colors: { primary: "#...", background: "#...", ... } },
+//   fonts: { heading: "Inter", body: "Geist" },
+//   open: false
+// }
+```
+
+### Events
+
+`themeforseen:change` is dispatched on the element whenever `state` changes: once when the page is first painted, then on every selection, mode change, open and close. It bubbles, so you can listen on `document`. `event.detail` is the new state.
+
+```js
+document.addEventListener("themeforseen:change", (event) => {
+  console.log(event.detail.theme.name, event.detail.mode);
+});
+```
+
+### Changing the mode from your page
+
+If your site has its own light/dark control, tell the drawer about a change and it repaints the page with the selection for that mode, whether or not the drawer is open:
+
+```js
+window.dispatchEvent(new CustomEvent("darkmode-change", { detail: { dark: true } }));
+```
+
+Setting `color-scheme` on `<html>` has the same effect.
+
+### The collection on its own
+
+The themes and font pairings are available without the element, for build scripts and server code:
+
+```js
+import { colorThemes, fontPairings, getAllThemeTags } from "theme-forseen/data";
+```
+
+The element fetches this file by itself, separately from its own code.
+
 ## Dev Server
 
 The dev server lets you write CSS variables directly to your project files with one click.
@@ -405,7 +478,7 @@ The server runs on port 3847 by default.
 
 ## Customization
 
-Add your own themes by editing `src/themes.ts`:
+Add your own themes by editing `src/themes.ts`. Add them at the end of the list: selections are stored by position, so inserting one higher up moves every visitor's selection.
 
 ```typescript
 export const colorThemes: ColorTheme[] = [

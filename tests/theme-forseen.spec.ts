@@ -376,6 +376,60 @@ test.describe('Keyboard Navigation', () => {
   });
 });
 
+test.describe('After A Filter Change', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/tests/fixtures/');
+    await clearStorage(page);
+    await page.reload();
+    await openDrawer(page);
+
+    // Each change to a filter re-renders the drawer
+    await shadowLocator(page, '.filter-dropdown-btn').click();
+    await shadowLocator(page, '.filter-option[data-tag="warm"] input').click();
+    await shadowLocator(page, '.filter-option[data-tag="warm"] input').click();
+    await shadowLocator(page, '.filter-dropdown-btn').click();
+  });
+
+  test('arrow keys still move one theme at a time', async ({ page }) => {
+    await shadowLocator(page, '.theme-item[data-index="2"]').click();
+
+    await page.keyboard.press('ArrowDown');
+
+    await expect(shadowLocator(page, '.theme-item[data-index="3"]')).toHaveClass(/selected-light/);
+    await expect(shadowLocator(page, '.theme-item[data-index="4"]')).not.toHaveClass(/selected-light/);
+  });
+
+  test('arrow keys still move one font pairing at a time', async ({ page }) => {
+    await shadowLocator(page, '.fonts-list').hover();
+    await shadowLocator(page, '.font-item[data-index="2"]').click();
+
+    await page.keyboard.press('ArrowDown');
+
+    await expect(shadowLocator(page, '.font-item[data-index="3"]')).toHaveClass(/selected/);
+  });
+
+  test('a star still toggles once', async ({ page }) => {
+    await shadowLocator(page, '.star[data-type="theme"][data-index="6"]').click();
+    await expect(shadowLocator(page, '.star[data-type="theme"][data-index="6"]')).toHaveClass(/starred/);
+
+    await shadowLocator(page, '.star[data-type="theme"][data-index="6"]').click();
+    await expect(shadowLocator(page, '.star[data-type="theme"][data-index="6"]')).not.toHaveClass(/starred/);
+  });
+
+  test('the selected row is scrolled into view by its index, not its position', async ({ page }) => {
+    await shadowLocator(page, '.filter-dropdown-btn').click();
+    await shadowLocator(page, '.filter-option[data-tag="cool"] input').click();
+    await shadowLocator(page, '.filter-dropdown-btn').click();
+
+    const rows = shadowLocator(page, '.theme-item');
+    await rows.nth(5).click();
+    await page.keyboard.press('ArrowDown');
+
+    const selected = shadowLocator(page, '.theme-item.selected-light');
+    await expect(selected).toBeInViewport();
+  });
+});
+
 test.describe('Drawer State', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/tests/fixtures/');

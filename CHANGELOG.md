@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-30
+
+### Fixed
+- Arrow keys, `s`, `h` and the star, heart and activate buttons ran once more for every filter change made since the page loaded, so an arrow press could skip rows and a star could toggle twice
+- Selecting a theme no longer rebuilds the whole list, and rows out of view are no longer laid out or painted. A key press in the drawer takes about a fifth of the time it did
+- With a filter active, the arrow keys scrolled the wrong row into view
+
+### Changed
+- Playwright updated to 1.63 for the tests
+
 ## [0.6.0] - 2026-09-29
 
 ### Added
@@ -93,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activation modal to export theme/font config
 - Works as vanilla Web Component (framework agnostic)
 
-[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/mark-mcdermott/theme-forseen/compare/v0.3.0...v0.4.0

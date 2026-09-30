@@ -334,6 +334,9 @@ export const styles = `
     transition: all 0.2s ease;
     background: light-dark(white, #2a2a2a);
     position: relative;
+    /* Rows out of view are not laid out or painted, so a change to the page costs the drawer little */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 81px;
   }
 
   .theme-item:hover, .font-item:hover {

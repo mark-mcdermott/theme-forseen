@@ -48,7 +48,7 @@
   "bugs": "https://github.com/mark-mcdermott/theme-forseen/issues",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.63.0",
     "@types/color-namer": "^1.3.3",
     "@types/node": "^25.0.3",
     "esbuild": "^0.27.2",

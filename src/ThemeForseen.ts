@@ -367,6 +367,7 @@ export class ThemeForseen extends HTMLElement {
     this.resolveSelections();
 
     this.render();
+    this.attachPersistentListeners();
     this.attachEventListeners();
     this.applyDrawerState();
     this.applyTheme(true); // Force on initial load
@@ -1029,6 +1030,146 @@ export class ThemeForseen extends HTMLElement {
     }
   }
 
+  // Listeners on the document and the shadow root outlive every re-render, so they are attached once
+  private attachPersistentListeners() {
+    document.addEventListener("keydown", (e) => {
+      if (!this.isOpen) return;
+
+      // Check if user is typing in an input field
+      const activeElement =
+        this.shadowRoot?.activeElement || document.activeElement;
+      const isTypingInInput =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA";
+
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        // Only prevent arrow keys if not in an input
+        if (!isTypingInInput) {
+          e.preventDefault();
+          this.handleArrowKey(e.key === "ArrowDown");
+        }
+      }
+
+      // Star/Heart keyboard shortcuts (only when not typing in input)
+      if (
+        !isTypingInInput &&
+        (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")
+      ) {
+        e.preventDefault();
+        this.handleFavoriteShortcut(e.key.toLowerCase() as "s" | "h");
+      }
+    });
+
+    // Delegated click handler for buttons (mode, collapse, instructions close, favorites, activate)
+    this.shadowRoot?.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+
+      // Mode toggle buttons
+      if (target.classList.contains("mode-btn")) {
+        this.isDarkMode = target.dataset.mode === "dark";
+        this.activeThemeIndex = this.selectedTheme[this.mode];
+        this.applyTheme();
+        this.updateModeButtons();
+        this.renderThemes();
+        return;
+      }
+
+      // Collapse buttons
+      if (target.classList.contains("collapse-btn")) {
+        e.stopPropagation();
+        const columnType = target.dataset.columnType as "themes" | "fonts";
+        this.toggleColumn(columnType);
+        return;
+      }
+
+      // Instructions close buttons
+      if (target.classList.contains("instructions-close")) {
+        e.stopPropagation();
+        const instructionsDiv = target.closest(".instructions");
+        if (instructionsDiv) {
+          instructionsDiv.classList.add("hidden");
+        }
+        return;
+      }
+
+      // Activate icons
+      if (target.classList.contains("activate-icon")) {
+        e.stopPropagation();
+        const type = target.dataset.type as "theme" | "font";
+        const index = parseInt(target.dataset.index || "0");
+        this.handleActivate(type, index);
+        return;
+      }
+
+      // Favorite icons (star and heart)
+      if (target.classList.contains("favorite-icon")) {
+        e.stopPropagation();
+        const type = target.dataset.type as "theme" | "font";
+        const index = parseInt(target.dataset.index || "0");
+        const isStar = target.classList.contains("star");
+
+        if (type === "theme") {
+          if (isStar) {
+            const currentStarred = this.starredTheme[this.mode];
+
+            if (currentStarred === index) {
+              this.starredTheme[this.mode] = null;
+              target.classList.remove("starred");
+            } else {
+              if (currentStarred !== null) {
+                const prevStar = this.shadowRoot?.querySelector(
+                  `.star[data-type="theme"][data-index="${currentStarred}"]`
+                );
+                prevStar?.classList.remove("starred");
+              }
+              this.starredTheme[this.mode] = index;
+              target.classList.add("starred");
+            }
+          } else {
+            const lovedSet = this.lovedThemes[this.mode];
+
+            if (lovedSet.has(index)) {
+              lovedSet.delete(index);
+              target.classList.remove("loved");
+            } else {
+              lovedSet.add(index);
+              target.classList.add("loved");
+            }
+          }
+        } else if (type === "font") {
+          if (isStar) {
+            if (this.starredFont === index) {
+              this.starredFont = null;
+              target.classList.remove("starred");
+            } else {
+              if (this.starredFont !== null) {
+                const prevStar = this.shadowRoot?.querySelector(
+                  `.star[data-type="font"][data-index="${this.starredFont}"]`
+                );
+                prevStar?.classList.remove("starred");
+              }
+
+              this.starredFont = index;
+              target.classList.add("starred");
+            }
+          } else {
+            if (this.lovedFonts.has(index)) {
+              this.lovedFonts.delete(index);
+              target.classList.remove("loved");
+            } else {
+              this.lovedFonts.add(index);
+              target.classList.add("loved");
+            }
+          }
+        }
+
+        this.saveToLocalStorage();
+        return;
+      }
+    });
+  }
+
+  // Listeners on elements that a re-render replaces
   private attachEventListeners() {
     const toggle = this.shadowRoot?.querySelector(".drawer-toggle");
     const closeBtn = this.shadowRoot?.querySelector(".close-btn");
@@ -1059,7 +1200,7 @@ export class ThemeForseen extends HTMLElement {
         this.focusedColumn = "themes";
         this.selectedTheme[this.mode] = index;
         this.applyTheme();
-        this.renderThemes();
+        this.updateThemeSelection();
       }
     });
 
@@ -1200,34 +1341,6 @@ export class ThemeForseen extends HTMLElement {
     this.attachFilterListeners();
     this.attachFontFilterListeners();
 
-    document.addEventListener("keydown", (e) => {
-      if (!this.isOpen) return;
-
-      // Check if user is typing in an input field
-      const activeElement =
-        this.shadowRoot?.activeElement || document.activeElement;
-      const isTypingInInput =
-        activeElement?.tagName === "INPUT" ||
-        activeElement?.tagName === "TEXTAREA";
-
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        // Only prevent arrow keys if not in an input
-        if (!isTypingInInput) {
-          e.preventDefault();
-          this.handleArrowKey(e.key === "ArrowDown");
-        }
-      }
-
-      // Star/Heart keyboard shortcuts (only when not typing in input)
-      if (
-        !isTypingInInput &&
-        (e.key.toLowerCase() === "s" || e.key.toLowerCase() === "h")
-      ) {
-        e.preventDefault();
-        this.handleFavoriteShortcut(e.key.toLowerCase() as "s" | "h");
-      }
-    });
-
     const themesContent = this.shadowRoot?.querySelector(
       '[data-column="themes"] .column-content'
     );
@@ -1269,114 +1382,6 @@ export class ThemeForseen extends HTMLElement {
 
     fontsContent?.addEventListener("mouseenter", () => {
       this.focusedColumn = "fonts";
-    });
-
-    // Delegated click handler for buttons (mode, collapse, instructions close, favorites, activate)
-    this.shadowRoot?.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-
-      // Mode toggle buttons
-      if (target.classList.contains("mode-btn")) {
-        this.isDarkMode = target.dataset.mode === "dark";
-        this.activeThemeIndex = this.selectedTheme[this.mode];
-        this.applyTheme();
-        this.updateModeButtons();
-        this.renderThemes();
-        return;
-      }
-
-      // Collapse buttons
-      if (target.classList.contains("collapse-btn")) {
-        e.stopPropagation();
-        const columnType = target.dataset.columnType as "themes" | "fonts";
-        this.toggleColumn(columnType);
-        return;
-      }
-
-      // Instructions close buttons
-      if (target.classList.contains("instructions-close")) {
-        e.stopPropagation();
-        const instructionsDiv = target.closest(".instructions");
-        if (instructionsDiv) {
-          instructionsDiv.classList.add("hidden");
-        }
-        return;
-      }
-
-      // Activate icons
-      if (target.classList.contains("activate-icon")) {
-        e.stopPropagation();
-        const type = target.dataset.type as "theme" | "font";
-        const index = parseInt(target.dataset.index || "0");
-        this.handleActivate(type, index);
-        return;
-      }
-
-      // Favorite icons (star and heart)
-      if (target.classList.contains("favorite-icon")) {
-        e.stopPropagation();
-        const type = target.dataset.type as "theme" | "font";
-        const index = parseInt(target.dataset.index || "0");
-        const isStar = target.classList.contains("star");
-
-        if (type === "theme") {
-          if (isStar) {
-            const currentStarred = this.starredTheme[this.mode];
-
-            if (currentStarred === index) {
-              this.starredTheme[this.mode] = null;
-              target.classList.remove("starred");
-            } else {
-              if (currentStarred !== null) {
-                const prevStar = this.shadowRoot?.querySelector(
-                  `.star[data-type="theme"][data-index="${currentStarred}"]`
-                );
-                prevStar?.classList.remove("starred");
-              }
-              this.starredTheme[this.mode] = index;
-              target.classList.add("starred");
-            }
-          } else {
-            const lovedSet = this.lovedThemes[this.mode];
-
-            if (lovedSet.has(index)) {
-              lovedSet.delete(index);
-              target.classList.remove("loved");
-            } else {
-              lovedSet.add(index);
-              target.classList.add("loved");
-            }
-          }
-        } else if (type === "font") {
-          if (isStar) {
-            if (this.starredFont === index) {
-              this.starredFont = null;
-              target.classList.remove("starred");
-            } else {
-              if (this.starredFont !== null) {
-                const prevStar = this.shadowRoot?.querySelector(
-                  `.star[data-type="font"][data-index="${this.starredFont}"]`
-                );
-                prevStar?.classList.remove("starred");
-              }
-
-              this.starredFont = index;
-              target.classList.add("starred");
-            }
-          } else {
-            if (this.lovedFonts.has(index)) {
-              this.lovedFonts.delete(index);
-              target.classList.remove("loved");
-            } else {
-              this.lovedFonts.add(index);
-              target.classList.add("loved");
-            }
-          }
-        }
-
-        this.saveToLocalStorage();
-        return;
-      }
     });
 
     // Activation modal event listeners
@@ -1446,7 +1451,7 @@ export class ThemeForseen extends HTMLElement {
       this.selectedTheme[this.mode] = visibleThemeIndices[newPos];
       this.activeThemeIndex = this.selectedTheme[this.mode];
       this.applyTheme();
-      this.renderThemes();
+      this.updateThemeSelection();
       this.scrollToSelected(".theme-item");
     } else {
       // Get visible font indices from DOM
@@ -1526,13 +1531,14 @@ export class ThemeForseen extends HTMLElement {
     const column =
       this.focusedColumn === "themes" ? this.themesColumn : this.fontsColumn;
     const content = column.querySelector(".column-content") as HTMLElement;
-    const items = column.querySelectorAll(selector);
     const selectedIndex =
       this.focusedColumn === "themes"
         ? this.selectedTheme[this.mode]
         : this.selectedFontPairing;
 
-    const selectedItem = items[selectedIndex] as HTMLElement;
+    const selectedItem = column.querySelector(
+      `${selector}[data-index="${selectedIndex}"]`
+    ) as HTMLElement | null;
     if (selectedItem && content) {
       // For first item, scroll to absolute top to avoid sticky header issues
       if (selectedIndex === 0) {

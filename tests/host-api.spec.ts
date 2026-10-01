@@ -34,6 +34,15 @@ async function lastChange(page: Page): Promise<Change | undefined> {
   return (await changes(page)).at(-1);
 }
 
+// Whether a row lies within the part of its column that shows, whatever the window has scrolled to
+async function inViewInItsColumn(page: Page, selector: string): Promise<boolean> {
+  return shadowLocator(page, selector).evaluate((row) => {
+    const column = row.closest('.column-content')!.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    return box.top >= column.top && box.bottom <= column.bottom + 1;
+  });
+}
+
 async function startFresh(page: Page, path = '/tests/fixtures/'): Promise<void> {
   await page.goto(path);
   await clearStorage(page);
@@ -473,8 +482,9 @@ test.describe('Docked', () => {
   test('both columns show, since the window is wide, and each opens on its selection', async ({ page }) => {
     await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
     await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
-    await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toBeInViewport();
-    await expect(shadowLocator(page, '.font-item[data-index="197"]')).toBeInViewport();
+    for (const row of ['.theme-item[data-index="2054"]', '.font-item[data-index="197"]']) {
+      expect(await inViewInItsColumn(page, row)).toBe(true);
+    }
   });
 
   test("the page's control closes it, and it leaves the element", async ({ page }) => {
@@ -493,6 +503,23 @@ test.describe('Docked', () => {
   test('a selection still applies to the page', async ({ page }) => {
     await shadowLocator(page, '.theme-item[data-index="0"]').click();
     expect(await getCSSVar(page, '--color-primary')).toBe('#FF3366');
+  });
+
+  test('opening on the selection scrolls the columns, not the page', async ({ page }) => {
+    await page.setViewportSize({ width: 1100, height: 500 });
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toHaveClass(/selected-light/);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await shadowLocator(page, '[data-column="themes"] .column-content').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
+  });
+
+  test('nothing in a column is wider than the column', async ({ page }) => {
+    for (const column of ['themes', 'fonts']) {
+      const content = shadowLocator(page, `[data-column="${column}"] .column-content`);
+      expect(await content.evaluate((element) => element.scrollWidth - element.clientWidth)).toBe(0);
+    }
   });
 
   test('the arrow keys are the page\'s until the pointer or the focus is on the drawer', async ({ page }) => {

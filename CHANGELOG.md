@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - The drawer's night palette was set inside the drawer, where it beat any `--tf-*` value a page had set on the element. It is keyed on the element's `mode` now, so a page's own rules hold in both modes
 - A drawer that starts open opens on its selections, as one opened later already did
+- Bringing a row into view scrolls its column and no longer the page
+- In a narrow column the row of style pills wraps instead of pushing the column's controls past its edge
 
 ## [0.7.0] - 2026-09-30
 

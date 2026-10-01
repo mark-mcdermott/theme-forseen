@@ -390,6 +390,13 @@ export const styles = `
     padding-bottom: 12px;
   }
 
+  /* Tracks take the column's width, not their content's: a row of pills must wrap rather than widen them */
+  .column-controls,
+  .filter-container,
+  .font-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .column-controls {
     position: sticky;
     top: 0;

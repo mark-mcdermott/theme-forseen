@@ -107,6 +107,27 @@ function showToast(
 
 const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
+/**
+ * Brings a row into view by scrolling its column and nothing else:
+ * scrollIntoView would move the page too, which a docked drawer must not do.
+ * Measured on the screen and converted, so it holds when a page zooms the drawer.
+ */
+function scrollWithin(content: HTMLElement, row: HTMLElement, where: "center" | "nearest", smooth = false): void {
+  const box = content.getBoundingClientRect();
+  const rowBox = row.getBoundingClientRect();
+  const scale = box.height / content.clientHeight || 1;
+  // The controls stick to the top of the column and cover what scrolls beneath them
+  const controls = content.querySelector(".column-controls")?.getBoundingClientRect().height ?? 0;
+  const top = box.top + controls;
+
+  let distance = 0;
+  if (where === "center") distance = rowBox.top + rowBox.height / 2 - (top + box.bottom) / 2;
+  else if (rowBox.top < top) distance = rowBox.top - top;
+  else if (rowBox.bottom > box.bottom) distance = rowBox.bottom - box.bottom;
+
+  if (distance) content.scrollBy({ top: distance / scale, behavior: smooth ? "smooth" : "auto" });
+}
+
 function favoriteButtons(type: "theme" | "font", index: number): string {
   return `
     <div class="favorites">
@@ -307,10 +328,17 @@ export class ThemeForseen extends HTMLElement {
       `.theme-item[data-index="${this.selectedTheme[this.mode]}"]`,
       `.font-item[data-index="${this.selectedFontPairing}"]`,
     ];
-    for (const selector of rows) {
-      const row = this.shadowRoot?.querySelector(selector);
-      row?.scrollIntoView({ block: "center" });
-    }
+    const reveal = () => {
+      for (const selector of rows) {
+        const row = this.shadowRoot?.querySelector<HTMLElement>(selector);
+        const content = row?.closest<HTMLElement>(".column-content");
+        if (row && content) scrollWithin(content, row, "center");
+      }
+    };
+
+    // Rows out of view are measured by estimate, so settle once they have been laid out
+    reveal();
+    requestAnimationFrame(reveal);
   }
 
   private resolveSelections() {
@@ -1517,7 +1545,7 @@ export class ThemeForseen extends HTMLElement {
       if (selectedIndex === 0) {
         content.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        selectedItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        scrollWithin(content, selectedItem, "nearest", true);
       }
     }
   }

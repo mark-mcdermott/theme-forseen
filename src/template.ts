@@ -43,7 +43,7 @@ function themesColumn(state: TemplateState): string {
       <div class="column-content">
         <div class="column-controls">
           <div class="instructions" data-instructions="themes">
-            Browse with ↑ ↓ or the wheel. Themes apply as you go.
+            ↑ ↓ or the wheel to browse. Applies as you go.
             <button class="instructions-close" aria-label="Dismiss">${icons.close}</button>
           </div>
           <div class="filter-container">
@@ -95,7 +95,7 @@ function fontsColumn(state: TemplateState): string {
       <div class="column-content">
         <div class="column-controls">
           <div class="instructions" data-instructions="fonts">
-            Browse with ↑ ↓ or the wheel. Pairings apply as you go.
+            ↑ ↓ or the wheel to browse. Applies as you go.
             <button class="instructions-close" aria-label="Dismiss">${icons.close}</button>
           </div>
           <div class="font-filters">

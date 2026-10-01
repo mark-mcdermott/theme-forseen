@@ -115,14 +115,10 @@ function favoriteButtons(type: "theme" | "font", index: number): string {
     </div>`;
 }
 
-function individualFont(role: "heading" | "body", face: string): string {
-  return `<span class="individual-font ${role}-font" data-font="${face}" data-type="${role}" title="Use ${face} for the ${role}" role="button" tabindex="0">${face}</span>`;
-}
-
-/** What the pairing is made of, from the data: a serif heading with a sans body is "Serif + Sans" */
-function describeStyles(pairing: FontPairing): string {
-  const first = (styles: string[]) => capitalize(styles[0] ?? "");
-  return `${first(pairing.headingStyle)} + ${first(pairing.bodyStyle)}`;
+/** One face of a pairing, which can be used on its own */
+function individualFont(role: "heading" | "body", face: string, styles: string[] = []): string {
+  const kind = styles[0] ? ` (${styles[0]})` : "";
+  return `<span class="individual-font ${role}-font" data-font="${face}" data-type="${role}" title="${face}${kind}: use for the ${role} alone" role="button" tabindex="0">${face}</span>`;
 }
 
 /** Points a face label at another face: its text, its data and the face it is set in */
@@ -131,7 +127,7 @@ function labelFace(element: Element | null, face: string): HTMLElement | null {
   if (span) {
     span.textContent = face;
     span.dataset.font = face;
-    span.title = `Use ${face} for the ${span.dataset.type}`;
+    span.title = `${face}: use for the ${span.dataset.type} alone`;
   }
   return span;
 }
@@ -748,11 +744,10 @@ export class ThemeForseen extends HTMLElement {
         }" data-index="${index}">
           <div class="font-sample" style="font-family: '${pairing.heading}', sans-serif" aria-hidden="true">Aa</div>
           <div class="font-main">
-            <div class="font-name">
-              ${individualFont("heading", pairing.heading)}<span class="font-amp">&amp;</span>${individualFont("body", pairing.body)}
-            </div>
+            <div class="font-name">${pairing.name}</div>
             <div class="font-preview">
-              <span class="font-styles" title="Heading style + body style">${describeStyles(pairing)}</span>
+              ${individualFont("heading", pairing.heading, pairing.headingStyle)}
+              ${individualFont("body", pairing.body, pairing.bodyStyle)}
               <button class="font-switch-icon" data-index="${index}" title="Swap heading and body" aria-label="Swap heading and body">${icons.swap}</button>
             </div>
           </div>

@@ -1,10 +1,11 @@
-// Captures the open drawer at the console's viewport: node scripts/shoot-drawer.mjs <url> <out.png> [dark]
+// Captures the open drawer at the console's viewport: node scripts/shoot-drawer.mjs <url> <out.png> [dark] [width]
 import { chromium } from '@playwright/test';
-const [url, out, mode] = process.argv.slice(2);
+const [url, out, mode, width] = process.argv.slice(2);
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1536, height: 1024 } });
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.waitForFunction(() => document.querySelector('theme-forseen')?.state != null);
+if (width) await page.addStyleTag({ content: `theme-forseen { --tf-width: ${width}px }` });
 await page.evaluate(async (mode) => {
   const tf = document.querySelector('theme-forseen'); tf.open();
   const root = tf.shadowRoot;

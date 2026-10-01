@@ -170,7 +170,7 @@ export const styles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 12px 10px 16px;
+    padding: 8px 10px 8px 14px;
     border-bottom: 1px solid var(--tf-line);
   }
 
@@ -181,7 +181,7 @@ export const styles = `
   }
 
   .drawer-header-logo {
-    width: 50px;
+    width: 42px;
     height: auto;
     color: var(--tf-text);
   }
@@ -191,7 +191,7 @@ export const styles = `
   }
 
   .drawer-header-wordmark {
-    height: 22px;
+    height: 19px;
     width: auto;
     color: var(--tf-text);
   }
@@ -215,14 +215,14 @@ export const styles = `
   .drawer-controls {
     display: flex;
     align-items: stretch;
-    gap: 12px;
-    padding: 14px 16px 12px;
+    gap: 10px;
+    padding: 12px 14px 10px;
   }
 
   .column-tabs {
     display: flex;
     flex: 1;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
   }
 
@@ -231,27 +231,27 @@ export const styles = `
     flex: 1;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
-    height: 54px;
-    padding: 0 10px;
+    height: 46px;
+    padding: 0 8px;
     border: 0;
     border-radius: var(--tf-radius);
     background: var(--tf-surface);
     box-shadow: inset 0 0 0 1px var(--tf-line);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
   }
 
   .column-tab .icon {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .column-tab .icon-aa {
-    width: 36px;
-    height: 22px;
+    width: 32px;
+    height: 20px;
   }
 
   .column-tab[aria-pressed="true"] {
@@ -272,15 +272,15 @@ export const styles = `
   }
 
   .mode-toggle > .icon {
-    font-size: 20px;
-    margin-top: 6px;
+    font-size: 18px;
+    margin-top: 5px;
     color: var(--tf-muted);
   }
 
   .mode-switch {
     position: relative;
     display: flex;
-    width: 84px;
+    width: 72px;
   }
 
   .mode-switch::before {
@@ -289,8 +289,8 @@ export const styles = `
     top: 0;
     left: 0;
     right: 0;
-    height: 32px;
-    border-radius: 16px;
+    height: 28px;
+    border-radius: 14px;
     background: var(--tf-key);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
   }
@@ -300,8 +300,8 @@ export const styles = `
     position: absolute;
     top: 3px;
     left: 3px;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: var(--tf-orange);
     box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -309,18 +309,18 @@ export const styles = `
   }
 
   .mode-switch:has(.mode-btn[data-mode="dark"].active)::after {
-    transform: translateX(52px);
+    transform: translateX(44px);
   }
 
   .mode-btn {
     position: relative;
     z-index: 1;
     flex: 1;
-    height: 52px;
-    padding: 36px 0 0;
+    height: 46px;
+    padding: 32px 0 0;
     border: 0;
     background: transparent;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     line-height: 1;
     color: var(--tf-muted);
@@ -335,8 +335,8 @@ export const styles = `
     display: flex;
     flex: 1;
     min-height: 0;
-    gap: 12px;
-    padding: 0 16px;
+    gap: 10px;
+    padding: 0 14px;
   }
 
   .column {
@@ -364,19 +364,19 @@ export const styles = `
     top: 0;
     z-index: 2;
     display: grid;
-    gap: 8px;
-    padding-bottom: 10px;
+    gap: 7px;
+    padding-bottom: 8px;
     background: var(--tf-bg);
   }
 
   .instructions {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    padding: 8px 8px 8px 10px;
-    border-radius: 8px;
+    gap: 6px;
+    padding: 6px 6px 6px 9px;
+    border-radius: 7px;
     background: var(--tf-surface-2);
-    font-size: 12px;
+    font-size: 11.5px;
     line-height: 1.35;
     color: var(--tf-muted);
   }
@@ -398,15 +398,15 @@ export const styles = `
   .filter-container,
   .font-filters {
     display: grid;
-    gap: 8px;
+    gap: 7px;
   }
 
   .search {
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 12px;
+    gap: 7px;
+    height: 36px;
+    padding: 0 11px;
     border-radius: var(--tf-radius);
     background: var(--tf-surface);
     box-shadow: inset 0 0 0 1px var(--tf-line);
@@ -419,7 +419,7 @@ export const styles = `
   }
 
   .search .icon {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .search input {
@@ -429,7 +429,7 @@ export const styles = `
     padding: 0;
     background: transparent;
     font: inherit;
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--tf-text);
     outline: none;
   }
@@ -445,27 +445,27 @@ export const styles = `
   .pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 5px;
   }
 
   .pill {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    height: 30px;
-    padding: 0 10px;
+    gap: 4px;
+    height: 28px;
+    padding: 0 9px;
     border: 0;
-    border-radius: 8px;
+    border-radius: 7px;
     background: var(--tf-surface);
     box-shadow: inset 0 0 0 1px var(--tf-line);
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
   }
 
   .pill .icon {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .pill:hover {
@@ -487,13 +487,13 @@ export const styles = `
     justify-content: space-between;
     gap: 8px;
     width: 100%;
-    height: 36px;
-    padding: 0 10px 0 12px;
+    height: 32px;
+    padding: 0 8px 0 11px;
     border: 0;
-    border-radius: 8px;
+    border-radius: 7px;
     background: var(--tf-surface);
     box-shadow: inset 0 0 0 1px var(--tf-line);
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
     text-align: left;
   }
@@ -611,9 +611,9 @@ export const styles = `
   .font-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-    padding: 10px 8px 10px 14px;
+    gap: 8px;
+    margin-bottom: 7px;
+    padding: 8px 6px 8px 12px;
     border-radius: var(--tf-radius);
     background: var(--tf-surface);
     box-shadow: inset 0 0 0 1px var(--tf-line), inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -636,32 +636,27 @@ export const styles = `
 
   .theme-name,
   .font-name {
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1.25;
   }
 
-  .theme-name {
+  .theme-name,
+  .font-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .font-amp {
-    margin: 0 4px;
-    font-weight: 400;
-    color: var(--tf-muted);
-  }
-
   .theme-colors {
     display: flex;
-    gap: 6px;
-    margin-top: 8px;
+    gap: 5px;
+    margin-top: 6px;
   }
 
   .color-swatch {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
   }
@@ -691,8 +686,8 @@ export const styles = `
 
   .font-sample {
     flex: none;
-    width: 46px;
-    font-size: 30px;
+    width: 44px;
+    font-size: 28px;
     font-weight: 600;
     line-height: 1;
     text-align: center;
@@ -700,44 +695,40 @@ export const styles = `
 
   .font-preview {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    margin-top: 3px;
-    font-size: 12px;
+    gap: 3px 4px;
+    margin-top: 4px;
+    font-size: 11px;
     line-height: 1.3;
     color: var(--tf-muted);
   }
 
-  .font-styles {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
+  /* A face on its own: a small chip, pressed when it is the one in use */
   .individual-font {
-    padding: 0 2px;
-    margin: 0 -2px;
+    padding: 1px 6px;
     border-radius: 4px;
+    background: var(--tf-surface-2);
     white-space: nowrap;
     cursor: pointer;
+    transition: background 0.15s, color 0.15s;
   }
 
   .individual-font:hover {
-    background: var(--tf-surface-2);
+    color: var(--tf-text);
   }
 
   .individual-font.selected {
-    color: var(--tf-orange);
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    background: var(--tf-orange);
+    color: var(--tf-on-orange);
   }
 
   .font-switch-icon {
     display: grid;
     place-items: center;
     flex: none;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 18px;
     padding: 0;
     border: 0;
     border-radius: 4px;
@@ -760,13 +751,13 @@ export const styles = `
   .favorite-icon {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 30px;
+    width: 26px;
+    height: 28px;
     padding: 0;
     border: 0;
     border-radius: 6px;
     background: transparent;
-    font-size: 18px;
+    font-size: 17px;
     color: var(--tf-muted);
   }
 
@@ -798,17 +789,17 @@ export const styles = `
     .theme-item,
     .font-item {
       gap: 6px;
-      padding: 9px 6px 9px 10px;
+      padding: 8px 4px 8px 10px;
     }
 
     .font-sample {
-      width: 40px;
-      font-size: 26px;
+      width: 38px;
+      font-size: 24px;
     }
 
     .theme-name,
     .font-name {
-      font-size: 14px;
+      font-size: 13.5px;
     }
 
     .color-swatch {
@@ -817,7 +808,23 @@ export const styles = `
     }
 
     .favorite-icon {
-      width: 26px;
+      width: 24px;
+    }
+
+    .pills {
+      gap: 4px;
+    }
+
+    .pill {
+      gap: 3px;
+      padding: 0 6px;
+      font-size: 11px;
+    }
+
+    .preview-btn,
+    .apply-btn {
+      gap: 6px;
+      font-size: 13.5px;
     }
   }
 
@@ -825,7 +832,7 @@ export const styles = `
   .drawer-footer {
     display: flex;
     gap: 10px;
-    padding: 12px 16px 16px;
+    padding: 10px 14px 14px;
     border-top: 1px solid var(--tf-line);
   }
 
@@ -836,12 +843,12 @@ export const styles = `
     min-width: 0;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 48px;
-    padding: 0 14px;
+    gap: 9px;
+    height: 46px;
+    padding: 0 12px;
     border: 0;
     border-radius: var(--tf-radius);
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 600;
     white-space: nowrap;
     transition: transform 0.1s, filter 0.15s;
@@ -849,7 +856,7 @@ export const styles = `
 
   .preview-btn .icon,
   .apply-btn .icon {
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .preview-btn {

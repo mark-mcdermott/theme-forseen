@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - A `docked` attribute: the drawer fills the element instead of floating over the page, with no tab and no backdrop, so a page can give it a place of its own. Closed, it slides out of the element to the right. `--tf-dock-radius` rounds its corners
+- The element carries `mode="light"` or `mode="dark"`
+
+### Fixed
+- The drawer's night palette was set inside the drawer, where it beat any `--tf-*` value a page had set on the element. It is keyed on the element's `mode` now, so a page's own rules hold in both modes
+- A drawer that starts open opens on its selections, as one opened later already did
 
 ## [0.7.0] - 2026-09-30
 

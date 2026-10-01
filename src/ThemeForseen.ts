@@ -385,6 +385,7 @@ export class ThemeForseen extends HTMLElement {
     this.resolveSelections();
 
     this.render();
+    this.setAttribute("mode", this.mode);
     this.attachPersistentListeners();
     this.attachEventListeners();
     this.applyDrawerState();
@@ -1569,6 +1570,7 @@ export class ThemeForseen extends HTMLElement {
       btn.setAttribute("aria-pressed", String(active));
     });
     this.drawerElement?.setAttribute("data-mode", this.mode);
+    this.setAttribute("mode", this.mode);
   }
 
   private applyDrawerState() {

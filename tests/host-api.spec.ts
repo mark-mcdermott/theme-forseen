@@ -495,3 +495,33 @@ test.describe('Docked', () => {
     expect(await getCSSVar(page, '--color-primary')).toBe('#FF3366');
   });
 });
+
+test.describe('Mode On The Element', () => {
+  test.beforeEach(async ({ page }) => {
+    await startFresh(page, '/tests/fixtures/defaults');
+  });
+
+  test('the element carries the mode, and a rule the page sets on it holds in both', async ({ page }) => {
+    const element = page.locator('theme-forseen');
+    await expect(element).toHaveAttribute('mode', 'light');
+
+    await page.addStyleTag({ content: 'theme-forseen { --tf-bg: rgb(1, 2, 3); }' });
+    const drawerBackground = () =>
+      page.evaluate(() => getComputedStyle(document.querySelector('theme-forseen')!.shadowRoot!.querySelector('.drawer')!).backgroundColor);
+    expect(await drawerBackground()).toBe('rgb(1, 2, 3)');
+
+    await openDrawer(page);
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await expect(element).toHaveAttribute('mode', 'dark');
+    expect(await drawerBackground()).toBe('rgb(1, 2, 3)');
+  });
+
+  test('without a rule from the page, night has its own palette', async ({ page }) => {
+    await openDrawer(page);
+    const drawerBackground = () =>
+      page.evaluate(() => getComputedStyle(document.querySelector('theme-forseen')!.shadowRoot!.querySelector('.drawer')!).backgroundColor);
+    const day = await drawerBackground();
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await expect.poll(drawerBackground).not.toBe(day);
+  });
+});

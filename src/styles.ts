@@ -44,7 +44,8 @@ export const styles = `
     -webkit-font-smoothing: antialiased;
   }
 
-  .drawer[data-mode="dark"] {
+  /* On the host, so a page's own rule for the element wins over it in both modes */
+  :host([mode="dark"]) {
     --tf-bg: #23201b;
     --tf-surface: #2f2a24;
     --tf-surface-2: #3b352d;

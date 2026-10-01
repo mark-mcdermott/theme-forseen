@@ -342,7 +342,12 @@ theme-forseen {
 }
 ```
 
-The drawer's night palette applies while the dark mode is selected, so a value set on the element holds in both modes; set it under your own dark-mode selector to vary it.
+The element carries the mode it is in as an attribute, `mode="light"` or `mode="dark"`, and its night palette is keyed on that. A value a page sets on the element holds in both modes; to vary it, key your own rule on the attribute too:
+
+```css
+theme-forseen { --tf-bg: #f4f1ea; }
+theme-forseen[mode="dark"] { --tf-bg: #1c1a17; }
+```
 
 ### Docking the drawer
 
@@ -377,6 +382,8 @@ The drawer adds itself to the page when you import the module. To configure it, 
 | `default-theme` | Name of the theme to apply, in both modes, when the visitor has not selected one    |
 | `default-fonts` | Name of the font pairing to apply when the visitor has not selected one             |
 | `open`          | Present while the drawer is open. Add or remove it to open or close the drawer      |
+| `docked`        | The drawer fills the element rather than floating over the page; see [Docking the drawer](#docking-the-drawer) |
+| `mode`          | Carried by the element: `light` or `dark`. Read it or style on it; the mode itself follows the drawer's switch and the page's `darkmode-change` event |
 
 Names are matched without regard to case. A name that is not in the collection logs a warning and the first entry is used. Defaults are read once, when the element starts.
 

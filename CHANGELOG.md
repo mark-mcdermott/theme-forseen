@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-30
+
+### Fixed
+- The heart and the star on a row were 26 px wide with nothing between them, which fell under the 24 px touch target once a page zoomed a docked drawer down. They are 29 px now, and the swatches in a narrow column give up the room
+
 ## [0.8.0] - 2026-09-30
 
 ### Added

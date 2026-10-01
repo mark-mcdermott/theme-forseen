@@ -797,11 +797,12 @@ export const styles = `
     gap: 0;
   }
 
+  /* 29 apart, so each is still a 24 px target when a page zooms the drawer down to 85% */
   .favorite-icon {
     display: grid;
     place-items: center;
-    width: 26px;
-    height: 28px;
+    width: 29px;
+    height: 29px;
     padding: 0;
     border: 0;
     border-radius: 6px;
@@ -842,7 +843,7 @@ export const styles = `
     }
 
     .font-sample {
-      width: 38px;
+      width: 34px;
       font-size: 24px;
     }
 
@@ -851,13 +852,13 @@ export const styles = `
       font-size: 13.5px;
     }
 
-    .color-swatch {
-      width: 22px;
-      height: 22px;
+    .theme-colors {
+      gap: 4px;
     }
 
-    .favorite-icon {
-      width: 24px;
+    .color-swatch {
+      width: 21px;
+      height: 21px;
     }
 
     .pills {

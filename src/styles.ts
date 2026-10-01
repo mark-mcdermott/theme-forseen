@@ -707,19 +707,10 @@ export const styles = `
     box-shadow: inset 0 0 0 2px var(--tf-orange);
   }
 
-  .drawer[data-mode="light"] .theme-item.selected-dark .theme-name::after,
-  .drawer[data-mode="dark"] .theme-item.selected-light .theme-name::after {
-    content: attr(data-other-mode);
-    margin-left: 8px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--tf-surface-2);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--tf-muted);
-    vertical-align: 2px;
+  .drawer[data-mode="light"] .theme-item.selected-dark:not(.selected-light),
+  .drawer[data-mode="dark"] .theme-item.selected-light:not(.selected-dark) {
+    outline: 1.5px dashed var(--tf-muted);
+    outline-offset: -2px;
   }
 
   .font-sample {
@@ -744,9 +735,12 @@ export const styles = `
 
   /* A face on its own: a small chip, pressed when it is the one in use */
   .individual-font {
+    max-width: 100%;
     padding: 1px 6px;
     border-radius: 4px;
     background: var(--tf-surface-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
@@ -850,13 +844,13 @@ export const styles = `
     }
 
     .pills {
-      gap: 4px;
+      gap: 3px;
     }
 
     .pill {
       gap: 3px;
-      padding: 0 6px;
-      font-size: 11px;
+      padding: 0 5px;
+      font-size: 10.5px;
     }
 
     .preview-btn,

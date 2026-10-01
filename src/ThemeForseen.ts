@@ -697,7 +697,7 @@ export class ThemeForseen extends HTMLElement {
         return `
         <div class="theme-item" data-index="${index}">
           <div class="theme-main">
-            <div class="theme-name" data-other-mode="${this.isDarkMode ? "light" : "dark"}">${theme.name}</div>
+            <div class="theme-name">${theme.name}</div>
             <div class="theme-colors">
               <div class="color-swatch" style="background-color: ${colors.primary}" title="Primary"></div>
               <div class="color-swatch" style="background-color: ${colors.accent}" title="Accent"></div>

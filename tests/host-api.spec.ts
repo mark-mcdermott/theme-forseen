@@ -453,3 +453,45 @@ test.describe('The Drawer', () => {
     expect((await lastChange(page))?.fonts.heading).toBe('Montserrat');
   });
 });
+
+test.describe('Docked', () => {
+  test.beforeEach(async ({ page }) => {
+    await recordChanges(page);
+    await startFresh(page, '/tests/fixtures/docked');
+  });
+
+  test('fills the element the page lays out, with no tab or backdrop', async ({ page }) => {
+    const slot = await page.locator('aside').boundingBox();
+    const drawer = await shadowLocator(page, '.drawer').boundingBox();
+    expect(drawer).toEqual({ x: slot!.x + 12, y: slot!.y + 12, width: slot!.width - 24, height: slot!.height - 24 });
+
+    await expect(shadowLocator(page, '.drawer-toggle')).toBeHidden();
+    await expect(shadowLocator(page, '.backdrop')).toBeHidden();
+    await expect(shadowLocator(page, '.drawer')).toHaveClass(/open/);
+  });
+
+  test('both columns show, since the window is wide, and each opens on its selection', async ({ page }) => {
+    await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toBeInViewport();
+    await expect(shadowLocator(page, '.font-item[data-index="197"]')).toBeInViewport();
+  });
+
+  test("the page's control closes it, and it leaves the element", async ({ page }) => {
+    await page.locator('#toggle').click();
+    await expect(shadowLocator(page, '.drawer')).not.toHaveClass(/open/);
+    expect((await lastChange(page))?.open).toBe(false);
+
+    // Slid out to the right and clipped by the host
+    await expect.poll(async () => {
+      const box = await shadowLocator(page, '.drawer').boundingBox();
+      const slot = await page.locator('aside').boundingBox();
+      return box!.x >= slot!.x + slot!.width - 24;
+    }).toBe(true);
+  });
+
+  test('a selection still applies to the page', async ({ page }) => {
+    await shadowLocator(page, '.theme-item[data-index="0"]').click();
+    expect(await getCSSVar(page, '--color-primary')).toBe('#FF3366');
+  });
+});

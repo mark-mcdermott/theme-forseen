@@ -344,6 +344,24 @@ theme-forseen {
 
 The drawer's night palette applies while the dark mode is selected, so a value set on the element holds in both modes; set it under your own dark-mode selector to vary it.
 
+### Docking the drawer
+
+By default the drawer floats over the page from the right edge. With the `docked` attribute it fills the element instead, so the page can give it a place of its own: a sidebar, a panel, a slot in a layout. The page sizes and positions the element; the drawer takes the whole of it. There is no tab and no backdrop while docked, so the page provides the control, through `open()`, `close()`, `toggle()` or the `open` attribute. Closed, the drawer slides out of the element to the right.
+
+```html
+<aside style="width: 480px; height: 80vh">
+  <theme-forseen docked open></theme-forseen>
+</aside>
+```
+
+```css
+theme-forseen[docked] {
+  --tf-dock-radius: 8px; /* the drawer's corners, when the slot has them */
+}
+```
+
+A page can dock on wide screens and float on narrow ones by toggling the attribute from a media query.
+
 ## Page API
 
 The drawer adds itself to the page when you import the module. To configure it, put the element in your markup yourself and the module will use that one.

@@ -57,6 +57,36 @@ export const styles = `
     --tf-on-orange: #15140f;
   }
 
+  /*
+   * Docked: the host is a box the page lays out, and the drawer fills it.
+   * There is no tab and no backdrop; the page provides the control. Closed,
+   * the drawer slides out of the box to the right, as into a chassis.
+   */
+  :host([docked]) {
+    position: relative;
+    top: auto;
+    right: auto;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: auto;
+  }
+
+  :host([docked]) .drawer-toggle,
+  :host([docked]) .backdrop {
+    display: none !important;
+  }
+
+  :host([docked]) .drawer {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    border-radius: var(--tf-dock-radius, 0);
+    box-shadow: none;
+  }
+
   .hidden {
     display: none !important;
   }

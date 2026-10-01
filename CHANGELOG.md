@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-30
+
+### Added
+- A `docked` attribute: the drawer fills the element instead of floating over the page, with no tab and no backdrop, so a page can give it a place of its own. Closed, it slides out of the element to the right. `--tf-dock-radius` rounds its corners
+
 ## [0.7.0] - 2026-09-30
 
 ### Changed

@@ -395,6 +395,7 @@ export class ThemeForseen extends HTMLElement {
     this.maybeHideInstructions();
 
     this.isReady = true;
+    if (this.isOpen) this.revealSelections();
     this.announce();
 
     // Jiggle the bookmark after 7 seconds to attract attention

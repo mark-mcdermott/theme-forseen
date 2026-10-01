@@ -634,6 +634,18 @@ test.describe('Docked', () => {
     expect(await shadowLocator(page, '[data-column="themes"] .column-content').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
   });
 
+  test('the heart and the star stay touch targets when a page zooms the drawer down', async ({ page }) => {
+    await page.addStyleTag({ content: 'theme-forseen { zoom: 0.85 }' });
+
+    const [heart, star] = await shadowLocator(page, '.theme-item[data-index="2054"] .favorite-icon').evaluateAll((buttons) =>
+      buttons.map((button) => button.getBoundingClientRect().toJSON()),
+    );
+    // WCAG 2.2: 24 px, or 24 px between centres
+    expect(heart.width).toBeGreaterThanOrEqual(24);
+    expect(heart.height).toBeGreaterThanOrEqual(24);
+    expect(star.left + star.width / 2 - (heart.left + heart.width / 2)).toBeGreaterThanOrEqual(24);
+  });
+
   test('nothing in a column is wider than the column', async ({ page }) => {
     for (const column of ['themes', 'fonts']) {
       const content = shadowLocator(page, `[data-column="${column}"] .column-content`);

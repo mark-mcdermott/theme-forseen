@@ -351,7 +351,7 @@ theme-forseen[mode="dark"] { --tf-bg: #1c1a17; }
 
 ### Docking the drawer
 
-By default the drawer floats over the page from the right edge. With the `docked` attribute it fills the element instead, so the page can give it a place of its own: a sidebar, a panel, a slot in a layout. The page sizes and positions the element; the drawer takes the whole of it. There is no tab and no backdrop while docked, so the page provides the control, through `open()`, `close()`, `toggle()` or the `open` attribute. Closed, the drawer slides out of the element to the right.
+By default the drawer floats over the page from the right edge. With the `docked` attribute it fills the element instead, so the page can give it a place of its own: a sidebar, a panel, a slot in a layout. The page sizes and positions the element; the drawer takes the whole of it. There is no tab and no backdrop while docked, so the page provides the control, through `open()`, `close()`, `toggle()` or the `open` attribute. Closed, the drawer slides out of the element to the right. The arrow keys and the `s` and `h` shortcuts work while the pointer or the focus is on the drawer, and are the page's otherwise.
 
 ```html
 <aside style="width: 480px; height: 80vh">

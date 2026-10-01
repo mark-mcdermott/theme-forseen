@@ -494,6 +494,18 @@ test.describe('Docked', () => {
     await shadowLocator(page, '.theme-item[data-index="0"]').click();
     expect(await getCSSVar(page, '--color-primary')).toBe('#FF3366');
   });
+
+  test('the arrow keys are the page\'s until the pointer or the focus is on the drawer', async ({ page }) => {
+    const theme = () => page.evaluate(() => document.querySelector('theme-forseen')!.state!.theme.name);
+    await page.mouse.move(100, 100);
+    await page.locator('h1').click();
+    await page.keyboard.press('ArrowDown');
+    expect(await theme()).toBe('Weather Station');
+
+    await shadowLocator(page, '.theme-item[data-index="2054"]').hover();
+    await page.keyboard.press('ArrowUp');
+    expect(await theme()).not.toBe('Weather Station');
+  });
 });
 
 test.describe('Mode On The Element', () => {

@@ -1047,6 +1047,8 @@ export class ThemeForseen extends HTMLElement {
   private attachPersistentListeners() {
     document.addEventListener("keydown", (e) => {
       if (!this.isOpen) return;
+      // Docked, the drawer is one part of a page: its keys work while it has the pointer or the focus
+      if (this.hasAttribute("docked") && !this.matches(":hover") && !this.shadowRoot?.activeElement) return;
 
       // Check if user is typing in an input field
       const activeElement =

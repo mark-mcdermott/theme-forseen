@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0] - 2026-09-30
 
 ### Added
-- A `docked` attribute: the drawer fills the element instead of floating over the page, with no tab and no backdrop, so a page can give it a place of its own. Closed, it slides out of the element to the right. `--tf-dock-radius` rounds its corners
+- A `docked` attribute: the drawer fills the element instead of floating over the page, with no tab and no backdrop, so a page can give it a place of its own. Closed, it slides out of the element to the right. `--tf-dock-radius` rounds its corners. Docked, the arrow keys and the `s` and `h` shortcuts work while the pointer or the focus is on the drawer, and are the page's otherwise
 - The element carries `mode="light"` or `mode="dark"`
 
 ### Fixed

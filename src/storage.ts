@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   BODY_FONT: `${STORAGE_PREFIX}body-font`,
   FILTER_TAGS: `${STORAGE_PREFIX}filter-tags`,
   FILTER_SEARCH: `${STORAGE_PREFIX}filter-search`,
+  FILTER_FONT_SEARCH: `${STORAGE_PREFIX}filter-font-search`,
   FILTER_HEADING_STYLES: `${STORAGE_PREFIX}filter-heading-styles`,
   FILTER_BODY_STYLES: `${STORAGE_PREFIX}filter-body-styles`,
   FILTER_HEARTED_ONLY: `${STORAGE_PREFIX}filter-hearted-only`,

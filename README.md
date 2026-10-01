@@ -298,11 +298,51 @@ Any CSS framework that supports CSS variables will work. Just reference the vari
 
 ## How to Use the Drawer
 
-1. **Open**: Click the icon on the right side of the screen
-2. **Browse Themes**: Click to apply, use arrow keys or mouse wheel to scroll
-3. **Toggle Mode**: Switch between Light and Dark mode
-4. **Browse Fonts**: Click any font pairing to apply it
-5. **Activate**: Click the lightning bolt icon to apply the theme to your project (see [Dev Server](#dev-server) below)
+1. **Open**: Click the tab on the right side of the screen
+2. **Browse themes**: Click one to apply it; the arrow keys and the mouse wheel step through the list. Search by name, color name or hex, narrow by tag, or show only what you have starred or liked
+3. **Browse fonts**: Click a pairing to apply it, or one face of it to use that face alone; the ⇄ swaps heading and body. Search by name, narrow by heading style with the pills and by body style with the menu
+4. **Light / Dark**: The switch beside the tabs. Each mode keeps its own theme
+5. **Preview on This Site**: Closes the drawer so you can look at the page with the selection applied; the tab brings it back
+6. **Apply to Project**: Writes the selection to your project when the [dev server](#dev-server) is running, and otherwise shows the two files to copy or save
+
+The two tabs put a column away or bring it back. One stays out at least, and on a phone one shows at a time.
+
+### Skinning the drawer
+
+The drawer draws itself with its own cream and night palettes. A host page can change any of them by setting custom properties on the element:
+
+```css
+theme-forseen {
+  --tf-font: 'Geist', system-ui, sans-serif; /* the drawer's face */
+  --tf-width: 480px;                          /* when floating */
+  --tf-radius: 10px;
+
+  /* surfaces and ink */
+  --tf-bg: #ede3d1;
+  --tf-surface: #f7f0e3;
+  --tf-surface-2: #e2d6bf;
+  --tf-text: #15140f;
+  --tf-muted: #6b6358;
+  --tf-line: rgba(21, 20, 15, 0.16);
+
+  /* the keys */
+  --tf-key: #1d262a;       /* the tab, the switch track, Preview's outline */
+  --tf-on-key: #f3ead9;
+  --tf-teal: #19606b;      /* pressed tabs and pills */
+  --tf-on-teal: #fff;
+  --tf-orange: #f0562b;    /* the selection, the switch knob, Apply */
+  --tf-on-orange: #15140f;
+
+  /* the stripes in the header's cloud, top to bottom */
+  --tf-cloud-1: #04394a;
+  --tf-cloud-2: #057276;
+  --tf-cloud-3: #fb4a1d;
+  --tf-cloud-4: #e88a16;
+  --tf-cloud-5: #92560e;
+}
+```
+
+The drawer's night palette applies while the dark mode is selected, so a value set on the element holds in both modes; set it under your own dark-mode selector to vary it.
 
 ## Page API
 
@@ -387,14 +427,14 @@ The dev server lets you write CSS variables directly to your project files with 
 npx theme-forseen
 ```
 
-This starts a local server that listens for theme activations. When you click the lightning bolt icon in the drawer, the CSS variables are written directly to your CSS file.
+This starts a local server that the drawer's **Apply to Project** button writes through: the selected theme's variables and the selected fonts go directly into your CSS file.
 
 ### How It Works
 
 1. **Start the server** in your project directory
-2. **Browse themes** in the drawer as usual
-3. **Click the lightning bolt** - variables are written to your CSS file instantly
-4. **No server running?** Falls back to showing a modal with the CSS to copy
+2. **Browse** in the drawer as usual
+3. **Apply to Project** - the colors and the fonts are written to your CSS file
+4. **No server running?** The button shows the two files to copy or save instead
 
 ### Smart Project Detection
 
@@ -436,7 +476,18 @@ The server writes CSS variables in this format:
 /* End ThemeForseen */
 ```
 
-Subsequent activations update the existing block without duplicating.
+And the fonts, as a second block:
+
+```css
+/* ThemeForseen Font */
+:root {
+  --font-heading: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+/* End ThemeForseen */
+```
+
+A later Apply replaces each block rather than adding another.
 
 ### Server Options
 
@@ -530,6 +581,14 @@ npx serve . -l 3000
 ```
 
 Then open http://localhost:3000/tests/fixtures
+
+To capture the drawer as a reviewer would see it, with the fixtures served:
+
+```bash
+node scripts/shoot-drawer.mjs http://localhost:3000/tests/fixtures/defaults.html drawer.png        # by day
+node scripts/shoot-drawer.mjs http://localhost:3000/tests/fixtures/defaults.html drawer.png dark   # by night
+node scripts/shoot-page.mjs http://localhost:3000/tests/fixtures/defaults.html phone.png 390 844 open
+```
 
 ### Running Tests
 

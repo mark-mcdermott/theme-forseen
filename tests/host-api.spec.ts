@@ -348,3 +348,108 @@ test.describe('Collection Entry', () => {
     expect(requested).toContain('/dist/data.js');
   });
 });
+
+test.describe('The Drawer', () => {
+  test.beforeEach(async ({ page }) => {
+    await recordChanges(page);
+    await startFresh(page, '/tests/fixtures/defaults');
+    await openDrawer(page);
+  });
+
+  test('opens on the selection in each column', async ({ page }) => {
+    await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toBeInViewport();
+    await expect(shadowLocator(page, '.font-item[data-index="197"]')).toBeInViewport();
+  });
+
+  test('the tabs show which columns are out, and both can be', async ({ page }) => {
+    const themesTab = shadowLocator(page, '.column-tab[data-column-type="themes"]');
+    const fontsTab = shadowLocator(page, '.column-tab[data-column-type="fonts"]');
+    await expect(themesTab).toHaveAttribute('aria-pressed', 'true');
+    await expect(fontsTab).toHaveAttribute('aria-pressed', 'true');
+
+    await fontsTab.click();
+    await expect(fontsTab).toHaveAttribute('aria-pressed', 'false');
+    await expect(shadowLocator(page, '[data-column="fonts"]')).toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
+  });
+
+  test('the mode switch is the two buttons', async ({ page }) => {
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await expect(shadowLocator(page, '.mode-btn[data-mode="dark"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(shadowLocator(page, '.drawer')).toHaveAttribute('data-mode', 'dark');
+    expect((await lastChange(page))?.mode).toBe('dark');
+  });
+
+  test('Starred and Liked show only those themes', async ({ page }) => {
+    await shadowLocator(page, '.star[data-type="theme"][data-index="2"]').click();
+    await shadowLocator(page, '.heart[data-type="theme"][data-index="3"]').click();
+    await shadowLocator(page, '.heart[data-type="theme"][data-index="5"]').click();
+
+    await shadowLocator(page, '.pill[data-favorites="starred"]').click();
+    await expect(shadowLocator(page, '.theme-item')).toHaveCount(1);
+    await expect(shadowLocator(page, '.theme-item[data-index="2"]')).toBeVisible();
+
+    await shadowLocator(page, '.pill[data-favorites="hearted"]').click();
+    await expect(shadowLocator(page, '.theme-item')).toHaveCount(2);
+    await expect(shadowLocator(page, '.pill[data-favorites="starred"]')).toHaveAttribute('aria-pressed', 'false');
+
+    await shadowLocator(page, '.pill[data-favorites="all"]').click();
+    expect(await shadowLocator(page, '.theme-item').count()).toBeGreaterThan(2000);
+  });
+
+  test('the font search finds pairings by name', async ({ page }) => {
+    await shadowLocator(page, '.font-filter-input').fill('geist');
+    const names = await shadowLocator(page, '.font-item .font-name').allTextContents();
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.every((name) => /geist/i.test(name))).toBe(true);
+
+    await page.reload();
+    await waitUntilReady(page);
+    await openDrawer(page);
+    await expect(shadowLocator(page, '.font-filter-input')).toHaveValue('geist');
+  });
+
+  test('the style pills filter by the heading face, and the menu by the body', async ({ page }) => {
+    await shadowLocator(page, '.pill[data-style="serif"]').click();
+    const serifCount = await shadowLocator(page, '.font-item').count();
+    expect(serifCount).toBeGreaterThan(0);
+    const styles = await shadowLocator(page, '.font-item .font-styles').allTextContents();
+    expect(styles.every((text) => text.trim().startsWith('Serif'))).toBe(true);
+
+    await shadowLocator(page, '.font-filter-dropdown-btn[data-filter-type="body"]').click();
+    await shadowLocator(page, '.font-filter-dropdown .filter-option[data-style="mono"] input').check();
+    expect(await shadowLocator(page, '.font-item').count()).toBeLessThan(serifCount);
+    await expect(shadowLocator(page, '.font-filter-dropdown-btn[data-filter-type="body"] .menu-label')).toHaveText('Mono');
+  });
+
+  test('the tag menu can be searched', async ({ page }) => {
+    await shadowLocator(page, '.filter-dropdown-btn').click();
+    await shadowLocator(page, '.dropdown-search').fill('weath');
+    await expect(shadowLocator(page, '.filter-option[data-tag="weather"]')).toBeVisible();
+    await expect(shadowLocator(page, '.filter-option[data-tag="warm"]')).toBeHidden();
+  });
+
+  test('Preview on This Site closes the drawer', async ({ page }) => {
+    await shadowLocator(page, '.preview-btn').click();
+    await expect(shadowLocator(page, '.drawer')).not.toHaveClass(/open/);
+    expect((await lastChange(page))?.open).toBe(false);
+  });
+
+  test('Apply to Project offers both files when there is no server', async ({ page }) => {
+    await shadowLocator(page, '.apply-btn').click();
+    const modal = shadowLocator(page, '.activation-modal');
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.activation-section')).toHaveCount(2);
+    await expect(modal.locator('.activation-code').nth(0)).toContainText("primary: '#EB5526'");
+    await expect(modal.locator('.activation-code').nth(1)).toContainText("--font-heading: 'Geist'");
+
+    await modal.locator('.activation-cancel-btn').click();
+    await expect(modal).toBeHidden();
+  });
+
+  test('a face name can be chosen with the keyboard', async ({ page }) => {
+    await shadowLocator(page, '.font-item[data-index="1"] .individual-font.heading-font').focus();
+    await page.keyboard.press('Enter');
+    expect((await lastChange(page))?.fonts.heading).toBe('Montserrat');
+  });
+});

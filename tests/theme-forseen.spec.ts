@@ -490,7 +490,7 @@ test.describe('Column Collapse', () => {
     await openDrawer(page);
 
     // Click collapse button for themes
-    await shadowLocator(page, '.collapse-btn[data-column-type="themes"]').click();
+    await shadowLocator(page, '.column-tab[data-column-type="themes"]').click();
 
     // Themes column should be collapsed
     await expect(shadowLocator(page, '[data-column="themes"]')).toHaveClass(/collapsed/);
@@ -500,7 +500,7 @@ test.describe('Column Collapse', () => {
     await openDrawer(page);
 
     // Click collapse button for fonts
-    await shadowLocator(page, '.collapse-btn[data-column-type="fonts"]').click();
+    await shadowLocator(page, '.column-tab[data-column-type="fonts"]').click();
 
     // Fonts column should be collapsed
     await expect(shadowLocator(page, '[data-column="fonts"]')).toHaveClass(/collapsed/);
@@ -510,11 +510,11 @@ test.describe('Column Collapse', () => {
     await openDrawer(page);
 
     // Collapse themes
-    await shadowLocator(page, '.collapse-btn[data-column-type="themes"]').click();
+    await shadowLocator(page, '.column-tab[data-column-type="themes"]').click();
     await expect(shadowLocator(page, '[data-column="themes"]')).toHaveClass(/collapsed/);
 
     // Expand themes
-    await shadowLocator(page, '.collapse-btn[data-column-type="themes"]').click();
+    await shadowLocator(page, '.column-tab[data-column-type="themes"]').click();
     await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
   });
 
@@ -522,7 +522,7 @@ test.describe('Column Collapse', () => {
     await openDrawer(page);
 
     // Collapse fonts column
-    await shadowLocator(page, '.collapse-btn[data-column-type="fonts"]').click();
+    await shadowLocator(page, '.column-tab[data-column-type="fonts"]').click();
 
     // Reload
     await page.reload();
@@ -542,25 +542,30 @@ test.describe('Mobile Accordion Behavior', () => {
     await page.reload();
   });
 
-  test('on mobile, expanding one column collapses the other', async ({ page }) => {
+  test('on mobile, one column shows at a time', async ({ page }) => {
     await openDrawer(page);
 
-    // Initially themes should be open, fonts collapsed (or vice versa on mobile)
-    // The behavior is: when you expand one, the other collapses
-
-    // Collapse themes first
-    await shadowLocator(page, '.collapse-btn[data-column-type="themes"]').click();
-    await expect(shadowLocator(page, '[data-column="themes"]')).toHaveClass(/collapsed/);
-
-    // Now expand themes - fonts should collapse
-    await shadowLocator(page, '.collapse-btn[data-column-type="themes"]').click();
+    // Themes to begin with
     await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
     await expect(shadowLocator(page, '[data-column="fonts"]')).toHaveClass(/collapsed/);
 
-    // Expand fonts - themes should collapse
-    await shadowLocator(page, '.collapse-btn[data-column-type="fonts"]').click();
+    // The fonts tab brings fonts in and puts themes away
+    await shadowLocator(page, '.column-tab[data-column-type="fonts"]').click();
     await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
     await expect(shadowLocator(page, '[data-column="themes"]')).toHaveClass(/collapsed/);
+
+    // And back
+    await shadowLocator(page, '.column-tab[data-column-type="themes"]').click();
+    await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '[data-column="fonts"]')).toHaveClass(/collapsed/);
+  });
+
+  test('the open column cannot be put away, so the drawer is never empty', async ({ page }) => {
+    await openDrawer(page);
+
+    await shadowLocator(page, '.column-tab[data-column-type="themes"]').click();
+    await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '.column-tab[data-column-type="themes"]')).toHaveAttribute('aria-pressed', 'true');
   });
 });
 

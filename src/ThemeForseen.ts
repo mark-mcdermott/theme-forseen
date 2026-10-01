@@ -16,7 +16,8 @@ import {
 } from "./storage.js";
 import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
 import { loadGoogleFont } from "./fontLoader.js";
-import { showActivationModal, handleSaveToFile } from "./activationModal.js";
+import { icons } from "./marks.js";
+import { activationSections, showActivationModal } from "./activationModal.js";
 
 const DEV_SERVER_URL = "http://localhost:3847";
 const DEV_SERVER_TIMEOUT = 1000;
@@ -88,45 +89,51 @@ function showToast(
   }
 
   const toast = document.createElement("div");
-  toast.className = "theme-forseen-toast";
+  toast.className = `theme-forseen-toast ${isSuccess ? "" : "error"}`;
   toast.innerHTML = `
     <span class="toast-icon">${isSuccess ? "✓" : "✕"}</span>
     <span class="toast-message">${message}</span>
   `;
 
-  // Style the toast
-  Object.assign(toast.style, {
-    position: "fixed",
-    bottom: "20px",
-    left: "50%",
-    transform: "translateX(-50%) translateY(100px)",
-    padding: "12px 24px",
-    borderRadius: "8px",
-    backgroundColor: isSuccess ? "#10B981" : "#EF4444",
-    color: "white",
-    fontSize: "14px",
-    fontWeight: "500",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-    zIndex: "10001",
-    transition: "transform 0.3s ease",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-  });
-
   shadowRoot.appendChild(toast);
 
-  // Animate in
-  requestAnimationFrame(() => {
-    toast.style.transform = "translateX(-50%) translateY(0)";
-  });
+  requestAnimationFrame(() => toast.classList.add("shown"));
 
-  // Auto-dismiss after 3 seconds
   setTimeout(() => {
-    toast.style.transform = "translateX(-50%) translateY(100px)";
+    toast.classList.remove("shown");
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
+
+function favoriteButtons(type: "theme" | "font", index: number): string {
+  return `
+    <div class="favorites">
+      <button class="favorite-icon heart" data-type="${type}" data-index="${index}" title="Like" aria-label="Like">${icons.heart}</button>
+      <button class="favorite-icon star" data-type="${type}" data-index="${index}" title="Star" aria-label="Star">${icons.star}</button>
+    </div>`;
+}
+
+function individualFont(role: "heading" | "body", face: string): string {
+  return `<span class="individual-font ${role}-font" data-font="${face}" data-type="${role}" title="Use ${face} for the ${role}" role="button" tabindex="0">${face}</span>`;
+}
+
+/** What the pairing is made of, from the data: a serif heading with a sans body is "Serif + Sans" */
+function describeStyles(pairing: FontPairing): string {
+  const first = (styles: string[]) => capitalize(styles[0] ?? "");
+  return `${first(pairing.headingStyle)} + ${first(pairing.bodyStyle)}`;
+}
+
+/** Points a face label at another face: its text, its data and the face it is set in */
+function labelFace(element: Element | null, face: string): HTMLElement | null {
+  const span = element as HTMLElement | null;
+  if (span) {
+    span.textContent = face;
+    span.dataset.font = face;
+    span.title = `Use ${face} for the ${span.dataset.type}`;
+  }
+  return span;
 }
 
 // Cache for color names to avoid repeated calculations
@@ -211,6 +218,7 @@ export class ThemeForseen extends HTMLElement {
 
   private selectedTags = new Set<string>();
   private searchText = "";
+  private fontSearchText = "";
   private selectedHeadingStyles = new Set<string>();
   private selectedBodyStyles = new Set<string>();
   private showHeartedOnly = false;
@@ -293,7 +301,20 @@ export class ThemeForseen extends HTMLElement {
 
     if (!this.isReady) return;
     this.applyDrawerState();
+    if (open) this.revealSelections();
     this.announce();
+  }
+
+  // Each list opens on its selection rather than its top
+  private revealSelections() {
+    const rows = [
+      `.theme-item[data-index="${this.selectedTheme[this.mode]}"]`,
+      `.font-item[data-index="${this.selectedFontPairing}"]`,
+    ];
+    for (const selector of rows) {
+      const row = this.shadowRoot?.querySelector(selector);
+      row?.scrollIntoView({ block: "center" });
+    }
   }
 
   private resolveSelections() {
@@ -460,7 +481,11 @@ export class ThemeForseen extends HTMLElement {
 
     this.selectedTags = getSet(STORAGE_KEYS.FILTER_TAGS);
     this.searchText = getItem(STORAGE_KEYS.FILTER_SEARCH) || "";
-    this.selectedHeadingStyles = getSet(STORAGE_KEYS.FILTER_HEADING_STYLES);
+    this.fontSearchText = getItem(STORAGE_KEYS.FILTER_FONT_SEARCH) || "";
+    // One heading style at a time now; an older store may hold several
+    this.selectedHeadingStyles = new Set(
+      Array.from(getSet<string>(STORAGE_KEYS.FILTER_HEADING_STYLES)).slice(0, 1)
+    );
     this.selectedBodyStyles = getSet(STORAGE_KEYS.FILTER_BODY_STYLES);
 
     const heartedOnly = getBool(STORAGE_KEYS.FILTER_HEARTED_ONLY);
@@ -539,6 +564,7 @@ export class ThemeForseen extends HTMLElement {
 
     setSet(STORAGE_KEYS.FILTER_TAGS, this.selectedTags);
     setItem(STORAGE_KEYS.FILTER_SEARCH, this.searchText);
+    setItem(STORAGE_KEYS.FILTER_FONT_SEARCH, this.fontSearchText);
     setSet(STORAGE_KEYS.FILTER_HEADING_STYLES, this.selectedHeadingStyles);
     setSet(STORAGE_KEYS.FILTER_BODY_STYLES, this.selectedBodyStyles);
     setBool(STORAGE_KEYS.FILTER_HEARTED_ONLY, this.showHeartedOnly);
@@ -556,6 +582,7 @@ export class ThemeForseen extends HTMLElement {
       fontsColumnCollapsed: this.fontsColumnCollapsed,
       isDarkMode: this.isDarkMode,
       searchText: this.searchText,
+      fontSearchText: this.fontSearchText,
       selectedTags: this.selectedTags,
       selectedHeadingStyles: this.selectedHeadingStyles,
       selectedBodyStyles: this.selectedBodyStyles,
@@ -577,17 +604,8 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private filterTheme(theme: ColorTheme, index: number): boolean {
-    // Filter by favorites if enabled (OR logic - show if hearted OR starred)
-    if (this.showHeartedOnly || this.showStarredOnly) {
-      const isHearted = this.lovedThemes[this.mode].has(index);
-      const isStarred = this.starredTheme[this.mode] === index;
-
-      let matchesFavorites = false;
-      if (this.showHeartedOnly && isHearted) matchesFavorites = true;
-      if (this.showStarredOnly && isStarred) matchesFavorites = true;
-
-      if (!matchesFavorites) return false;
-    }
+    if (this.showStarredOnly && this.starredTheme[this.mode] !== index) return false;
+    if (this.showHeartedOnly && !this.lovedThemes[this.mode].has(index)) return false;
 
     // Filter by tags if any are selected
     if (this.selectedTags.size > 0) {
@@ -652,19 +670,17 @@ export class ThemeForseen extends HTMLElement {
         // Selection classes added by updateThemeSelection()
         return `
         <div class="theme-item" data-index="${index}">
-          <div class="theme-name">${theme.name}</div>
-          <div class="theme-colors">
-            <div class="color-swatch" style="background-color: ${colors.primary}" title="Primary"></div>
-            <div class="color-swatch" style="background-color: ${colors.accent}" title="Accent"></div>
-            <div class="color-swatch" style="background-color: ${colors.background}" title="Background"></div>
-            <div class="color-swatch" style="background-color: ${colors.cardBackground}" title="Card Background"></div>
-            <div class="color-swatch" style="background-color: ${colors.text}" title="Text"></div>
+          <div class="theme-main">
+            <div class="theme-name" data-other-mode="${this.isDarkMode ? "light" : "dark"}">${theme.name}</div>
+            <div class="theme-colors">
+              <div class="color-swatch" style="background-color: ${colors.primary}" title="Primary"></div>
+              <div class="color-swatch" style="background-color: ${colors.accent}" title="Accent"></div>
+              <div class="color-swatch" style="background-color: ${colors.background}" title="Background"></div>
+              <div class="color-swatch" style="background-color: ${colors.cardBackground}" title="Card Background"></div>
+              <div class="color-swatch" style="background-color: ${colors.text}" title="Text"></div>
+            </div>
           </div>
-          <div class="favorites">
-            <button class="activate-icon" data-type="theme" data-index="${index}" title="Activate this theme">⚡</button>
-            <span class="favorite-icon star" data-type="theme" data-index="${index}" title="Like">★</span>
-            <span class="favorite-icon heart" data-type="theme" data-index="${index}" title="Love">♥</span>
-          </div>
+          ${favoriteButtons("theme", index)}
         </div>
       `;
       })
@@ -692,6 +708,9 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private filterFontPairing(pairing: FontPairing): boolean {
+    const search = this.fontSearchText.trim().toLowerCase();
+    if (search && !pairing.name.toLowerCase().includes(search)) return false;
+
     // Filter by heading styles if any are selected
     if (this.selectedHeadingStyles.size > 0) {
       const hasMatchingHeadingStyle = pairing.headingStyle.some((style) =>
@@ -727,29 +746,17 @@ export class ThemeForseen extends HTMLElement {
         <div class="font-item ${
           isActive ? "active" : ""
         }" data-index="${index}">
-          <div class="font-name">${pairing.name}</div>
-          <div class="font-preview">
-            <span class="individual-font heading-font" data-font="${
-              pairing.heading
-            }" data-type="heading">
-              Heading: <span class="font-name-preview" style="font-family: '${
-                pairing.heading
-              }', sans-serif">${pairing.heading}</span>
-            </span><br>
-            <span class="individual-font body-font" data-font="${
-              pairing.body
-            }" data-type="body">
-              Body: <span class="font-name-preview" style="font-family: '${
-                pairing.body
-              }', sans-serif">${pairing.body}</span>
-            </span>
+          <div class="font-sample" style="font-family: '${pairing.heading}', sans-serif" aria-hidden="true">Aa</div>
+          <div class="font-main">
+            <div class="font-name">
+              ${individualFont("heading", pairing.heading)}<span class="font-amp">&amp;</span>${individualFont("body", pairing.body)}
+            </div>
+            <div class="font-preview">
+              <span class="font-styles" title="Heading style + body style">${describeStyles(pairing)}</span>
+              <button class="font-switch-icon" data-index="${index}" title="Swap heading and body" aria-label="Swap heading and body">${icons.swap}</button>
+            </div>
           </div>
-          <button class="font-switch-icon" data-index="${index}" title="Swap heading and body fonts">⇄</button>
-          <div class="favorites">
-            <button class="activate-icon" data-type="font" data-index="${index}" title="Activate this font pairing">⚡</button>
-            <span class="favorite-icon star" data-type="font" data-index="${index}" title="Like">★</span>
-            <span class="favorite-icon heart" data-type="font" data-index="${index}" title="Love">♥</span>
-          </div>
+          ${favoriteButtons("font", index)}
         </div>
       `;
       })
@@ -823,16 +830,34 @@ export class ThemeForseen extends HTMLElement {
     );
     const filterDropdown = this.shadowRoot?.querySelector(".filter-dropdown");
 
-    // Show dropdown when clicking on input
-    filterInput?.addEventListener("click", () => {
-      this.filterDropdownOpen = true;
-      filterDropdown?.classList.remove("hidden");
-    });
-
     filterDropdownBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
       this.filterDropdownOpen = !this.filterDropdownOpen;
       filterDropdown?.classList.toggle("hidden");
+      filterDropdownBtn.setAttribute("aria-expanded", String(this.filterDropdownOpen));
+      if (this.filterDropdownOpen) (filterDropdown?.querySelector(".dropdown-search") as HTMLInputElement | null)?.focus();
+    });
+
+    const tagSearch = filterDropdown?.querySelector(".dropdown-search") as HTMLInputElement | null;
+    tagSearch?.addEventListener("input", () => {
+      const needle = tagSearch.value.trim().toLowerCase();
+      filterDropdown?.querySelectorAll<HTMLElement>(".filter-option[data-tag]").forEach((option) => {
+        option.classList.toggle("hidden", !option.dataset.tag!.includes(needle));
+      });
+    });
+    tagSearch?.addEventListener("click", (e) => e.stopPropagation());
+
+    this.shadowRoot?.querySelectorAll<HTMLElement>(".pill[data-favorites]").forEach((pillButton) => {
+      pillButton.addEventListener("click", () => {
+        const which = pillButton.dataset.favorites;
+        this.showStarredOnly = which === "starred";
+        this.showHeartedOnly = which === "hearted";
+        this.shadowRoot?.querySelectorAll(".pill[data-favorites]").forEach((other) => {
+          other.setAttribute("aria-pressed", String(other === pillButton));
+        });
+        this.saveToLocalStorage();
+        this.renderThemes();
+      });
     });
 
     // Close dropdown when clicking outside (only add once since shadowRoot persists)
@@ -840,13 +865,8 @@ export class ThemeForseen extends HTMLElement {
       this.clickOutsideHandlerAdded = true;
       this.shadowRoot?.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
-        // Don't interfere with favorite/activate icon clicks
-        if (
-          target.classList.contains("favorite-icon") ||
-          target.classList.contains("activate-icon")
-        ) {
-          return;
-        }
+        // Don't interfere with favorite clicks
+        if (target.closest(".favorite-icon")) return;
         const currentFilterContainer =
           this.shadowRoot?.querySelector(".filter-container");
         const currentFilterDropdown =
@@ -857,6 +877,7 @@ export class ThemeForseen extends HTMLElement {
         ) {
           this.filterDropdownOpen = false;
           currentFilterDropdown?.classList.add("hidden");
+          this.shadowRoot?.querySelector(".filter-dropdown-btn")?.setAttribute("aria-expanded", "false");
         }
       });
     }
@@ -879,32 +900,6 @@ export class ThemeForseen extends HTMLElement {
           const option = (e.target as HTMLInputElement).closest(
             ".filter-option"
           );
-
-          // Handle favorites filters
-          const favoritesType = option?.getAttribute("data-favorites");
-          if (favoritesType) {
-            const isChecked = (e.target as HTMLInputElement).checked;
-            if (favoritesType === "hearted") {
-              this.showHeartedOnly = isChecked;
-            } else if (favoritesType === "starred") {
-              this.showStarredOnly = isChecked;
-            }
-            // Save scroll position before re-render
-            const filterDropdown = this.shadowRoot?.querySelector(
-              ".filter-dropdown"
-            ) as HTMLElement | null;
-            if (filterDropdown) {
-              this.filterDropdownScrollTop = filterDropdown.scrollTop;
-            }
-            this.saveToLocalStorage();
-            this.render();
-            this.applyDrawerState();
-            this.applyFilterDropdownState();
-            this.attachEventListeners();
-            this.renderThemes();
-            this.renderFonts();
-            return;
-          }
 
           // Handle tag filters
           const tag = option?.getAttribute("data-tag");
@@ -948,22 +943,38 @@ export class ThemeForseen extends HTMLElement {
     });
   }
 
-  private updateFontFilterButtonText(filterType: "heading" | "body") {
-    const targetSet =
-      filterType === "heading"
-        ? this.selectedHeadingStyles
-        : this.selectedBodyStyles;
-    const btn = this.shadowRoot?.querySelector(
-      `.font-filter-dropdown-btn[data-filter-type="${filterType}"]`
+  private updateFontFilterButtonText() {
+    const label = this.shadowRoot?.querySelector(
+      '.font-filter-dropdown-btn[data-filter-type="body"] .menu-label'
     );
-    if (btn) {
-      const text =
-        targetSet.size > 0 ? Array.from(targetSet).join(", ") : "All styles";
-      btn.textContent = `${text} ▼`;
+    if (label) {
+      label.textContent =
+        this.selectedBodyStyles.size > 0
+          ? Array.from(this.selectedBodyStyles).map(capitalize).join(", ")
+          : "Any body";
     }
   }
 
   private attachFontFilterListeners() {
+    const searchInput = this.shadowRoot?.querySelector(".font-filter-input") as HTMLInputElement | null;
+    searchInput?.addEventListener("input", () => {
+      this.fontSearchText = searchInput.value;
+      this.saveToLocalStorage();
+      this.renderFonts();
+    });
+
+    this.shadowRoot?.querySelectorAll<HTMLElement>(".pill[data-style]").forEach((pillButton) => {
+      pillButton.addEventListener("click", () => {
+        const style = pillButton.dataset.style!;
+        this.selectedHeadingStyles = new Set(style === "all" ? [] : [style]);
+        this.shadowRoot?.querySelectorAll(".pill[data-style]").forEach((other) => {
+          other.setAttribute("aria-pressed", String(other === pillButton));
+        });
+        this.saveToLocalStorage();
+        this.renderFonts();
+      });
+    });
+
     this.shadowRoot
       ?.querySelectorAll(".font-filter-dropdown-btn")
       .forEach((btn) => {
@@ -975,6 +986,7 @@ export class ThemeForseen extends HTMLElement {
             `.font-filter-dropdown[data-filter-type="${filterType}"]`
           );
           dropdown?.classList.toggle("hidden");
+          btn.setAttribute("aria-expanded", String(!dropdown?.classList.contains("hidden")));
         });
       });
 
@@ -1005,7 +1017,7 @@ export class ThemeForseen extends HTMLElement {
             }
 
             this.saveToLocalStorage();
-            this.updateFontFilterButtonText(filterType);
+            this.updateFontFilterButtonText();
             this.renderFonts();
           }
         });
@@ -1026,6 +1038,9 @@ export class ThemeForseen extends HTMLElement {
             .forEach((dropdown) => {
               dropdown.classList.add("hidden");
             });
+          this.shadowRoot
+            ?.querySelectorAll(".font-filter-dropdown-btn")
+            .forEach((button) => button.setAttribute("aria-expanded", "false"));
         }
       });
     }
@@ -1061,9 +1076,12 @@ export class ThemeForseen extends HTMLElement {
       }
     });
 
-    // Delegated click handler for buttons (mode, collapse, instructions close, favorites, activate)
+    // Delegated click handler for buttons (mode, tabs, footer, instructions close, favorites)
     this.shadowRoot?.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
+      const target = (e.target as Element).closest<HTMLElement>(
+        ".mode-btn, .column-tab, .instructions-close, .favorite-icon, .preview-btn, .apply-btn"
+      );
+      if (!target) return;
 
       // Mode toggle buttons
       if (target.classList.contains("mode-btn")) {
@@ -1075,8 +1093,8 @@ export class ThemeForseen extends HTMLElement {
         return;
       }
 
-      // Collapse buttons
-      if (target.classList.contains("collapse-btn")) {
+      // Column tabs
+      if (target.classList.contains("column-tab")) {
         e.stopPropagation();
         const columnType = target.dataset.columnType as "themes" | "fonts";
         this.toggleColumn(columnType);
@@ -1086,19 +1104,17 @@ export class ThemeForseen extends HTMLElement {
       // Instructions close buttons
       if (target.classList.contains("instructions-close")) {
         e.stopPropagation();
-        const instructionsDiv = target.closest(".instructions");
-        if (instructionsDiv) {
-          instructionsDiv.classList.add("hidden");
-        }
+        target.closest(".instructions")?.classList.add("hidden");
         return;
       }
 
-      // Activate icons
-      if (target.classList.contains("activate-icon")) {
-        e.stopPropagation();
-        const type = target.dataset.type as "theme" | "font";
-        const index = parseInt(target.dataset.index || "0");
-        this.handleActivate(type, index);
+      // The footer: look at the site, or write the selection to the project
+      if (target.classList.contains("preview-btn")) {
+        this.close();
+        return;
+      }
+      if (target.classList.contains("apply-btn")) {
+        this.applyToProject();
         return;
       }
 
@@ -1187,13 +1203,8 @@ export class ThemeForseen extends HTMLElement {
     const themesList = this.shadowRoot?.querySelector(".themes-list");
     themesList?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      // Ignore clicks on favorite/activate icons - they have their own handlers
-      if (
-        target.classList.contains("favorite-icon") ||
-        target.classList.contains("activate-icon")
-      ) {
-        return;
-      }
+      // The favorite buttons have their own handler
+      if (target.closest(".favorite-icon")) return;
       const themeItem = target.closest(".theme-item");
       if (themeItem) {
         const index = parseInt((themeItem as HTMLElement).dataset.index || "0");
@@ -1210,17 +1221,13 @@ export class ThemeForseen extends HTMLElement {
     fontsList?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
 
-      if (
-        target.classList.contains("favorite-icon") ||
-        target.classList.contains("activate-icon")
-      ) {
-        return;
-      }
+      if (target.closest(".favorite-icon")) return;
 
-      if (target.classList.contains("font-switch-icon")) {
+      const switchButton = target.closest<HTMLElement>(".font-switch-icon");
+      if (switchButton) {
         e.stopPropagation();
 
-        const index = parseInt(target.dataset.index || "0");
+        const index = parseInt(switchButton.dataset.index || "0");
         const pairing = this.fontPairings[index];
 
         // Determine current fonts to swap
@@ -1243,20 +1250,8 @@ export class ThemeForseen extends HTMLElement {
               `.font-item[data-index="${this.lastSwappedIndex}"]`
             );
             if (prevItem) {
-              const prevHeading = prevItem.querySelector(
-                ".heading-font"
-              ) as HTMLElement;
-              const prevBody = prevItem.querySelector(
-                ".body-font"
-              ) as HTMLElement;
-              if (prevHeading) {
-                prevHeading.innerHTML = `Heading: <span class="font-name-preview" style="font-family: '${prevPairing.heading}', sans-serif">${prevPairing.heading}</span>`;
-                prevHeading.dataset.font = prevPairing.heading;
-              }
-              if (prevBody) {
-                prevBody.innerHTML = `Body: <span class="font-name-preview" style="font-family: '${prevPairing.body}', sans-serif">${prevPairing.body}</span>`;
-                prevBody.dataset.font = prevPairing.body;
-              }
+              labelFace(prevItem.querySelector(".heading-font"), prevPairing.heading);
+              labelFace(prevItem.querySelector(".body-font"), prevPairing.body);
             }
           }
           // Use the new item's pairing
@@ -1283,20 +1278,12 @@ export class ThemeForseen extends HTMLElement {
           `.font-item[data-index="${index}"]`
         );
         if (fontItem) {
-          const headingSpan = fontItem.querySelector(
-            ".heading-font"
-          ) as HTMLElement;
-          const bodySpan = fontItem.querySelector(".body-font") as HTMLElement;
-          if (headingSpan) {
-            headingSpan.innerHTML = `Heading: <span class="font-name-preview" style="font-family: '${this.selectedHeadingFont}', sans-serif">${this.selectedHeadingFont}</span>`;
-            headingSpan.dataset.font = this.selectedHeadingFont;
-            headingSpan.classList.add("selected");
-          }
-          if (bodySpan) {
-            bodySpan.innerHTML = `Body: <span class="font-name-preview" style="font-family: '${this.selectedBodyFont}', sans-serif">${this.selectedBodyFont}</span>`;
-            bodySpan.dataset.font = this.selectedBodyFont;
-            bodySpan.classList.add("selected");
-          }
+          const headingSpan = labelFace(fontItem.querySelector(".heading-font"), this.selectedHeadingFont);
+          const bodySpan = labelFace(fontItem.querySelector(".body-font"), this.selectedBodyFont);
+          headingSpan?.classList.add("selected");
+          bodySpan?.classList.add("selected");
+          const sample = fontItem.querySelector(".font-sample") as HTMLElement | null;
+          if (sample) sample.style.fontFamily = `'${this.selectedHeadingFont}', sans-serif`;
         }
 
         this.applyFonts();
@@ -1336,6 +1323,15 @@ export class ThemeForseen extends HTMLElement {
 
         this.applyFonts();
         this.renderFonts(); // Re-render to show active state
+      }
+    });
+
+    fontsList?.addEventListener("keydown", (e) => {
+      const target = e.target as HTMLElement;
+      const key = (e as KeyboardEvent).key;
+      if (target.classList.contains("individual-font") && (key === "Enter" || key === " ")) {
+        e.preventDefault();
+        target.click();
       }
     });
 
@@ -1393,12 +1389,6 @@ export class ThemeForseen extends HTMLElement {
     const activationCancelBtn = this.shadowRoot?.querySelector(
       ".activation-cancel-btn"
     );
-    const activationCopyBtn = this.shadowRoot?.querySelector(
-      ".activation-copy-btn"
-    );
-    const activationSaveBtn = this.shadowRoot?.querySelector(
-      ".activation-save-btn"
-    );
 
     activationModalClose?.addEventListener("click", () => {
       activationModal?.classList.add("hidden");
@@ -1406,23 +1396,6 @@ export class ThemeForseen extends HTMLElement {
 
     activationCancelBtn?.addEventListener("click", () => {
       activationModal?.classList.add("hidden");
-    });
-
-    activationCopyBtn?.addEventListener("click", () => {
-      const codeElement = this.shadowRoot?.querySelector(".activation-code");
-      if (codeElement?.textContent) {
-        navigator.clipboard.writeText(codeElement.textContent);
-        activationCopyBtn.textContent = "Copied!";
-        activationCopyBtn.classList.add("copied");
-        setTimeout(() => {
-          activationCopyBtn.textContent = "Copy";
-          activationCopyBtn.classList.remove("copied");
-        }, 2000);
-      }
-    });
-
-    activationSaveBtn?.addEventListener("click", () => {
-      this.handleSaveToFile();
     });
   }
 
@@ -1595,16 +1568,11 @@ export class ThemeForseen extends HTMLElement {
 
   private updateModeButtons() {
     this.shadowRoot?.querySelectorAll(".mode-btn").forEach((btn) => {
-      const mode = (btn as HTMLElement).dataset.mode;
-      if (
-        (mode === "dark" && this.isDarkMode) ||
-        (mode === "light" && !this.isDarkMode)
-      ) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
+      const active = ((btn as HTMLElement).dataset.mode === "dark") === this.isDarkMode;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", String(active));
     });
+    this.drawerElement?.setAttribute("data-mode", this.mode);
   }
 
   private applyDrawerState() {
@@ -1641,6 +1609,13 @@ export class ThemeForseen extends HTMLElement {
       columnType === "themes"
         ? this.themesColumnCollapsed
         : this.fontsColumnCollapsed;
+    const otherCollapsed =
+      columnType === "themes"
+        ? this.fontsColumnCollapsed
+        : this.themesColumnCollapsed;
+
+    // One column at least
+    if (!isExpanding && otherCollapsed) return;
 
     if (columnType === "themes") {
       this.themesColumnCollapsed = !this.themesColumnCollapsed;
@@ -1658,131 +1633,51 @@ export class ThemeForseen extends HTMLElement {
       }
     }
 
-    // Update classes on existing elements for smooth animation
-    const column = this.shadowRoot?.querySelector(
-      `[data-column="${columnType}"]`
-    );
-    const collapseBtn = column?.querySelector(
-      ".collapse-btn"
-    ) as HTMLButtonElement;
-    const headerContent = this.shadowRoot?.querySelector(
-      ".drawer-header-content"
-    );
-
-    if (column) {
-      if (columnType === "themes") {
-        column.classList.toggle("collapsed", this.themesColumnCollapsed);
-        if (collapseBtn) {
-          collapseBtn.innerHTML = this.themesColumnCollapsed ? "«" : "»";
-          collapseBtn.title = this.themesColumnCollapsed
-            ? "Expand"
-            : "Collapse";
-        }
-      } else {
-        column.classList.toggle("collapsed", this.fontsColumnCollapsed);
-        if (collapseBtn) {
-          collapseBtn.innerHTML = this.fontsColumnCollapsed ? "«" : "»";
-          collapseBtn.title = this.fontsColumnCollapsed ? "Expand" : "Collapse";
-        }
-      }
-    }
-
-    if (headerContent) {
-      headerContent.classList.toggle(
-        "logo-hidden",
-        this.themesColumnCollapsed || this.fontsColumnCollapsed
-      );
-    }
-
+    this.updateColumnUI(columnType);
     this.saveToLocalStorage();
   }
 
-  // Helper to update just one column's UI (used for accordion behavior on mobile)
   private updateColumnUI(columnType: "themes" | "fonts") {
-    const column = this.shadowRoot?.querySelector(
-      `[data-column="${columnType}"]`
-    );
-    const collapseBtn = column?.querySelector(
-      ".collapse-btn"
-    ) as HTMLButtonElement;
-    const headerContent = this.shadowRoot?.querySelector(
-      ".drawer-header-content"
-    );
+    const isCollapsed =
+      columnType === "themes"
+        ? this.themesColumnCollapsed
+        : this.fontsColumnCollapsed;
 
-    if (column) {
-      const isCollapsed =
-        columnType === "themes"
-          ? this.themesColumnCollapsed
-          : this.fontsColumnCollapsed;
-
-      column.classList.toggle("collapsed", isCollapsed);
-      if (collapseBtn) {
-        collapseBtn.innerHTML = isCollapsed ? "«" : "»";
-        collapseBtn.title = isCollapsed ? "Expand" : "Collapse";
-      }
-    }
-
-    if (headerContent) {
-      headerContent.classList.toggle(
-        "logo-hidden",
-        this.themesColumnCollapsed || this.fontsColumnCollapsed
-      );
-    }
+    this.shadowRoot
+      ?.querySelector(`[data-column="${columnType}"]`)
+      ?.classList.toggle("collapsed", isCollapsed);
+    this.shadowRoot
+      ?.querySelector(`.column-tab[data-column-type="${columnType}"]`)
+      ?.setAttribute("aria-pressed", String(!isCollapsed));
   }
 
-  private async handleActivate(type: "theme" | "font", index: number) {
+  // The selection as applied to the page: the theme in the mode in view, and the faces
+  private async applyToProject() {
     if (!this.shadowRoot) return;
 
-    // Try to apply via dev server first
-    let colors: ColorTheme["light"] | ColorTheme["dark"] | null = null;
-    let fonts: ThemeForseenState["fonts"] | null = null;
+    const theme = this.colorThemes[this.selectedTheme[this.mode]];
+    if (!theme) return;
+    const colors = this.isDarkMode ? theme.dark : theme.light;
+    const fonts = this.currentFonts();
 
-    if (type === "theme") {
-      const theme = this.colorThemes[index];
-      colors = this.isDarkMode ? theme.dark : theme.light;
-    } else {
-      const pairing = this.fontPairings[index];
-      fonts = {
-        heading: this.selectedHeadingFont || pairing.heading,
-        body: this.selectedBodyFont || pairing.body,
-      };
-    }
-
-    const result = await tryApplyViaServer(
-      type,
-      colors,
-      fonts,
-      this.isDarkMode
-    );
-
-    if (result?.success) {
-      // Show success toast with filename
-      const message = result.created
-        ? `Created ${result.file}`
-        : `Applied to ${result.file}`;
-      showToast(this.shadowRoot, message, true);
-
-      // If file was created, show import instruction in console
-      if (result.created && result.importInstruction) {
-        console.log(`[ThemeForseen] ${result.importInstruction}`);
-      }
+    // The server rewrites one file; the writes go one after the other
+    const themeResult = await tryApplyViaServer("theme", colors, null, this.isDarkMode);
+    if (!themeResult) {
+      showActivationModal(this.shadowRoot, activationSections(colors, fonts));
       return;
     }
+    const fontResult = await tryApplyViaServer("font", null, fonts, this.isDarkMode);
 
-    // Fall back to modal if server not available
-    showActivationModal(type, index, {
-      shadowRoot: this.shadowRoot,
-      isDarkMode: this.isDarkMode,
-      selectedHeadingFont: this.selectedHeadingFont,
-      selectedBodyFont: this.selectedBodyFont,
-      colorThemes: this.colorThemes,
-      fontPairings: this.fontPairings,
-    });
-  }
-
-  private async handleSaveToFile() {
-    if (!this.shadowRoot) return;
-    await handleSaveToFile(this.shadowRoot);
+    const result = fontResult?.success ? fontResult : themeResult;
+    if (themeResult.success && fontResult?.success) {
+      const created = themeResult.created || fontResult.created;
+      showToast(this.shadowRoot, `${created ? "Created" : "Applied to"} ${result.file}`, true);
+      if (created && result.importInstruction) {
+        console.log(`[ThemeForseen] ${result.importInstruction}`);
+      }
+    } else {
+      showToast(this.shadowRoot, result.message || "The project could not be written to.", false);
+    }
   }
 
   private applyTheme(force = false) {

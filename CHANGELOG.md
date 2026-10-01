@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The keep buttons and the swap are full-size touch targets; the face tags and the old swap icon were under the 24 px minimum
+- A column's search and filters no longer ride over its list. The list scrolls on its own beneath them, so a row passing the top is clipped rather than left with its heart and star half covered
 - The tab on the page's edge was labelled "Open ThemeForseen" for assistive technology while showing "Themes"; its label now contains what it shows
 - A face chosen alone in 0.8 or earlier, which stored no pairing, comes back as a kept face on the default pairing's row, where it can be let go
 

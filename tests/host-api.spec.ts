@@ -40,7 +40,7 @@ async function lastChange(page: Page): Promise<Change | undefined> {
 // Whether a row lies within the part of its column that shows, whatever the window has scrolled to
 async function inViewInItsColumn(page: Page, selector: string): Promise<boolean> {
   return shadowLocator(page, selector).evaluate((row) => {
-    const column = row.closest('.column-content')!.getBoundingClientRect();
+    const column = row.closest('.themes-list, .fonts-list')!.getBoundingClientRect();
     const box = row.getBoundingClientRect();
     return box.top >= column.top && box.bottom <= column.bottom + 1;
   });
@@ -696,7 +696,7 @@ test.describe('Docked', () => {
 
     await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toHaveClass(/selected-light/);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
-    expect(await shadowLocator(page, '[data-column="themes"] .column-content').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
+    expect(await shadowLocator(page, '.themes-list').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
   });
 
   test('the heart and the star stay touch targets when a page zooms the drawer down', async ({ page }) => {
@@ -716,6 +716,22 @@ test.describe('Docked', () => {
     for (const box of controls) {
       expect(box.width).toBeGreaterThanOrEqual(24);
       expect(box.height).toBeGreaterThanOrEqual(24);
+    }
+  });
+
+  test('a row is never half covered by its column\'s controls', async ({ page }) => {
+    // Scroll so that a row lies across the top of each list
+    for (const list of ['.themes-list', '.fonts-list']) {
+      await shadowLocator(page, list).evaluate((element) => element.scrollBy({ top: 31 }));
+    }
+
+    for (const column of ['themes', 'fonts']) {
+      const covered = await shadowLocator(page, `[data-column="${column}"]`).evaluate((element) => {
+        const controls = element.querySelector('.column-controls')!.getBoundingClientRect();
+        const list = element.querySelector('.themes-list, .fonts-list')!.getBoundingClientRect();
+        return controls.bottom > list.top + 0.5;
+      });
+      expect(covered).toBe(false);
     }
   });
 

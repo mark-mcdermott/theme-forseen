@@ -115,20 +115,17 @@ const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1
  * scrollIntoView would move the page too, which a docked drawer must not do.
  * Measured on the screen and converted, so it holds when a page zooms the drawer.
  */
-function scrollWithin(content: HTMLElement, row: HTMLElement, where: "center" | "nearest", smooth = false): void {
-  const box = content.getBoundingClientRect();
+function scrollWithin(list: HTMLElement, row: HTMLElement, where: "center" | "nearest", smooth = false): void {
+  const box = list.getBoundingClientRect();
   const rowBox = row.getBoundingClientRect();
-  const scale = box.height / content.clientHeight || 1;
-  // The controls stick to the top of the column and cover what scrolls beneath them
-  const controls = content.querySelector(".column-controls")?.getBoundingClientRect().height ?? 0;
-  const top = box.top + controls;
+  const scale = box.height / list.clientHeight || 1;
 
   let distance = 0;
-  if (where === "center") distance = rowBox.top + rowBox.height / 2 - (top + box.bottom) / 2;
-  else if (rowBox.top < top) distance = rowBox.top - top;
+  if (where === "center") distance = rowBox.top + rowBox.height / 2 - (box.top + box.bottom) / 2;
+  else if (rowBox.top < box.top) distance = rowBox.top - box.top;
   else if (rowBox.bottom > box.bottom) distance = rowBox.bottom - box.bottom;
 
-  if (distance) content.scrollBy({ top: distance / scale, behavior: smooth ? "smooth" : "auto" });
+  if (distance) list.scrollBy({ top: distance / scale, behavior: smooth ? "smooth" : "auto" });
 }
 
 function favoriteButtons(type: "theme" | "font", index: number): string {
@@ -352,8 +349,8 @@ export class ThemeForseen extends HTMLElement {
     const reveal = () => {
       for (const selector of rows) {
         const row = this.shadowRoot?.querySelector<HTMLElement>(selector);
-        const content = row?.closest<HTMLElement>(".column-content");
-        if (row && content) scrollWithin(content, row, "center");
+        const list = row?.closest<HTMLElement>(".themes-list, .fonts-list");
+        if (row && list) scrollWithin(list, row, "center");
       }
     };
 
@@ -836,7 +833,7 @@ export class ThemeForseen extends HTMLElement {
         }
       },
       {
-        root: this.fontsColumn.querySelector(".column-content"),
+        root: this.fontsColumn.querySelector(".fonts-list"),
         rootMargin: "200px 0px",
       }
     );
@@ -1459,7 +1456,7 @@ export class ThemeForseen extends HTMLElement {
   private scrollToSelected(selector: string) {
     const column =
       this.focusedColumn === "themes" ? this.themesColumn : this.fontsColumn;
-    const content = column.querySelector(".column-content") as HTMLElement;
+    const list = column.querySelector(".themes-list, .fonts-list") as HTMLElement;
     const selectedIndex =
       this.focusedColumn === "themes"
         ? this.selectedTheme[this.mode]
@@ -1468,14 +1465,7 @@ export class ThemeForseen extends HTMLElement {
     const selectedItem = column.querySelector(
       `${selector}[data-index="${selectedIndex}"]`
     ) as HTMLElement | null;
-    if (selectedItem && content) {
-      // For first item, scroll to absolute top to avoid sticky header issues
-      if (selectedIndex === 0) {
-        content.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        scrollWithin(content, selectedItem, "nearest", true);
-      }
-    }
+    if (selectedItem && list) scrollWithin(list, selectedItem, "nearest", true);
   }
 
   private updateThemeSelection() {

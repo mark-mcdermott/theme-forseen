@@ -398,7 +398,20 @@ export const styles = `
     display: none;
   }
 
+  /*
+   * A column is its controls, and beneath them its list, which scrolls on its
+   * own. The controls do not ride over the list: a row passing under them
+   * would have its buttons half covered, too little left of them to press.
+   */
   .column-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .themes-list,
+  .fonts-list {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -414,14 +427,14 @@ export const styles = `
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Above the list, for the menus that open over it */
   .column-controls {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 2;
     display: grid;
+    flex: none;
     gap: 7px;
     padding-bottom: 8px;
-    background: var(--tf-bg);
   }
 
   .instructions {

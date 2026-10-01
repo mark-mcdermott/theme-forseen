@@ -301,11 +301,11 @@ Any CSS framework that supports CSS variables will work. Just reference the vari
 1. **Open**: Click the tab on the right side of the screen
 2. **Browse themes**: Click one to apply it; the arrow keys and the mouse wheel step through the list. Search by name, color name or hex, narrow by tag, or show only what you have starred or liked
 3. **Browse fonts**: Click a pairing to apply it, or one face of it to use that face alone; the ⇄ swaps heading and body. Search by name, narrow by heading style with the pills and by body style with the menu
-4. **Light / Dark**: The switch beside the tabs. Each mode keeps its own theme
-5. **Preview on This Site**: Closes the drawer so you can look at the page with the selection applied; the tab brings it back
+4. **Light / Dark**: The switch in the header. Each mode keeps its own theme
+5. **Preview on This Site**: A key to compare with. Press it and the selection comes off the page, which shows its own look; press it again, or choose anything, and the selection is back
 6. **Apply to Project**: Writes the selection to your project when the [dev server](#dev-server) is running, and otherwise shows the two files to copy or save
 
-The two tabs put a column away or bring it back. One stays out at least, and on a phone one shows at a time.
+Each column has a header over it. Pressing a header puts its column away, leaving a stub on that side that brings it back; one column stays out at least. On a phone the headers are tabs, one column at a time.
 
 ### Skinning the drawer
 
@@ -399,7 +399,7 @@ drawer.toggle();
 
 ### State
 
-`state` is what is applied to the page right now. It is `null` until the collection has loaded.
+`state` is the selection right now. It is `null` until the collection has loaded.
 
 ```js
 drawer.state;
@@ -407,9 +407,12 @@ drawer.state;
 //   mode: "light",
 //   theme: { name: "Golden Hour", colors: { primary: "#...", background: "#...", ... } },
 //   fonts: { heading: "Inter", body: "Geist" },
-//   open: false
+//   open: false,
+//   previewing: true
 // }
 ```
+
+`previewing` is `false` while the visitor has the preview key down to compare: the selection is still the selection, but it is off the page, which shows its own styles. A page that derives anything of its own from the selection should put that aside too until `previewing` is `true` again.
 
 ### Events
 

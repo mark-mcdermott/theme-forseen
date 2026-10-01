@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The element carries `mode="light"` or `mode="dark"`
 
 ### Changed
+- **Preview on This Site is a compare key.** It used to close the drawer. Now it takes the selection off the page, which shows its own styles, and puts it back when pressed again or when anything is chosen. `state` and the change event carry `previewing`
+- The two tabs are column headers: each sits over its own column at its width, with an icon of the pane it stands for and a chevron pointing where the column goes. Put away, a column leaves a stub on its side. The list and "Aa" icons are gone
+- The Light / Dark switch is in the header beside the close button, without the sun beside it
 - The faces a moment calls for, such as a screenful of rows after a filter, are asked of Google Fonts in one request rather than one each. Every stylesheet of faces that arrives makes the browser look again at all the text on the page, which on a busy page showed as a flicker
 - The Apply modal is a `<dialog>` and the toast a popover, both in the browser's top layer, so nothing on the host page can sit above them, whatever the drawer is docked inside. The modal closes on Escape and on a click outside it
 

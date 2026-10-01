@@ -463,10 +463,70 @@ test.describe('The Drawer', () => {
     await expect(shadowLocator(page, '.filter-option[data-tag="warm"]')).toBeHidden();
   });
 
-  test('Preview on This Site closes the drawer', async ({ page }) => {
+  test('the preview key takes the selection off the page, and puts it back', async ({ page }) => {
+    const key = shadowLocator(page, '.preview-btn');
+    await expect(key).toHaveAttribute('aria-pressed', 'true');
+    expect(await getCSSVar(page, '--color-primary')).toBe('#EB5526');
+
+    await key.click();
+    await expect(key).toHaveAttribute('aria-pressed', 'false');
+    await expect(key).toHaveText(/Site's Own Look/);
+    // The page's own styles: nothing of the selection is left on it
+    expect(await getCSSVar(page, '--color-primary')).toBe('');
+    expect(await getCSSVar(page, '--font-heading')).toBe('');
+    expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('');
+    expect(await lastChange(page)).toMatchObject({ previewing: false, theme: { name: 'Weather Station' }, open: true });
+
+    await key.click();
+    await expect(key).toHaveAttribute('aria-pressed', 'true');
+    expect(await getCSSVar(page, '--color-primary')).toBe('#EB5526');
+    expect(await getCSSVar(page, '--font-heading')).toContain('Geist');
+    expect((await lastChange(page))?.previewing).toBe(true);
+  });
+
+  test('choosing anything while comparing puts the preview back, whole', async ({ page }) => {
     await shadowLocator(page, '.preview-btn').click();
-    await expect(shadowLocator(page, '.drawer')).not.toHaveClass(/open/);
-    expect((await lastChange(page))?.open).toBe(false);
+    await shadowLocator(page, '.font-item[data-index="1"]').click();
+
+    await expect(shadowLocator(page, '.preview-btn')).toHaveAttribute('aria-pressed', 'true');
+    expect(await getCSSVar(page, '--font-heading')).toContain('Montserrat');
+    expect(await getCSSVar(page, '--color-primary')).toBe('#EB5526');
+
+    await shadowLocator(page, '.preview-btn').click();
+    await shadowLocator(page, '.theme-item[data-index="2053"]').click();
+    expect(await getCSSVar(page, '--color-primary')).not.toBe('');
+    expect(await getCSSVar(page, '--font-heading')).toContain('Montserrat');
+  });
+
+  test('comparing does not change the mode, whatever the page looks like without the selection', async ({ page }) => {
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await shadowLocator(page, '.preview-btn').click();
+    // The page changing its own style while the selection is off is not a mode change
+    await page.evaluate(() => document.documentElement.style.setProperty('--anything', '1'));
+    await page.waitForTimeout(100);
+
+    expect(await lastChange(page)).toMatchObject({ previewing: false, mode: 'dark' });
+    await expect(page.locator('theme-forseen')).toHaveAttribute('mode', 'dark');
+  });
+
+  test('a column header puts its column away and leaves a stub that brings it back', async ({ page }) => {
+    const fontsTab = shadowLocator(page, '.column-tab[data-column-type="fonts"]');
+    const themesTab = shadowLocator(page, '.column-tab[data-column-type="themes"]');
+    await expect(fontsTab).toHaveAttribute('title', 'Hide Font Pairings');
+
+    // Each header is as wide as the column beneath it
+    const widths = async (selector: string) => shadowLocator(page, selector).evaluate((element) => Math.round(element.getBoundingClientRect().width));
+    expect(await widths('.column-tab[data-column-type="fonts"]')).toBe(await widths('[data-column="fonts"]'));
+
+    await fontsTab.click();
+    await expect(fontsTab).toHaveAttribute('title', 'Show Font Pairings');
+    expect(await widths('.column-tab[data-column-type="fonts"]')).toBeLessThan(50);
+    await expect(fontsTab.locator('.tab-name')).toBeHidden();
+    // The last column out does not offer to go
+    await expect(themesTab.locator('.tab-away')).toBeHidden();
+
+    await fontsTab.click();
+    await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
   });
 
   test('Apply to Project offers both files when there is no server', async ({ page }) => {

@@ -14,7 +14,7 @@ import {
   setSet,
   removeItem,
 } from "./storage.js";
-import { applyThemeColors, applyFontStyles } from "./themeApplicator.js";
+import { applyThemeColors, applyFontStyles, clearApplied } from "./themeApplicator.js";
 import { loadGoogleFont } from "./fontLoader.js";
 import { icons } from "./marks.js";
 import { activationSections, showActivationModal } from "./activationModal.js";
@@ -195,6 +195,8 @@ export interface ThemeForseenState {
   theme: { name: string; colors: ColorTheme["light"] };
   fonts: { heading: string; body: string };
   open: boolean;
+  /** The selection is on the page. False while the page is shown as it is without it, to compare */
+  previewing: boolean;
 }
 
 export const CHANGE_EVENT = "themeforseen:change";
@@ -213,6 +215,7 @@ export class ThemeForseen extends HTMLElement {
   private fontRowObserver: IntersectionObserver | null = null;
 
   private isOpen = false;
+  private previewing = true;
   private isDarkMode = false;
   private focusedColumn: "themes" | "fonts" = "themes";
 
@@ -298,6 +301,7 @@ export class ThemeForseen extends HTMLElement {
       theme: { name: theme.name, colors: { ...theme[this.mode] } },
       fonts: this.currentFonts(),
       open: this.isOpen,
+      previewing: this.previewing,
     };
   }
 
@@ -464,6 +468,9 @@ export class ThemeForseen extends HTMLElement {
 
     // Watch for color-scheme changes from external sources via MutationObserver
     this.darkModeObserver = new MutationObserver(() => {
+      // With the selection off the page, the page's style says nothing about the mode
+      if (!this.previewing) return;
+
       const currentColorScheme =
         document.documentElement.style.colorScheme ||
         getComputedStyle(document.documentElement).colorScheme;
@@ -1140,7 +1147,7 @@ export class ThemeForseen extends HTMLElement {
 
       // The footer: look at the site, or write the selection to the project
       if (target.classList.contains("preview-btn")) {
-        this.close();
+        this.setPreviewing(!this.previewing);
         return;
       }
       if (target.classList.contains("apply-btn")) {
@@ -1669,9 +1676,10 @@ export class ThemeForseen extends HTMLElement {
     this.shadowRoot
       ?.querySelector(`[data-column="${columnType}"]`)
       ?.classList.toggle("collapsed", isCollapsed);
-    this.shadowRoot
-      ?.querySelector(`.column-tab[data-column-type="${columnType}"]`)
-      ?.setAttribute("aria-pressed", String(!isCollapsed));
+    const tab = this.shadowRoot?.querySelector(`.column-tab[data-column-type="${columnType}"]`);
+    const name = columnType === "themes" ? "Color Themes" : "Font Pairings";
+    tab?.setAttribute("aria-pressed", String(!isCollapsed));
+    tab?.setAttribute("title", `${isCollapsed ? "Show" : "Hide"} ${name}`);
   }
 
   // The selection as applied to the page: the theme in the mode in view, and the faces
@@ -1703,11 +1711,66 @@ export class ThemeForseen extends HTMLElement {
     }
   }
 
+  // The compare key: the page as it is without the selection, and back
+  private setPreviewing(previewing: boolean) {
+    if (this.previewing === previewing) return;
+
+    if (previewing) {
+      this.applyFonts();
+      return;
+    }
+
+    this.previewing = false;
+    this.updatePreviewButton();
+    this.withoutWatchingThePage(() => clearApplied());
+    this.announce();
+  }
+
+  // Anything that applies a selection puts the preview back on; says whether it had been off
+  private resumePreview(): boolean {
+    if (this.previewing) return false;
+
+    this.previewing = true;
+    this.updatePreviewButton();
+    return true;
+  }
+
+  private updatePreviewButton() {
+    const button = this.shadowRoot?.querySelector(".preview-btn");
+    if (!button) return;
+
+    button.setAttribute("aria-pressed", String(this.previewing));
+    button.setAttribute(
+      "title",
+      this.previewing
+        ? "Your selection is on the page. Press to see the page without it"
+        : "The page as it is without your selection. Press to put it back"
+    );
+    button.querySelector(".preview-label")!.textContent = this.previewing
+      ? "Preview on This Site"
+      : "Site's Own Look";
+  }
+
+  // The element writes to the page's style itself; those writes are not the page changing its mode
+  private withoutWatchingThePage(write: () => void) {
+    this.darkModeObserver?.disconnect();
+
+    try {
+      write();
+    } finally {
+      this.darkModeObserver?.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
+    }
+  }
+
   private applyTheme(force = false) {
     if (!force && !this.isOpen && this.drawerElement) {
       return;
     }
 
+    const resumed = this.resumePreview();
     this.darkModeObserver?.disconnect();
 
     try {
@@ -1715,6 +1778,10 @@ export class ThemeForseen extends HTMLElement {
       const colors = theme[this.mode];
 
       applyThemeColors(colors, this.isDarkMode);
+      if (resumed) {
+        const { heading, body } = this.currentFonts();
+        applyFontStyles(heading, body);
+      }
       this.saveToLocalStorage();
     } finally {
       this.darkModeObserver?.observe(document.documentElement, {
@@ -1747,7 +1814,15 @@ export class ThemeForseen extends HTMLElement {
   private applyFonts() {
     const { heading, body } = this.currentFonts();
 
-    applyFontStyles(heading, body);
+    const resumed = this.resumePreview();
+    this.withoutWatchingThePage(() => applyFontStyles(heading, body));
+
+    // The colours came off with the faces; applyTheme puts them back, saves and announces
+    if (resumed) {
+      this.applyTheme(true);
+      return;
+    }
+
     this.saveToLocalStorage();
     this.announce();
   }

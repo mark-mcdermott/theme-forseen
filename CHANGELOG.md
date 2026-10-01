@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-01
+
+### Changed
+- **Mixing faces from different pairings is done by keeping one.** A click anywhere on a font row now chooses its pairing. The selected row shows the heading and body faces in use as two buttons: press one to keep that face, and choosing another pairing changes only the other; press again to let it go. Before, each row carried two small tags that chose one face alone, which sat in the middle of a narrow row and caught clicks meant for the pairing
+- The ⇄ swap is on the selected row, with the keep buttons, and a second press puts the pairing back as it comes
+- Rows show the pairing's styles ("Serif + Sans") beneath its name
+- The tests run on a port of their own (5373, or `TF_TEST_PORT`) and only reuse a server that is serving this repository's fixtures. They used port 3000 and would test whatever dev server happened to be there
+
+### Fixed
+- The keep buttons and the swap are full-size touch targets; the face tags and the old swap icon were under the 24 px minimum
+- A column's search and filters no longer ride over its list. The list scrolls on its own beneath them, so a row passing the top is clipped rather than left with its heart and star half covered
+- The tab on the page's edge was labelled "Open ThemeForseen" for assistive technology while showing "Themes"; its label now contains what it shows
+- A face chosen alone in 0.8 or earlier, which stored no pairing, comes back as a kept face on the default pairing's row, where it can be let go
+
 ## [0.8.1] - 2026-09-30
 
 ### Fixed

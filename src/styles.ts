@@ -398,7 +398,20 @@ export const styles = `
     display: none;
   }
 
+  /*
+   * A column is its controls, and beneath them its list, which scrolls on its
+   * own. The controls do not ride over the list: a row passing under them
+   * would have its buttons half covered, too little left of them to press.
+   */
   .column-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .themes-list,
+  .fonts-list {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -414,14 +427,14 @@ export const styles = `
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Above the list, for the menus that open over it */
   .column-controls {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 2;
     display: grid;
+    flex: none;
     gap: 7px;
     padding-bottom: 8px;
-    background: var(--tf-bg);
   }
 
   .instructions {
@@ -739,56 +752,105 @@ export const styles = `
     text-align: center;
   }
 
-  .font-preview {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 3px 4px;
-    margin-top: 4px;
-    font-size: 11px;
+  .font-styles {
+    margin-top: 2px;
+    font-size: 11.5px;
     line-height: 1.3;
     color: var(--tf-muted);
-  }
-
-  /* A face on its own: a small chip, pressed when it is the one in use */
-  .individual-font {
-    max-width: 100%;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--tf-surface-2);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    cursor: pointer;
+  }
+
+  /*
+   * The selected row's controls, on a line of their own beneath it: the face
+   * in use for headings and the one for body text, each of which can be kept
+   * while another pairing is chosen, and the swap. Sized and spaced to be
+   * touch targets even when a page zooms the drawer down to 85%.
+   */
+  .font-item {
+    flex-wrap: wrap;
+  }
+
+  .font-keep {
+    display: grid;
+    flex: 0 0 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px;
+    margin-top: 6px;
+    padding-right: 6px;
+  }
+
+  .keep-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    height: 40px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--tf-surface-2);
+    font-size: 12.5px;
+    text-align: left;
     transition: background 0.15s, color 0.15s;
   }
 
-  .individual-font:hover {
-    color: var(--tf-text);
+  .keep-btn .icon {
+    font-size: 15px;
+    opacity: 0.6;
   }
 
-  .individual-font.selected {
+  .keep-text {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.2;
+  }
+
+  .keep-role {
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  .keep-face {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .keep-btn:hover {
+    filter: brightness(0.96);
+  }
+
+  .keep-btn[aria-pressed="true"] {
     background: var(--tf-orange);
     color: var(--tf-on-orange);
   }
 
-  .font-switch-icon {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 20px;
-    height: 18px;
-    padding: 0;
-    border: 0;
-    border-radius: 4px;
-    background: transparent;
-    font-size: 14px;
-    color: var(--tf-muted);
+  .keep-btn[aria-pressed="true"] .icon {
+    fill: currentColor;
+    opacity: 1;
   }
 
-  .font-switch-icon:hover {
+  .font-swap {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    place-items: center;
+    width: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
     background: var(--tf-surface-2);
-    color: var(--tf-text);
+    font-size: 17px;
+  }
+
+  .font-swap:hover {
+    filter: brightness(0.96);
   }
 
   .favorites {

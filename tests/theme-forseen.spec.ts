@@ -650,41 +650,35 @@ test.describe('Multiple Hearts Allowed', () => {
   });
 });
 
-test.describe('Individual Font Selection', () => {
+test.describe('Keeping A Face', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/tests/fixtures/');
     await clearStorage(page);
     await page.reload();
   });
 
-  test('can select individual heading font', async ({ page }) => {
+  test('a kept heading stays on the page while pairings are browsed', async ({ page }) => {
     await openDrawer(page);
 
-    // Click on the heading font within a font pairing
-    await shadowLocator(page, '.individual-font.heading-font').first().click();
+    await shadowLocator(page, '.keep-btn[data-keep="heading"]').click();
+    const kept = await getCSSVar(page, '--font-heading');
+    const body = await getCSSVar(page, '--font-body');
 
-    // Should apply the font
-    const headingFont = await getCSSVar(page, '--font-heading');
-    expect(headingFont).toBeTruthy();
+    await shadowLocator(page, '.font-item[data-index="4"]').click();
+
+    expect(await getCSSVar(page, '--font-heading')).toBe(kept);
+    expect(await getCSSVar(page, '--font-body')).not.toBe(body);
   });
 
   test('can swap heading and body fonts', async ({ page }) => {
     await openDrawer(page);
 
-    // Get initial fonts from first pairing
     const initialHeading = await getCSSVar(page, '--font-heading');
     const initialBody = await getCSSVar(page, '--font-body');
 
-    // Click swap button on first font pairing
-    await shadowLocator(page, '.font-switch-icon[data-index="0"]').click();
+    await shadowLocator(page, '.font-swap').click();
 
-    // Fonts should be swapped
-    const swappedHeading = await getCSSVar(page, '--font-heading');
-    const swappedBody = await getCSSVar(page, '--font-body');
-
-    // The heading should now contain what was the body font name
-    // (exact comparison is tricky due to fallbacks, but they should be different)
-    expect(swappedHeading).not.toBe(initialHeading);
-    expect(swappedBody).not.toBe(initialBody);
+    expect(await getCSSVar(page, '--font-heading')).toContain(initialBody.split(',')[0]);
+    expect(await getCSSVar(page, '--font-body')).toContain(initialHeading.split(',')[0]);
   });
 });

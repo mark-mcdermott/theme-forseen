@@ -40,7 +40,7 @@ async function lastChange(page: Page): Promise<Change | undefined> {
 // Whether a row lies within the part of its column that shows, whatever the window has scrolled to
 async function inViewInItsColumn(page: Page, selector: string): Promise<boolean> {
   return shadowLocator(page, selector).evaluate((row) => {
-    const column = row.closest('.column-content')!.getBoundingClientRect();
+    const column = row.closest('.themes-list, .fonts-list')!.getBoundingClientRect();
     const box = row.getBoundingClientRect();
     return box.top >= column.top && box.bottom <= column.bottom + 1;
   });
@@ -67,15 +67,18 @@ test.describe('State', () => {
     });
   });
 
-  test('follows an individual font selection', async ({ page }) => {
+  test('follows a kept face: the heading stays while another pairing is chosen', async ({ page }) => {
     await startFresh(page);
     await openDrawer(page);
 
-    await shadowLocator(page, '.font-item[data-index="2"] .individual-font.heading-font').click();
+    // Raleway & Lato, and keep Raleway
+    await shadowLocator(page, '.font-item[data-index="2"]').click();
+    await shadowLocator(page, '.keep-btn[data-keep="heading"]').click();
+    // Poppins & Roboto: only the body changes
+    await shadowLocator(page, '.font-item[data-index="3"]').click();
 
-    const heading = await shadowLocator(page, '.font-item[data-index="2"] .individual-font.heading-font').getAttribute('data-font');
     const state = await page.evaluate(() => document.querySelector('theme-forseen')!.state);
-    expect(state?.fonts.heading).toBe(heading);
+    expect(state?.fonts).toEqual({ heading: 'Raleway', body: 'Roboto' });
   });
 });
 
@@ -251,14 +254,25 @@ test.describe('Named Defaults', () => {
     expect(await getCSSVar(page, '--color-primary')).toBe('#00F5FF');
   });
 
-  test('an individual font falls back to the named pairing for the other face', async ({ page }) => {
-    await startFresh(page, '/tests/fixtures/defaults');
-    await openDrawer(page);
-
-    await shadowLocator(page, '.font-item[data-index="3"] .individual-font.heading-font').click();
+  test('a face kept before there were pairings to keep it against falls back to the named pairing', async ({ page }) => {
+    await page.goto('/tests/fixtures/defaults');
+    // As 0.8 and earlier stored one face chosen alone: the face, and no pairing
+    await page.evaluate(() => {
+      localStorage.setItem('themeforseen-heading-font', 'Poppins');
+      localStorage.setItem('themeforseen-font', '-1');
+    });
+    await page.reload();
+    await waitUntilReady(page);
 
     const state = await page.evaluate(() => document.querySelector('theme-forseen')!.state);
-    expect(state?.fonts.body).toBe('Inter');
+    expect(state?.fonts).toEqual({ heading: 'Poppins', body: 'Inter' });
+
+    // And it can be let go, on the named pairing's row
+    await openDrawer(page);
+    const keep = shadowLocator(page, '.font-item[data-index="197"] .keep-btn[data-keep="heading"]');
+    await expect(keep).toHaveAttribute('aria-pressed', 'true');
+    await keep.click();
+    expect((await page.evaluate(() => document.querySelector('theme-forseen')!.state))?.fonts.heading).toBe('Geist');
   });
 
   test('a name that is not in the collection falls back to the first entry', async ({ page }) => {
@@ -575,10 +589,61 @@ test.describe('The Drawer', () => {
     await expect(modal).toBeHidden();
   });
 
-  test('a face name can be chosen with the keyboard', async ({ page }) => {
-    await shadowLocator(page, '.font-item[data-index="1"] .individual-font.heading-font').focus();
+  test('anywhere on a font row chooses its pairing, the middle included', async ({ page }) => {
+    const row = shadowLocator(page, '.font-item[data-index="1"]');
+    await row.scrollIntoViewIfNeeded();
+    await row.click();
+
+    await expect(row).toHaveClass(/selected/);
+    expect((await lastChange(page))?.fonts).toEqual({ heading: 'Montserrat', body: 'Open Sans' });
+    // Only the selected row carries the controls
+    await expect(shadowLocator(page, '.font-keep')).toHaveCount(1);
+    await expect(row.locator('.font-keep')).toBeVisible();
+  });
+
+  test('a kept face holds through other pairings, and lets go', async ({ page }) => {
+    await shadowLocator(page, '.font-item[data-index="1"]').click();
+    const keepBody = shadowLocator(page, '.keep-btn[data-keep="body"]');
+    await keepBody.click();
+    await expect(keepBody).toHaveAttribute('aria-pressed', 'true');
+
+    await shadowLocator(page, '.font-item[data-index="2"]').click();
+    expect((await lastChange(page))?.fonts).toEqual({ heading: 'Raleway', body: 'Open Sans' });
+    // The controls moved to the newly selected row and still show what is in use
+    const controls = shadowLocator(page, '.font-item[data-index="2"] .font-keep');
+    await expect(controls.locator('[data-keep="body"] .keep-face')).toHaveText('Open Sans');
+    await expect(controls.locator('[data-keep="body"]')).toHaveAttribute('aria-pressed', 'true');
+
+    await controls.locator('[data-keep="body"]').click();
+    expect((await lastChange(page))?.fonts).toEqual({ heading: 'Raleway', body: 'Lato' });
+
+    // Kept faces are remembered
+    await controls.locator('[data-keep="heading"]').click();
+    await page.reload();
+    await waitUntilReady(page);
+    await openDrawer(page);
+    await expect(shadowLocator(page, '.keep-btn[data-keep="heading"]')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('swap exchanges the two faces, and again puts the pairing back as it comes', async ({ page }) => {
+    await shadowLocator(page, '.font-item[data-index="1"]').click();
+    await shadowLocator(page, '.font-swap').click();
+    expect((await lastChange(page))?.fonts).toEqual({ heading: 'Open Sans', body: 'Montserrat' });
+    await expect(shadowLocator(page, '.keep-btn[data-keep="heading"] .keep-face')).toHaveText('Open Sans');
+
+    await shadowLocator(page, '.font-swap').click();
+    expect((await lastChange(page))?.fonts).toEqual({ heading: 'Montserrat', body: 'Open Sans' });
+    await expect(shadowLocator(page, '.keep-btn[data-keep="heading"]')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('the keep buttons work from the keyboard, and keep the focus', async ({ page }) => {
+    await shadowLocator(page, '.font-item[data-index="1"]').click();
+    const keep = shadowLocator(page, '.keep-btn[data-keep="heading"]');
+    await keep.focus();
     await page.keyboard.press('Enter');
-    expect((await lastChange(page))?.fonts.heading).toBe('Montserrat');
+
+    await expect(keep).toHaveAttribute('aria-pressed', 'true');
+    await expect(keep).toBeFocused();
   });
 });
 
@@ -631,7 +696,7 @@ test.describe('Docked', () => {
 
     await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toHaveClass(/selected-light/);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
-    expect(await shadowLocator(page, '[data-column="themes"] .column-content').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
+    expect(await shadowLocator(page, '.themes-list').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
   });
 
   test('the heart and the star stay touch targets when a page zooms the drawer down', async ({ page }) => {
@@ -644,6 +709,30 @@ test.describe('Docked', () => {
     expect(heart.width).toBeGreaterThanOrEqual(24);
     expect(heart.height).toBeGreaterThanOrEqual(24);
     expect(star.left + star.width / 2 - (heart.left + heart.width / 2)).toBeGreaterThanOrEqual(24);
+
+    // The selected font row's controls too
+    const controls = await shadowLocator(page, '.font-keep button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
+    expect(controls).toHaveLength(3);
+    for (const box of controls) {
+      expect(box.width).toBeGreaterThanOrEqual(24);
+      expect(box.height).toBeGreaterThanOrEqual(24);
+    }
+  });
+
+  test('a row is never half covered by its column\'s controls', async ({ page }) => {
+    // Scroll so that a row lies across the top of each list
+    for (const list of ['.themes-list', '.fonts-list']) {
+      await shadowLocator(page, list).evaluate((element) => element.scrollBy({ top: 31 }));
+    }
+
+    for (const column of ['themes', 'fonts']) {
+      const covered = await shadowLocator(page, `[data-column="${column}"]`).evaluate((element) => {
+        const controls = element.querySelector('.column-controls')!.getBoundingClientRect();
+        const list = element.querySelector('.themes-list, .fonts-list')!.getBoundingClientRect();
+        return controls.bottom > list.top + 0.5;
+      });
+      expect(covered).toBe(false);
+    }
   });
 
   test('nothing in a column is wider than the column', async ({ page }) => {

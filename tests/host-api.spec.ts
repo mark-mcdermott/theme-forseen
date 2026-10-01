@@ -1,8 +1,10 @@
 import { test, expect, Page } from '@playwright/test';
 import {
   clearStorage,
+  countFontRequests,
   countFontStylesheets,
   countRequestedFaces,
+  fontRequests,
   getCSSVar,
   openDrawer,
   shadowLocator,
@@ -293,6 +295,8 @@ test.describe('Font Loading', () => {
   });
 
   test('only the applied faces are requested while the drawer is closed', async ({ page }) => {
+    await expect.poll(() => countRequestedFaces(page)).toBe(2);
+    await page.waitForTimeout(300);
     expect(await countRequestedFaces(page)).toBe(2);
   });
 
@@ -314,27 +318,47 @@ test.describe('Font Loading', () => {
   });
 
   test('the faces a screenful of rows calls for are asked for together', async ({ page }) => {
-    await page.route(/fonts\.googleapis\.com/, (route) => route.fulfill({ contentType: 'text/css', body: '' }));
+    await page.route(/fonts\.googleapis\.com/, (route) => route.fulfill({ contentType: 'text/css', body: '', headers: { 'access-control-allow-origin': '*' } }));
     await page.reload();
     await waitUntilReady(page);
     // The two applied faces, in one request
-    expect(await countFontStylesheets(page)).toBe(1);
+    await expect.poll(() => countFontRequests(page)).toBe(1);
 
     await openDrawer(page);
     await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(6);
-    expect(await countFontStylesheets(page)).toBeLessThanOrEqual(3);
+    expect(await countFontRequests(page)).toBeLessThanOrEqual(3);
   });
 
   test('if Google refuses a request for several, each face is asked for on its own', async ({ page }) => {
     await page.route(/fonts\.googleapis\.com/, (route) => {
       const families = route.request().url().match(/family=/g)!.length;
-      return families > 1 ? route.fulfill({ status: 400, body: '' }) : route.fulfill({ contentType: 'text/css', body: '' });
+      const headers = { 'access-control-allow-origin': '*' };
+      return families > 1 ? route.fulfill({ status: 400, body: '', headers }) : route.fulfill({ contentType: 'text/css', body: '', headers });
     });
     await page.reload();
     await waitUntilReady(page);
 
-    await expect.poll(() => countFontStylesheets(page)).toBe(2);
-    expect(await countRequestedFaces(page)).toBe(2);
+    await expect.poll(async () => (await fontRequests(page)).filter((url) => url.match(/family=/g)!.length === 1).length).toBe(2);
+  });
+
+  test('faces are registered with the page, not linked into it, so its own faces are left alone', async ({ page }) => {
+    const css = `@font-face { font-family: 'Electrolize'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/test/face.woff2) format('woff2'); unicode-range: U+0000-00FF; }`;
+    await page.route(/fonts\.googleapis\.com/, (route) => route.fulfill({ contentType: 'text/css', body: css, headers: { 'access-control-allow-origin': '*' } }));
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect
+      .poll(() => page.evaluate(() => [...document.fonts].filter((face) => face.family === 'Electrolize').map((face) => `${face.weight} ${face.unicodeRange}`)))
+      .toEqual(['400 U+0-FF']);
+    expect(await countFontStylesheets(page)).toBe(0);
+  });
+
+  test('where the host cannot be fetched from, its stylesheet is linked as before', async ({ page }) => {
+    await page.route(/fonts\.googleapis\.com/, (route) => (route.request().resourceType() === 'fetch' ? route.abort() : route.fulfill({ contentType: 'text/css', body: '' })));
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect.poll(() => countFontStylesheets(page)).toBe(1);
   });
 
   test('faces the page declares itself are not requested', async ({ page }) => {
@@ -344,10 +368,8 @@ test.describe('Font Loading', () => {
     await openDrawer(page);
     await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(0);
 
-    const requested = await page.evaluate(() =>
-      [...document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]')].map((link) => link.getAttribute('href')),
-    );
-    expect(requested.some((href) => /family=(Geist|Inter)(:|&|$)/.test(href!))).toBe(false);
+    const requested = await fontRequests(page);
+    expect(requested.some((url) => /family=(Geist|Inter)(:|&|$)/.test(url))).toBe(false);
   });
 });
 

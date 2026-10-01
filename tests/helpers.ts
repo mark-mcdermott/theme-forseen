@@ -34,18 +34,26 @@ export async function waitUntilReady(page: Page): Promise<void> {
   await page.waitForFunction(() => document.querySelector('theme-forseen')?.state != null);
 }
 
-// The stylesheets asked of the font hosts so far
-export async function countFontStylesheets(page: Page): Promise<number> {
-  return page.evaluate(() => document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]').length);
+// What has been asked of the font hosts so far
+export async function fontRequests(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .filter((name) => /\/\/fonts\.(googleapis|cdnfonts)\.com\//.test(name)),
+  );
 }
 
-// The faces those stylesheets ask for: one request to Google can carry several families
+export async function countFontRequests(page: Page): Promise<number> {
+  return (await fontRequests(page)).length;
+}
+
+// The faces those requests ask for: one request to Google can carry several families
 export async function countRequestedFaces(page: Page): Promise<number> {
-  return page.evaluate(
-    () =>
-      [...document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]')].flatMap((link) => {
-        const families = link.getAttribute('href')!.match(/family=/g);
-        return families ?? ['one'];
-      }).length,
-  );
+  return (await fontRequests(page)).flatMap((url) => url.match(/family=/g) ?? ['one']).length;
+}
+
+// Stylesheets the element has added to the page for faces: none, unless a host's CSS cannot be fetched
+export async function countFontStylesheets(page: Page): Promise<number> {
+  return page.evaluate(() => document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]').length);
 }

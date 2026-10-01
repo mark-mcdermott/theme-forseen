@@ -37,7 +37,7 @@ export function activationSections(
 const escape = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 export function showActivationModal(shadowRoot: ShadowRoot, sections: ActivationSection[]): void {
-  const modal = shadowRoot.querySelector(".activation-modal");
+  const modal = shadowRoot.querySelector<HTMLDialogElement>(".activation-modal");
   const instructions = shadowRoot.querySelector(".activation-instructions");
   const container = shadowRoot.querySelector(".activation-sections");
   if (!modal || !instructions || !container) return;
@@ -77,7 +77,8 @@ export function showActivationModal(shadowRoot: ShadowRoot, sections: Activation
     save.addEventListener("click", () => saveToFile(section, save));
   });
 
-  modal.classList.remove("hidden");
+  // The top layer: above everything on the page, whatever the drawer is docked inside
+  if (!modal.open) modal.showModal();
 }
 
 function flash(button: HTMLButtonElement, label: string, className: string) {

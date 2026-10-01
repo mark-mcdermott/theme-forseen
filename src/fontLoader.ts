@@ -144,31 +144,68 @@ function isDeclaredByPage(fontName: string): boolean {
   return declared;
 }
 
+function appendStylesheet(href: string): HTMLLinkElement {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  document.head.appendChild(link);
+  return link;
+}
+
+const googleFontsUrl = (families: string[]) =>
+  `https://fonts.googleapis.com/css2?${families
+    .map((family) => `family=${family.replace(/ /g, "+")}:wght@400;500;600;700`)
+    .join("&")}&display=swap`;
+
+/** Families waiting to be asked for together */
+let waiting: string[] = [];
+const FAMILIES_PER_REQUEST = 16;
+
+/**
+ * Every stylesheet of faces that arrives makes the browser look again at all
+ * the text on the page, so the faces a moment calls for, such as a screenful
+ * of rows, are asked for in one request rather than one each.
+ */
+function requestWaiting(): void {
+  const families = waiting;
+  waiting = [];
+
+  for (let i = 0; i < families.length; i += FAMILIES_PER_REQUEST) {
+    const batch = families.slice(i, i + FAMILIES_PER_REQUEST);
+    const link = appendStylesheet(googleFontsUrl(batch));
+
+    // One family Google does not have fails the whole request, so each is asked for on its own
+    if (batch.length > 1) {
+      link.addEventListener(
+        "error",
+        () => {
+          link.remove();
+          batch.forEach((family) => appendStylesheet(googleFontsUrl([family])));
+        },
+        { once: true }
+      );
+    }
+  }
+}
+
 export function loadGoogleFont(fontName: string): void {
   if (loadedFonts.has(fontName)) {
     return;
   }
+  loadedFonts.add(fontName);
 
   if (isDeclaredByPage(fontName)) {
-    loadedFonts.add(fontName);
     return;
   }
 
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-
-  // Check if this font is on CDNFonts
+  // Fonts hosted on CDNFonts come one to a stylesheet
   if (cdnFontsMap[fontName]) {
-    link.href = `https://fonts.cdnfonts.com/css/${cdnFontsMap[fontName]}`;
-  } else {
-    // Default to Google Fonts
-    const fontNameForUrl = fontName.replace(/ /g, "+");
-    link.href = `https://fonts.googleapis.com/css2?family=${fontNameForUrl}:wght@400;500;600;700&display=swap`;
+    appendStylesheet(`https://fonts.cdnfonts.com/css/${cdnFontsMap[fontName]}`);
+    return;
   }
 
-  document.head.appendChild(link);
-
-  loadedFonts.add(fontName);
+  if (waiting.length === 0) queueMicrotask(requestWaiting);
+  waiting.push(fontName);
 }
 
 export function isFontLoaded(fontName: string): boolean {

@@ -912,27 +912,26 @@ export const styles = `
     transform: translateY(1px);
   }
 
-  /* The modal, when there is no server to write to */
+  /* The modal, when there is no server to write to: a dialog, so it opens above the whole page */
   .activation-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000000;
-    display: grid;
-    place-items: center;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
-  }
-
-  .activation-modal-content {
-    display: flex;
-    flex-direction: column;
-    width: min(680px, 100%);
+    width: min(680px, calc(100vw - 40px));
     max-height: 90vh;
+    padding: 0;
+    border: 0;
     border-radius: 12px;
     background: var(--tf-bg);
     color: var(--tf-text);
     box-shadow: var(--tf-shadow);
     overflow: hidden;
+  }
+
+  .activation-modal[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .activation-modal::backdrop {
+    background: rgba(0, 0, 0, 0.5);
   }
 
   .activation-modal-header {
@@ -1069,10 +1068,12 @@ export const styles = `
   /* Toast */
   .theme-forseen-toast {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
+    inset: auto auto 20px 50%;
     z-index: 1000001;
     display: flex;
+    margin: 0;
+    border: 0;
+    overflow: visible;
     align-items: center;
     gap: 8px;
     padding: 12px 20px;

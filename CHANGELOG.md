@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `docked` attribute: the drawer fills the element instead of floating over the page, with no tab and no backdrop, so a page can give it a place of its own. Closed, it slides out of the element to the right. `--tf-dock-radius` rounds its corners. Docked, the arrow keys and the `s` and `h` shortcuts work while the pointer or the focus is on the drawer, and are the page's otherwise
 - The element carries `mode="light"` or `mode="dark"`
 
+### Changed
+- The faces a moment calls for, such as a screenful of rows after a filter, are asked of Google Fonts in one request rather than one each. Every stylesheet of faces that arrives makes the browser look again at all the text on the page, which on a busy page showed as a flicker
+- The Apply modal is a `<dialog>` and the toast a popover, both in the browser's top layer, so nothing on the host page can sit above them, whatever the drawer is docked inside. The modal closes on Escape and on a click outside it
+
 ### Fixed
 - The drawer's night palette was set inside the drawer, where it beat any `--tf-*` value a page had set on the element. It is keyed on the element's `mode` now, so a page's own rules hold in both modes
 - A drawer that starts open opens on its selections, as one opened later already did

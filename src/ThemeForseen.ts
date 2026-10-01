@@ -95,7 +95,10 @@ function showToast(
     <span class="toast-message">${message}</span>
   `;
 
+  // In the top layer where the browser has one, so no part of the page can cover it
+  toast.setAttribute("popover", "manual");
   shadowRoot.appendChild(toast);
+  toast.showPopover?.();
 
   requestAnimationFrame(() => toast.classList.add("shown"));
 
@@ -1408,21 +1411,13 @@ export class ThemeForseen extends HTMLElement {
       this.focusedColumn = "fonts";
     });
 
-    // Activation modal event listeners
-    const activationModal = this.shadowRoot?.querySelector(".activation-modal");
-    const activationModalClose = this.shadowRoot?.querySelector(
-      ".activation-modal-close"
-    );
-    const activationCancelBtn = this.shadowRoot?.querySelector(
-      ".activation-cancel-btn"
-    );
-
-    activationModalClose?.addEventListener("click", () => {
-      activationModal?.classList.add("hidden");
-    });
-
-    activationCancelBtn?.addEventListener("click", () => {
-      activationModal?.classList.add("hidden");
+    // The modal closes from its own buttons and from a click on its backdrop
+    const activationModal = this.shadowRoot?.querySelector<HTMLDialogElement>(".activation-modal");
+    activationModal?.addEventListener("click", (e) => {
+      const target = e.target as Element;
+      if (target === activationModal || target.closest(".activation-modal-close, .activation-cancel-btn")) {
+        activationModal.close();
+      }
     });
   }
 

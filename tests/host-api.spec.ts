@@ -2,6 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 import {
   clearStorage,
   countFontStylesheets,
+  countRequestedFaces,
   getCSSVar,
   openDrawer,
   shadowLocator,
@@ -292,32 +293,56 @@ test.describe('Font Loading', () => {
   });
 
   test('only the applied faces are requested while the drawer is closed', async ({ page }) => {
-    expect(await countFontStylesheets(page)).toBe(2);
+    expect(await countRequestedFaces(page)).toBe(2);
   });
 
   test('opening the drawer requests the faces in view, not the whole collection', async ({ page }) => {
     await openDrawer(page);
 
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(2);
-    expect(await countFontStylesheets(page)).toBeLessThan(40);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(2);
+    expect(await countRequestedFaces(page)).toBeLessThan(40);
   });
 
   test('faces further down are requested as they come into view', async ({ page }) => {
     await openDrawer(page);
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(2);
-    const atTop = await countFontStylesheets(page);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(2);
+    const atTop = await countRequestedFaces(page);
 
     await shadowLocator(page, '.font-item[data-index="120"]').scrollIntoViewIfNeeded();
 
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(atTop);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(atTop);
+  });
+
+  test('the faces a screenful of rows calls for are asked for together', async ({ page }) => {
+    await page.route(/fonts\.googleapis\.com/, (route) => route.fulfill({ contentType: 'text/css', body: '' }));
+    await page.reload();
+    await waitUntilReady(page);
+    // The two applied faces, in one request
+    expect(await countFontStylesheets(page)).toBe(1);
+
+    await openDrawer(page);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(6);
+    expect(await countFontStylesheets(page)).toBeLessThanOrEqual(3);
+  });
+
+  test('if Google refuses a request for several, each face is asked for on its own', async ({ page }) => {
+    await page.route(/fonts\.googleapis\.com/, (route) => {
+      const families = route.request().url().match(/family=/g)!.length;
+      return families > 1 ? route.fulfill({ status: 400, body: '' }) : route.fulfill({ contentType: 'text/css', body: '' });
+    });
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect.poll(() => countFontStylesheets(page)).toBe(2);
+    expect(await countRequestedFaces(page)).toBe(2);
   });
 
   test('faces the page declares itself are not requested', async ({ page }) => {
     await startFresh(page, '/tests/fixtures/self-hosted');
-    expect(await countFontStylesheets(page)).toBe(0);
+    expect(await countRequestedFaces(page)).toBe(0);
 
     await openDrawer(page);
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(0);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(0);
 
     const requested = await page.evaluate(() =>
       [...document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]')].map((link) => link.getAttribute('href')),
@@ -453,6 +478,18 @@ test.describe('The Drawer', () => {
     await expect(modal.locator('.activation-code').nth(1)).toContainText("--font-heading: 'Geist'");
 
     await modal.locator('.activation-cancel-btn').click();
+    await expect(modal).toBeHidden();
+  });
+
+  test('the Apply modal opens in the top layer, above whatever the page has', async ({ page }) => {
+    await page.addStyleTag({ content: 'body::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; }' });
+    await shadowLocator(page, '.apply-btn').click();
+
+    const modal = shadowLocator(page, '.activation-modal');
+    expect(await modal.evaluate((dialog) => dialog.matches(':modal'))).toBe(true);
+
+    // Escape closes it, as a dialog's does
+    await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
   });
 

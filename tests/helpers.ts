@@ -34,7 +34,18 @@ export async function waitUntilReady(page: Page): Promise<void> {
   await page.waitForFunction(() => document.querySelector('theme-forseen')?.state != null);
 }
 
-// Helper to count the font stylesheets requested so far
+// The stylesheets asked of the font hosts so far
 export async function countFontStylesheets(page: Page): Promise<number> {
   return page.evaluate(() => document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]').length);
+}
+
+// The faces those stylesheets ask for: one request to Google can carry several families
+export async function countRequestedFaces(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      [...document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]')].flatMap((link) => {
+        const families = link.getAttribute('href')!.match(/family=/g);
+        return families ?? ['one'];
+      }).length,
+  );
 }

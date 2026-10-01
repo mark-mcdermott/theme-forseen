@@ -171,20 +171,18 @@ export function getTemplate(state: TemplateState): string {
       </footer>
     </div>
 
-    <div class="activation-modal hidden" role="dialog" aria-label="Apply to your project">
-      <div class="activation-modal-content">
-        <div class="activation-modal-header">
-          <h3>Apply to your project</h3>
-          <button class="activation-modal-close" aria-label="Close">${icons.close}</button>
-        </div>
-        <div class="activation-modal-body">
-          <p class="activation-instructions"></p>
-          <div class="activation-sections"></div>
-          <div class="activation-buttons">
-            <button class="activation-cancel-btn">Done</button>
-          </div>
+    <dialog class="activation-modal" aria-label="Apply to your project">
+      <div class="activation-modal-header">
+        <h3>Apply to your project</h3>
+        <button class="activation-modal-close" aria-label="Close">${icons.close}</button>
+      </div>
+      <div class="activation-modal-body">
+        <p class="activation-instructions"></p>
+        <div class="activation-sections"></div>
+        <div class="activation-buttons">
+          <button class="activation-cancel-btn">Done</button>
         </div>
       </div>
-    </div>
+    </dialog>
   `;
 }

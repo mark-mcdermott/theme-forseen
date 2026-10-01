@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import type { ThemeColors, CssTarget } from "./types.js";
+import { bodyStack, headingStack } from "../fontStacks.js";
 
 const START_MARKER = "/* ThemeForseen Colors";
 const END_MARKER = "/* End ThemeForseen */";
@@ -28,10 +29,11 @@ function generateCssBlock(colors: ThemeColors, isDarkMode: boolean): string {
 /* End ThemeForseen */`;
 }
 
-function generateFontCssBlock(fontFamily: string): string {
+function generateFontCssBlock(heading: string, body: string): string {
   return `/* ThemeForseen Font */
 :root {
-  --font-family: ${fontFamily};
+  --font-heading: ${headingStack(heading)};
+  --font-body: ${bodyStack(body)};
 }
 /* End ThemeForseen */`;
 }
@@ -121,12 +123,12 @@ export function writeThemeToCss(
   }
 }
 
-export function writeFontToCss(cssPath: string, fontFamily: string): WriteResult {
+export function writeFontToCss(cssPath: string, heading: string, body: string): WriteResult {
   const absolutePath = path.isAbsolute(cssPath)
     ? cssPath
     : path.join(process.cwd(), cssPath);
 
-  const newBlock = generateFontCssBlock(fontFamily);
+  const newBlock = generateFontCssBlock(heading, body);
   let created = false;
 
   try {
@@ -170,8 +172,8 @@ export function writeFontToCss(cssPath: string, fontFamily: string): WriteResult
     return {
       success: true,
       message: created
-        ? `Created ${cssPath} with font family`
-        : `Updated ${cssPath} with font family`,
+        ? `Created ${cssPath} with fonts`
+        : `Updated ${cssPath} with fonts`,
       created,
     };
   } catch (error) {
@@ -274,13 +276,14 @@ export function writeThemeToTarget(
 
 export function writeFontToTarget(
   target: CssTarget,
-  fontFamily: string
+  heading: string,
+  body: string
 ): WriteResult {
-  const cssBlock = generateFontCssBlock(fontFamily);
+  const cssBlock = generateFontCssBlock(heading, body);
 
   if (target.type === "inline") {
     return writeToInlineStyle(target.path, cssBlock, "/* ThemeForseen Font");
   }
 
-  return writeFontToCss(target.path, fontFamily);
+  return writeFontToCss(target.path, heading, body);
 }

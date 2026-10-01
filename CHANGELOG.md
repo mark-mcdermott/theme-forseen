@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-09-30
+
+### Fixed
+- A face the page declares itself with `@font-face` is no longer requested from Google Fonts as well
+- Applying a pairing through the dev server wrote one variable, `--font-family`, holding the heading face alone. It now writes `--font-heading` and `--font-body`, with the same fallback stacks the live preview sets, so the applied CSS matches what the preview showed and what the Copy snippet documents
+- `npx theme-forseen --version` and the server's health response reported 1.0.0 whatever the installed version
+
+### Changed
+- `color-namer` is bundled into the widget, so it is a development dependency rather than one installs pull in
+
 ## [0.6.1] - 2026-09-30
 
 ### Fixed

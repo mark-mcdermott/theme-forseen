@@ -36,6 +36,9 @@ export interface ApplyRequest {
   type: "theme" | "font";
   data: {
     colors?: ThemeColors;
+    heading?: string;
+    body?: string;
+    /** The heading face alone, as widgets before 0.6.2 sent it */
     font?: string;
     isDarkMode?: boolean;
   };

@@ -2,9 +2,9 @@ import * as http from "http";
 import { detectProject, getDefaultCssPath, getImportInstruction } from "./projectDetector.js";
 import { writeThemeToTarget, writeFontToTarget } from "./cssWriter.js";
 import type { ApplyRequest, ApplyResponse, HealthResponse, ProjectInfo, CssTarget } from "./types.js";
+import { version } from "./version.js";
 
 const PORT = 3847;
-const VERSION = "1.0.0";
 
 let cachedProjectInfo: ProjectInfo | null = null;
 
@@ -38,7 +38,7 @@ function handleHealth(res: http.ServerResponse): void {
   const cssTarget = project.cssTarget;
   const response: HealthResponse = {
     status: "ok",
-    version: VERSION,
+    version,
     projectType: project.type,
     cssFile: cssTarget ? cssTarget.path : null,
   };
@@ -87,8 +87,9 @@ function handleApply(req: http.IncomingMessage, res: http.ServerResponse): void 
         if (writeResult.created) {
           result.importInstruction = getImportInstruction(project.type, target.path);
         }
-      } else if (request.type === "font" && request.data.font) {
-        const writeResult = writeFontToTarget(target, request.data.font);
+      } else if (request.type === "font" && (request.data.heading || request.data.font)) {
+        const heading = request.data.heading || request.data.font!;
+        const writeResult = writeFontToTarget(target, heading, request.data.body || heading);
 
         result = {
           success: writeResult.success,

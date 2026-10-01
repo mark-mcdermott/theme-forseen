@@ -20,7 +20,7 @@
   },
   "type": "module",
   "bin": {
-    "theme-forseen": "./dist/cli/index.js"
+    "theme-forseen": "dist/cli/index.js"
   },
   "files": [
     "dist",
@@ -44,7 +44,10 @@
     "css-variables"
   ],
   "author": "Mark McDermott",
-  "repository": "github:mark-mcdermott/theme-forseen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mark-mcdermott/theme-forseen.git"
+  },
   "homepage": "https://themeforseen.com/",
   "bugs": "https://github.com/mark-mcdermott/theme-forseen/issues",
   "license": "MIT",

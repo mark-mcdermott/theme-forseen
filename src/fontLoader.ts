@@ -135,8 +135,22 @@ const cdnFontsMap: Record<string, string> = {
   'Dish Out': 'dish-out',
 };
 
+// A page that declares a family with @font-face has its own files for it
+function isDeclaredByPage(fontName: string): boolean {
+  let declared = false;
+  document.fonts.forEach((face) => {
+    if (face.family.replace(/^["']|["']$/g, "") === fontName) declared = true;
+  });
+  return declared;
+}
+
 export function loadGoogleFont(fontName: string): void {
   if (loadedFonts.has(fontName)) {
+    return;
+  }
+
+  if (isDeclaredByPage(fontName)) {
+    loadedFonts.add(fontName);
     return;
   }
 

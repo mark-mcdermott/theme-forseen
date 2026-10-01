@@ -1,6 +1,6 @@
 {
   "name": "theme-forseen",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "packageManager": "pnpm@10.28.2",
   "description": "A live color theme and font pairing preview drawer for web applications",
   "main": "dist/index.js",
@@ -52,11 +52,9 @@
     "@playwright/test": "^1.63.0",
     "@types/color-namer": "^1.3.3",
     "@types/node": "^26.6.3",
+    "color-namer": "^1.4.0",
     "esbuild": "^0.28.2",
     "serve": "^14.2.0",
     "typescript": "^7.0.2"
-  },
-  "dependencies": {
-    "color-namer": "^1.4.0"
   }
 }

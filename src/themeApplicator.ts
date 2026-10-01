@@ -1,48 +1,8 @@
 import type { ColorTheme } from "./themes.js";
 import { loadGoogleFont } from "./fontLoader.js";
+import { bodyStack, headingStack } from "./fontStacks.js";
 
 type ThemeColors = ColorTheme["light"] | ColorTheme["dark"];
-
-const SERIF_HEADING_FONTS = [
-  "Playfair Display",
-  "Merriweather",
-  "Lora",
-  "DM Serif Display",
-  "Crimson Text",
-  "Abril Fatface",
-  "Libre Baskerville",
-  "Cormorant Garamond",
-  "Spectral",
-  "Yeseva One",
-  "Arvo",
-  "Vollkorn",
-  "Bitter",
-  "Cardo",
-];
-
-const SERIF_BODY_FONTS = [
-  "Lora",
-  "Merriweather",
-  "Libre Baskerville",
-  "Source Sans Pro",
-];
-
-const MONO_FONTS = ["Space Mono"];
-
-function getHeadingFallback(fontName: string): string {
-  return SERIF_HEADING_FONTS.includes(fontName)
-    ? `"${fontName}", Georgia, "Times New Roman", serif`
-    : `"${fontName}", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`;
-}
-
-function getBodyFallback(fontName: string): string {
-  if (MONO_FONTS.includes(fontName)) {
-    return `"${fontName}", "Courier New", Courier, monospace`;
-  }
-  return SERIF_BODY_FONTS.includes(fontName)
-    ? `"${fontName}", Georgia, "Times New Roman", serif`
-    : `"${fontName}", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`;
-}
 
 export function applyThemeColors(colors: ThemeColors, isDarkMode: boolean): void {
   const root = document.documentElement;
@@ -95,8 +55,8 @@ export function applyFontStyles(headingFont: string, bodyFont: string): void {
   loadGoogleFont(bodyFont);
 
   const root = document.documentElement;
-  const headingFallback = getHeadingFallback(headingFont);
-  const bodyFallback = getBodyFallback(bodyFont);
+  const headingFallback = headingStack(headingFont);
+  const bodyFallback = bodyStack(bodyFont);
 
   root.style.setProperty("--font-heading", headingFallback);
   root.style.setProperty("--font-body", bodyFallback);

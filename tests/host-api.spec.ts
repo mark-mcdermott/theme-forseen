@@ -302,6 +302,19 @@ test.describe('Font Loading', () => {
 
     await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(atTop);
   });
+
+  test('faces the page declares itself are not requested', async ({ page }) => {
+    await startFresh(page, '/tests/fixtures/self-hosted');
+    expect(await countFontStylesheets(page)).toBe(0);
+
+    await openDrawer(page);
+    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(0);
+
+    const requested = await page.evaluate(() =>
+      [...document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]')].map((link) => link.getAttribute('href')),
+    );
+    expect(requested.some((href) => /family=(Geist|Inter)(:|&|$)/.test(href!))).toBe(false);
+  });
 });
 
 test.describe('Collection Entry', () => {

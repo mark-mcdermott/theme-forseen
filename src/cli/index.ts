@@ -1,4 +1,5 @@
 import { startServer } from "./server.js";
+import { version } from "./version.js";
 
 const args = process.argv.slice(2);
 
@@ -21,7 +22,7 @@ if (args.includes("--help") || args.includes("-h")) {
 }
 
 if (args.includes("--version") || args.includes("-v")) {
-  console.log("1.0.0");
+  console.log(version);
   process.exit(0);
 }
 

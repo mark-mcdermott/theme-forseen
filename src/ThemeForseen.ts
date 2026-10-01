@@ -33,7 +33,7 @@ interface DevServerResponse {
 async function tryApplyViaServer(
   type: "theme" | "font",
   colors: ColorTheme["light"] | ColorTheme["dark"] | null,
-  fontFamily: string | null,
+  fonts: ThemeForseenState["fonts"] | null,
   isDarkMode: boolean
 ): Promise<DevServerResponse | null> {
   const controller = new AbortController();
@@ -56,8 +56,9 @@ async function tryApplyViaServer(
         },
         isDarkMode,
       };
-    } else if (type === "font" && fontFamily) {
-      body.data = { font: fontFamily };
+    } else if (type === "font" && fonts) {
+      // `font` is what servers before 0.6.2 read
+      body.data = { heading: fonts.heading, body: fonts.body, font: fonts.heading };
     }
 
     const response = await fetch(`${DEV_SERVER_URL}/api/apply`, {
@@ -1734,20 +1735,23 @@ export class ThemeForseen extends HTMLElement {
 
     // Try to apply via dev server first
     let colors: ColorTheme["light"] | ColorTheme["dark"] | null = null;
-    let fontFamily: string | null = null;
+    let fonts: ThemeForseenState["fonts"] | null = null;
 
     if (type === "theme") {
       const theme = this.colorThemes[index];
       colors = this.isDarkMode ? theme.dark : theme.light;
     } else {
       const pairing = this.fontPairings[index];
-      fontFamily = this.selectedHeadingFont || pairing.heading;
+      fonts = {
+        heading: this.selectedHeadingFont || pairing.heading,
+        body: this.selectedBodyFont || pairing.body,
+      };
     }
 
     const result = await tryApplyViaServer(
       type,
       colors,
-      fontFamily,
+      fonts,
       this.isDarkMode
     );
 

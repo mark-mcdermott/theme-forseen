@@ -40,6 +40,7 @@ export const icons = {
   /** The drawer's two panes, with the one a header belongs to filled in */
   leftPane: icon('<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/><rect class="pane" x="5.5" y="6.5" width="4" height="11" rx="1" fill="currentColor" stroke="none"/>'),
   rightPane: icon('<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/><rect class="pane" x="14.5" y="6.5" width="4" height="11" rx="1" fill="currentColor" stroke="none"/>'),
+  pin: icon('<path d="M9 4h6l-1 5 3 4H7l3-4-1-5ZM12 13v7"/>'),
   chevronLeft: icon('<path d="m14 6-6 6 6 6"/>'),
   chevronRight: icon('<path d="m10 6 6 6-6 6"/>'),
   eyeOff: icon('<path d="M3 3l18 18M10.6 5.2A9.6 9.6 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.6 8.5 2 12 2 12s3.6 7 10 7c1.6 0 3-.4 4.300-1"/><path d="M9.900 9.900a3 3 0 0 0 4.200 4.200"/>'),

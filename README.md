@@ -300,7 +300,7 @@ Any CSS framework that supports CSS variables will work. Just reference the vari
 
 1. **Open**: Click the tab on the right side of the screen
 2. **Browse themes**: Click one to apply it; the arrow keys and the mouse wheel step through the list. Search by name, color name or hex, narrow by tag, or show only what you have starred or liked
-3. **Browse fonts**: Click a pairing to apply it, or one face of it to use that face alone; the ⇄ swaps heading and body. Search by name, narrow by heading style with the pills and by body style with the menu
+3. **Browse fonts**: Click a pairing to apply it. The selected row shows the two faces in use: press one to keep it, and choosing another pairing then changes only the other, so a heading from one pairing can go with a body from another; press it again to let it go. The ⇄ swaps heading and body. Search by name, narrow by heading style with the pills and by body style with the menu
 4. **Light / Dark**: The switch in the header. Each mode keeps its own theme
 5. **Preview on This Site**: A key to compare with. Press it and the selection comes off the page, which shows its own look; press it again, or choose anything, and the selection is back
 6. **Apply to Project**: Writes the selection to your project when the [dev server](#dev-server) is running, and otherwise shows the two files to copy or save

@@ -140,7 +140,7 @@ export function getTemplate(state: TemplateState): string {
 
     <div class="backdrop"></div>
 
-    <button class="drawer-toggle" title="Open ThemeForseen" aria-label="Open ThemeForseen">
+    <button class="drawer-toggle" title="Open ThemeForseen" aria-label="Themes: open ThemeForseen">
       ${filledCloud("toggle-icon")}
       <span class="toggle-text">Themes</span>
     </button>

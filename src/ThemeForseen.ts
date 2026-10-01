@@ -139,21 +139,35 @@ function favoriteButtons(type: "theme" | "font", index: number): string {
     </div>`;
 }
 
-/** One face of a pairing, which can be used on its own */
-function individualFont(role: "heading" | "body", face: string, styles: string[] = []): string {
-  const kind = styles[0] ? ` (${styles[0]})` : "";
-  return `<span class="individual-font ${role}-font" data-font="${face}" data-type="${role}" title="${face}${kind}: use for the ${role} alone" role="button" tabindex="0">${face}</span>`;
+/** What the pairing is made of, from the data: a serif heading with a sans body is "Serif + Sans" */
+function describeStyles(pairing: FontPairing): string {
+  const first = (styles: string[]) => capitalize(styles[0] ?? "");
+  return `${first(pairing.headingStyle)} + ${first(pairing.bodyStyle)}`;
 }
 
-/** Points a face label at another face: its text, its data and the face it is set in */
-function labelFace(element: Element | null, face: string): HTMLElement | null {
-  const span = element as HTMLElement | null;
-  if (span) {
-    span.textContent = face;
-    span.dataset.font = face;
-    span.title = `${face}: use for the ${span.dataset.type} alone`;
-  }
-  return span;
+/**
+ * The selected row's controls: the two faces in use, each of which can be kept
+ * while another pairing is chosen, and the swap.
+ */
+function keepControls(fonts: { heading: string; body: string }, kept: { heading: boolean; body: boolean }): string {
+  const keep = (role: "heading" | "body") => `
+    <button class="keep-btn" data-keep="${role}" aria-pressed="${kept[role]}" title="${keepTitle(role, fonts[role], kept[role])}">
+      ${icons.pin}<span class="keep-text"><span class="keep-role">${capitalize(role)}</span><span class="keep-face">${fonts[role]}</span></span>
+    </button>`;
+
+  return `
+    <div class="font-keep" role="group" aria-label="Faces in use">
+      ${keep("heading")}
+      ${keep("body")}
+      <button class="font-swap" title="Swap heading and body" aria-label="Swap heading and body">${icons.swap}</button>
+    </div>`;
+}
+
+function keepTitle(role: "heading" | "body", face: string, kept: boolean): string {
+  const use = role === "heading" ? "headings" : "body text";
+  return kept
+    ? `${face} is kept for ${use}. Press to let it change with the pairing`
+    : `Keep ${face} for ${use} while you choose another pairing`;
 }
 
 // Cache for color names to avoid repeated calculations
@@ -232,12 +246,12 @@ export class ThemeForseen extends HTMLElement {
 
   private selectedFontPairing = 0;
   private hasStoredFontPairing = false;
-  private lastSwappedIndex: number | null = null;
   private starredFont: number | null = null;
   private lovedFonts = new Set<number>();
 
-  private selectedHeadingFont: string | null = null;
-  private selectedBodyFont: string | null = null;
+  // A face kept while other pairings are chosen; the other face comes from the pairing
+  private keptHeading: string | null = null;
+  private keptBody: string | null = null;
 
   private selectedTags = new Set<string>();
   private searchText = "";
@@ -361,7 +375,9 @@ export class ThemeForseen extends HTMLElement {
       }
     }
 
+    // Before faces could be kept, choosing one alone stored no pairing at all
     const pairingIsMissing =
+      this.selectedFontPairing < 0 ||
       this.selectedFontPairing >= this.fontPairings.length;
     if (!this.hasStoredFontPairing || pairingIsMissing) {
       this.selectedFontPairing = this.defaultFontPairing;
@@ -512,8 +528,8 @@ export class ThemeForseen extends HTMLElement {
 
     this.lovedFonts = getSet(STORAGE_KEYS.LOVED_FONTS);
 
-    this.selectedHeadingFont = getItem(STORAGE_KEYS.HEADING_FONT);
-    this.selectedBodyFont = getItem(STORAGE_KEYS.BODY_FONT);
+    this.keptHeading = getItem(STORAGE_KEYS.HEADING_FONT);
+    this.keptBody = getItem(STORAGE_KEYS.BODY_FONT);
 
     this.selectedTags = getSet(STORAGE_KEYS.FILTER_TAGS);
     this.searchText = getItem(STORAGE_KEYS.FILTER_SEARCH) || "";
@@ -587,13 +603,13 @@ export class ThemeForseen extends HTMLElement {
 
     setSet(STORAGE_KEYS.LOVED_FONTS, this.lovedFonts);
 
-    if (this.selectedHeadingFont) {
-      setItem(STORAGE_KEYS.HEADING_FONT, this.selectedHeadingFont);
+    if (this.keptHeading) {
+      setItem(STORAGE_KEYS.HEADING_FONT, this.keptHeading);
     } else {
       removeItem(STORAGE_KEYS.HEADING_FONT);
     }
-    if (this.selectedBodyFont) {
-      setItem(STORAGE_KEYS.BODY_FONT, this.selectedBodyFont);
+    if (this.keptBody) {
+      setItem(STORAGE_KEYS.BODY_FONT, this.keptBody);
     } else {
       removeItem(STORAGE_KEYS.BODY_FONT);
     }
@@ -785,13 +801,10 @@ export class ThemeForseen extends HTMLElement {
           <div class="font-sample" style="font-family: '${pairing.heading}', sans-serif" aria-hidden="true">Aa</div>
           <div class="font-main">
             <div class="font-name">${pairing.name}</div>
-            <div class="font-preview">
-              ${individualFont("heading", pairing.heading, pairing.headingStyle)}
-              ${individualFont("body", pairing.body, pairing.bodyStyle)}
-              <button class="font-switch-icon" data-index="${index}" title="Swap heading and body" aria-label="Swap heading and body">${icons.swap}</button>
-            </div>
+            <div class="font-styles" title="Heading style + body style">${describeStyles(pairing)}</div>
           </div>
           ${favoriteButtons("font", index)}
+          ${index === this.selectedFontPairing ? this.keepControlsMarkup() : ""}
         </div>
       `;
       })
@@ -1260,93 +1273,19 @@ export class ThemeForseen extends HTMLElement {
 
       if (target.closest(".favorite-icon")) return;
 
-      const switchButton = target.closest<HTMLElement>(".font-switch-icon");
-      if (switchButton) {
-        e.stopPropagation();
-
-        const index = parseInt(switchButton.dataset.index || "0");
-        const pairing = this.fontPairings[index];
-
-        // Determine current fonts to swap
-        let currentHeading: string;
-        let currentBody: string;
-
-        if (
-          this.lastSwappedIndex === index &&
-          this.selectedHeadingFont &&
-          this.selectedBodyFont
-        ) {
-          // Clicking same item again - toggle by swapping current selection
-          currentHeading = this.selectedHeadingFont;
-          currentBody = this.selectedBodyFont;
-        } else {
-          // Clicking a different item - reset the previous item's labels first
-          if (this.lastSwappedIndex !== null) {
-            const prevPairing = this.fontPairings[this.lastSwappedIndex];
-            const prevItem = this.shadowRoot?.querySelector(
-              `.font-item[data-index="${this.lastSwappedIndex}"]`
-            );
-            if (prevItem) {
-              labelFace(prevItem.querySelector(".heading-font"), prevPairing.heading);
-              labelFace(prevItem.querySelector(".body-font"), prevPairing.body);
-            }
-          }
-          // Use the new item's pairing
-          currentHeading = pairing.heading;
-          currentBody = pairing.body;
-        }
-
-        // Swap the fonts
-        this.selectedHeadingFont = currentBody;
-        this.selectedBodyFont = currentHeading;
-        this.selectedFontPairing = -1;
-        this.lastSwappedIndex = index;
-
-        // Clear all selection states first
-        this.shadowRoot?.querySelectorAll(".font-item").forEach((item) => {
-          item.classList.remove("selected");
-        });
-        this.shadowRoot?.querySelectorAll(".individual-font").forEach((el) => {
-          el.classList.remove("selected");
-        });
-
-        // Update the labels, styles, and highlight only the clicked item
-        const fontItem = this.shadowRoot?.querySelector(
-          `.font-item[data-index="${index}"]`
-        );
-        if (fontItem) {
-          const headingSpan = labelFace(fontItem.querySelector(".heading-font"), this.selectedHeadingFont);
-          const bodySpan = labelFace(fontItem.querySelector(".body-font"), this.selectedBodyFont);
-          headingSpan?.classList.add("selected");
-          bodySpan?.classList.add("selected");
-          const sample = fontItem.querySelector(".font-sample") as HTMLElement | null;
-          if (sample) sample.style.fontFamily = `'${this.selectedHeadingFont}', sans-serif`;
-        }
-
-        this.applyFonts();
+      // The selected row's own controls
+      const keepButton = target.closest<HTMLElement>(".keep-btn");
+      if (keepButton) {
+        this.toggleKept(keepButton.dataset.keep as "heading" | "body");
         return;
       }
-
-      if (target.classList.contains("individual-font")) {
-        e.stopPropagation();
-        const fontName = target.dataset.font || "";
-        const fontType = target.dataset.type as "heading" | "body";
-
-        if (fontType === "heading") {
-          this.selectedHeadingFont = fontName;
-        } else {
-          this.selectedBodyFont = fontName;
-        }
-
-        // Clear pairing selection when individual fonts are selected
-        this.selectedFontPairing = -1;
-
-        this.applyFonts();
-        this.updateFontSelection();
+      if (target.closest(".font-swap")) {
+        this.swapFaces();
         return;
       }
+      if (target.closest(".font-keep")) return;
 
-      // Otherwise, selecting a font pairing
+      // Anywhere else on a row chooses its pairing; a kept face stays as it is
       const fontItem = target.closest(".font-item");
       if (fontItem) {
         const index = parseInt((fontItem as HTMLElement).dataset.index || "0");
@@ -1354,21 +1293,8 @@ export class ThemeForseen extends HTMLElement {
         this.focusedColumn = "fonts";
         this.selectedFontPairing = index;
 
-        // Clear individual font selections when selecting a pairing
-        this.selectedHeadingFont = null;
-        this.selectedBodyFont = null;
-
         this.applyFonts();
         this.renderFonts(); // Re-render to show active state
-      }
-    });
-
-    fontsList?.addEventListener("keydown", (e) => {
-      const target = e.target as HTMLElement;
-      const key = (e as KeyboardEvent).key;
-      if (target.classList.contains("individual-font") && (key === "Enter" || key === " ")) {
-        e.preventDefault();
-        target.click();
       }
     });
 
@@ -1569,30 +1495,55 @@ export class ThemeForseen extends HTMLElement {
   }
 
   private updateFontSelection() {
-    const hasIndividualSelection =
-      this.selectedHeadingFont !== null || this.selectedBodyFont !== null;
-
     this.shadowRoot?.querySelectorAll(".font-item").forEach((item) => {
       const itemIndex = parseInt((item as HTMLElement).dataset.index || "-1");
-      if (!hasIndividualSelection && itemIndex === this.selectedFontPairing) {
-        item.classList.add("selected");
-      } else {
-        item.classList.remove("selected");
-      }
+      item.classList.toggle("selected", itemIndex === this.selectedFontPairing);
     });
+  }
 
-    this.shadowRoot?.querySelectorAll(".individual-font").forEach((element) => {
-      const fontName = (element as HTMLElement).dataset.font;
-      const fontType = (element as HTMLElement).dataset.type;
-
-      if (fontType === "heading" && fontName === this.selectedHeadingFont) {
-        element.classList.add("selected");
-      } else if (fontType === "body" && fontName === this.selectedBodyFont) {
-        element.classList.add("selected");
-      } else {
-        element.classList.remove("selected");
-      }
+  private keepControlsMarkup(): string {
+    return keepControls(this.currentFonts(), {
+      heading: this.keptHeading !== null,
+      body: this.keptBody !== null,
     });
+  }
+
+  // In place, so the button that was pressed keeps the focus
+  private updateKeepControls() {
+    const fonts = this.currentFonts();
+    const kept = { heading: this.keptHeading !== null, body: this.keptBody !== null };
+
+    for (const role of ["heading", "body"] as const) {
+      const button = this.shadowRoot?.querySelector(`.keep-btn[data-keep="${role}"]`);
+      if (!button) continue;
+
+      button.setAttribute("aria-pressed", String(kept[role]));
+      button.setAttribute("title", keepTitle(role, fonts[role], kept[role]));
+      button.querySelector(".keep-face")!.textContent = fonts[role];
+    }
+  }
+
+  // Keeps the face in use for a role, or lets it follow the pairing again
+  private toggleKept(role: "heading" | "body") {
+    const face = this.currentFonts()[role];
+
+    if (role === "heading") this.keptHeading = this.keptHeading === null ? face : null;
+    else this.keptBody = this.keptBody === null ? face : null;
+
+    this.applyFonts();
+    this.updateKeepControls();
+  }
+
+  // Heading and body change places. Swapped back to the pairing as it comes, nothing is kept
+  private swapFaces() {
+    const { heading, body } = this.currentFonts();
+    const pairing = this.fontPairings[this.selectedFontPairing];
+
+    this.keptHeading = body === pairing?.heading ? null : body;
+    this.keptBody = heading === pairing?.body ? null : heading;
+
+    this.applyFonts();
+    this.updateKeepControls();
   }
 
   private updateModeButtons() {
@@ -1793,21 +1744,15 @@ export class ThemeForseen extends HTMLElement {
     this.announce();
   }
 
-  // Individual selections win; whichever face has none comes from the pairing
+  // A kept face wins; the other comes from the selected pairing
   private currentFonts(): ThemeForseenState["fonts"] {
-    const hasIndividualSelection = Boolean(
-      this.selectedHeadingFont || this.selectedBodyFont
-    );
-    const usesSelectedPairing =
-      !hasIndividualSelection && this.selectedFontPairing >= 0;
     const pairing =
-      this.fontPairings[
-        usesSelectedPairing ? this.selectedFontPairing : this.defaultFontPairing
-      ];
+      this.fontPairings[this.selectedFontPairing] ??
+      this.fontPairings[this.defaultFontPairing];
 
     return {
-      heading: this.selectedHeadingFont || pairing.heading,
-      body: this.selectedBodyFont || pairing.body,
+      heading: this.keptHeading ?? pairing.heading,
+      body: this.keptBody ?? pairing.body,
     };
   }
 

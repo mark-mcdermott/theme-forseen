@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-30
+
+### Changed
+- The drawer's look, from the TF-01 design: the cloud and wordmark in the header, two tabs that put a column away or bring it back, a Light/Dark switch, a search in each column, All / Starred / Liked pills and a searchable tag menu for themes, style pills and a body-style menu for fonts, rows with a heart and a star, and a footer with Preview on This Site and Apply to Project. Day and night palettes of its own
+- The tab on the side of the page is a plain dark key with the cloud; the purple gradient is gone
+- Font rows lead with a sample of the heading face and name both faces, each one clickable on its own; beneath, the styles the pairing is made of
+- The theme filter shows all, starred or liked themes, rather than any mix
+- The font style pills filter by the heading face, one style at a time; the body menu still takes several
+- Each list opens scrolled to its selection
+- Starred and Liked are the words for the star and the heart, in place of Like and Love
+- The drawer's own face is the system's; it no longer fetches Work Sans, which was a render-blocking request on every host page
+
+### Added
+- Custom properties on the element to skin the drawer: `--tf-font`, `--tf-width`, `--tf-radius`, the surfaces, inks and keys, and `--tf-cloud-1` to `-5` for the header cloud's stripes
+- A search in the fonts column, kept between visits
+- A search inside the tag menu
+- Apply to Project writes the theme and the fonts together through the dev server, and without one shows both files to copy or save
+- Face names in a font row can be chosen with the keyboard
+
+### Removed
+- The lightning button on each row, in favor of Apply to Project
+
 ## [0.6.2] - 2026-09-30
 
 ### Fixed

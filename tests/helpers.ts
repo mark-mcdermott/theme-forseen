@@ -34,7 +34,26 @@ export async function waitUntilReady(page: Page): Promise<void> {
   await page.waitForFunction(() => document.querySelector('theme-forseen')?.state != null);
 }
 
-// Helper to count the font stylesheets requested so far
+// What has been asked of the font hosts so far
+export async function fontRequests(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .filter((name) => /\/\/fonts\.(googleapis|cdnfonts)\.com\//.test(name)),
+  );
+}
+
+export async function countFontRequests(page: Page): Promise<number> {
+  return (await fontRequests(page)).length;
+}
+
+// The faces those requests ask for: one request to Google can carry several families
+export async function countRequestedFaces(page: Page): Promise<number> {
+  return (await fontRequests(page)).flatMap((url) => url.match(/family=/g) ?? ['one']).length;
+}
+
+// Stylesheets the element has added to the page for faces: none, unless a host's CSS cannot be fetched
 export async function countFontStylesheets(page: Page): Promise<number> {
   return page.evaluate(() => document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]').length);
 }

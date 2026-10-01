@@ -1,7 +1,10 @@
 import { test, expect, Page } from '@playwright/test';
 import {
   clearStorage,
+  countFontRequests,
   countFontStylesheets,
+  countRequestedFaces,
+  fontRequests,
   getCSSVar,
   openDrawer,
   shadowLocator,
@@ -32,6 +35,15 @@ async function changes(page: Page): Promise<Change[]> {
 
 async function lastChange(page: Page): Promise<Change | undefined> {
   return (await changes(page)).at(-1);
+}
+
+// Whether a row lies within the part of its column that shows, whatever the window has scrolled to
+async function inViewInItsColumn(page: Page, selector: string): Promise<boolean> {
+  return shadowLocator(page, selector).evaluate((row) => {
+    const column = row.closest('.column-content')!.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    return box.top >= column.top && box.bottom <= column.bottom + 1;
+  });
 }
 
 async function startFresh(page: Page, path = '/tests/fixtures/'): Promise<void> {
@@ -283,37 +295,81 @@ test.describe('Font Loading', () => {
   });
 
   test('only the applied faces are requested while the drawer is closed', async ({ page }) => {
-    expect(await countFontStylesheets(page)).toBe(2);
+    await expect.poll(() => countRequestedFaces(page)).toBe(2);
+    await page.waitForTimeout(300);
+    expect(await countRequestedFaces(page)).toBe(2);
   });
 
   test('opening the drawer requests the faces in view, not the whole collection', async ({ page }) => {
     await openDrawer(page);
 
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(2);
-    expect(await countFontStylesheets(page)).toBeLessThan(40);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(2);
+    expect(await countRequestedFaces(page)).toBeLessThan(40);
   });
 
   test('faces further down are requested as they come into view', async ({ page }) => {
     await openDrawer(page);
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(2);
-    const atTop = await countFontStylesheets(page);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(2);
+    const atTop = await countRequestedFaces(page);
 
     await shadowLocator(page, '.font-item[data-index="120"]').scrollIntoViewIfNeeded();
 
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(atTop);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(atTop);
+  });
+
+  test('the faces a screenful of rows calls for are asked for together', async ({ page }) => {
+    await page.route(/fonts\.googleapis\.com/, (route) => route.fulfill({ contentType: 'text/css', body: '', headers: { 'access-control-allow-origin': '*' } }));
+    await page.reload();
+    await waitUntilReady(page);
+    // The two applied faces, in one request
+    await expect.poll(() => countFontRequests(page)).toBe(1);
+
+    await openDrawer(page);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(6);
+    expect(await countFontRequests(page)).toBeLessThanOrEqual(3);
+  });
+
+  test('if Google refuses a request for several, each face is asked for on its own', async ({ page }) => {
+    await page.route(/fonts\.googleapis\.com/, (route) => {
+      const families = route.request().url().match(/family=/g)!.length;
+      const headers = { 'access-control-allow-origin': '*' };
+      return families > 1 ? route.fulfill({ status: 400, body: '', headers }) : route.fulfill({ contentType: 'text/css', body: '', headers });
+    });
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect.poll(async () => (await fontRequests(page)).filter((url) => url.match(/family=/g)!.length === 1).length).toBe(2);
+  });
+
+  test('faces are registered with the page, not linked into it, so its own faces are left alone', async ({ page }) => {
+    const css = `@font-face { font-family: 'Electrolize'; font-style: normal; font-weight: 400; font-display: swap; src: url(https://fonts.gstatic.com/s/test/face.woff2) format('woff2'); unicode-range: U+0000-00FF; }`;
+    await page.route(/fonts\.googleapis\.com/, (route) => route.fulfill({ contentType: 'text/css', body: css, headers: { 'access-control-allow-origin': '*' } }));
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect
+      .poll(() => page.evaluate(() => [...document.fonts].filter((face) => face.family === 'Electrolize').map((face) => `${face.weight} ${face.unicodeRange}`)))
+      .toEqual(['400 U+0-FF']);
+    expect(await countFontStylesheets(page)).toBe(0);
+  });
+
+  test('where the host cannot be fetched from, its stylesheet is linked as before', async ({ page }) => {
+    await page.route(/fonts\.googleapis\.com/, (route) => (route.request().resourceType() === 'fetch' ? route.abort() : route.fulfill({ contentType: 'text/css', body: '' })));
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect.poll(() => countFontStylesheets(page)).toBe(1);
   });
 
   test('faces the page declares itself are not requested', async ({ page }) => {
     await startFresh(page, '/tests/fixtures/self-hosted');
-    expect(await countFontStylesheets(page)).toBe(0);
+    expect(await countRequestedFaces(page)).toBe(0);
 
     await openDrawer(page);
-    await expect.poll(() => countFontStylesheets(page)).toBeGreaterThan(0);
+    await expect.poll(() => countRequestedFaces(page)).toBeGreaterThan(0);
 
-    const requested = await page.evaluate(() =>
-      [...document.head.querySelectorAll('link[rel="stylesheet"][href*="//fonts."]')].map((link) => link.getAttribute('href')),
-    );
-    expect(requested.some((href) => /family=(Geist|Inter)(:|&|$)/.test(href!))).toBe(false);
+    const requested = await fontRequests(page);
+    expect(requested.some((url) => /family=(Geist|Inter)(:|&|$)/.test(url))).toBe(false);
   });
 });
 
@@ -429,10 +485,70 @@ test.describe('The Drawer', () => {
     await expect(shadowLocator(page, '.filter-option[data-tag="warm"]')).toBeHidden();
   });
 
-  test('Preview on This Site closes the drawer', async ({ page }) => {
+  test('the preview key takes the selection off the page, and puts it back', async ({ page }) => {
+    const key = shadowLocator(page, '.preview-btn');
+    await expect(key).toHaveAttribute('aria-pressed', 'true');
+    expect(await getCSSVar(page, '--color-primary')).toBe('#EB5526');
+
+    await key.click();
+    await expect(key).toHaveAttribute('aria-pressed', 'false');
+    await expect(key).toHaveText(/Site's Own Look/);
+    // The page's own styles: nothing of the selection is left on it
+    expect(await getCSSVar(page, '--color-primary')).toBe('');
+    expect(await getCSSVar(page, '--font-heading')).toBe('');
+    expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('');
+    expect(await lastChange(page)).toMatchObject({ previewing: false, theme: { name: 'Weather Station' }, open: true });
+
+    await key.click();
+    await expect(key).toHaveAttribute('aria-pressed', 'true');
+    expect(await getCSSVar(page, '--color-primary')).toBe('#EB5526');
+    expect(await getCSSVar(page, '--font-heading')).toContain('Geist');
+    expect((await lastChange(page))?.previewing).toBe(true);
+  });
+
+  test('choosing anything while comparing puts the preview back, whole', async ({ page }) => {
     await shadowLocator(page, '.preview-btn').click();
-    await expect(shadowLocator(page, '.drawer')).not.toHaveClass(/open/);
-    expect((await lastChange(page))?.open).toBe(false);
+    await shadowLocator(page, '.font-item[data-index="1"]').click();
+
+    await expect(shadowLocator(page, '.preview-btn')).toHaveAttribute('aria-pressed', 'true');
+    expect(await getCSSVar(page, '--font-heading')).toContain('Montserrat');
+    expect(await getCSSVar(page, '--color-primary')).toBe('#EB5526');
+
+    await shadowLocator(page, '.preview-btn').click();
+    await shadowLocator(page, '.theme-item[data-index="2053"]').click();
+    expect(await getCSSVar(page, '--color-primary')).not.toBe('');
+    expect(await getCSSVar(page, '--font-heading')).toContain('Montserrat');
+  });
+
+  test('comparing does not change the mode, whatever the page looks like without the selection', async ({ page }) => {
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await shadowLocator(page, '.preview-btn').click();
+    // The page changing its own style while the selection is off is not a mode change
+    await page.evaluate(() => document.documentElement.style.setProperty('--anything', '1'));
+    await page.waitForTimeout(100);
+
+    expect(await lastChange(page)).toMatchObject({ previewing: false, mode: 'dark' });
+    await expect(page.locator('theme-forseen')).toHaveAttribute('mode', 'dark');
+  });
+
+  test('a column header puts its column away and leaves a stub that brings it back', async ({ page }) => {
+    const fontsTab = shadowLocator(page, '.column-tab[data-column-type="fonts"]');
+    const themesTab = shadowLocator(page, '.column-tab[data-column-type="themes"]');
+    await expect(fontsTab).toHaveAttribute('title', 'Hide Font Pairings');
+
+    // Each header is as wide as the column beneath it
+    const widths = async (selector: string) => shadowLocator(page, selector).evaluate((element) => Math.round(element.getBoundingClientRect().width));
+    expect(await widths('.column-tab[data-column-type="fonts"]')).toBe(await widths('[data-column="fonts"]'));
+
+    await fontsTab.click();
+    await expect(fontsTab).toHaveAttribute('title', 'Show Font Pairings');
+    expect(await widths('.column-tab[data-column-type="fonts"]')).toBeLessThan(50);
+    await expect(fontsTab.locator('.tab-name')).toBeHidden();
+    // The last column out does not offer to go
+    await expect(themesTab.locator('.tab-away')).toBeHidden();
+
+    await fontsTab.click();
+    await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
   });
 
   test('Apply to Project offers both files when there is no server', async ({ page }) => {
@@ -447,9 +563,123 @@ test.describe('The Drawer', () => {
     await expect(modal).toBeHidden();
   });
 
+  test('the Apply modal opens in the top layer, above whatever the page has', async ({ page }) => {
+    await page.addStyleTag({ content: 'body::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; }' });
+    await shadowLocator(page, '.apply-btn').click();
+
+    const modal = shadowLocator(page, '.activation-modal');
+    expect(await modal.evaluate((dialog) => dialog.matches(':modal'))).toBe(true);
+
+    // Escape closes it, as a dialog's does
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+  });
+
   test('a face name can be chosen with the keyboard', async ({ page }) => {
     await shadowLocator(page, '.font-item[data-index="1"] .individual-font.heading-font').focus();
     await page.keyboard.press('Enter');
     expect((await lastChange(page))?.fonts.heading).toBe('Montserrat');
+  });
+});
+
+test.describe('Docked', () => {
+  test.beforeEach(async ({ page }) => {
+    await recordChanges(page);
+    await startFresh(page, '/tests/fixtures/docked');
+  });
+
+  test('fills the element the page lays out, with no tab or backdrop', async ({ page }) => {
+    const slot = await page.locator('aside').boundingBox();
+    const drawer = await shadowLocator(page, '.drawer').boundingBox();
+    expect(drawer).toEqual({ x: slot!.x + 12, y: slot!.y + 12, width: slot!.width - 24, height: slot!.height - 24 });
+
+    await expect(shadowLocator(page, '.drawer-toggle')).toBeHidden();
+    await expect(shadowLocator(page, '.backdrop')).toBeHidden();
+    await expect(shadowLocator(page, '.drawer')).toHaveClass(/open/);
+  });
+
+  test('both columns show, since the window is wide, and each opens on its selection', async ({ page }) => {
+    await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
+    for (const row of ['.theme-item[data-index="2054"]', '.font-item[data-index="197"]']) {
+      expect(await inViewInItsColumn(page, row)).toBe(true);
+    }
+  });
+
+  test("the page's control closes it, and it leaves the element", async ({ page }) => {
+    await page.locator('#toggle').click();
+    await expect(shadowLocator(page, '.drawer')).not.toHaveClass(/open/);
+    expect((await lastChange(page))?.open).toBe(false);
+
+    // Slid out to the right and clipped by the host
+    await expect.poll(async () => {
+      const box = await shadowLocator(page, '.drawer').boundingBox();
+      const slot = await page.locator('aside').boundingBox();
+      return box!.x >= slot!.x + slot!.width - 24;
+    }).toBe(true);
+  });
+
+  test('a selection still applies to the page', async ({ page }) => {
+    await shadowLocator(page, '.theme-item[data-index="0"]').click();
+    expect(await getCSSVar(page, '--color-primary')).toBe('#FF3366');
+  });
+
+  test('opening on the selection scrolls the columns, not the page', async ({ page }) => {
+    await page.setViewportSize({ width: 1100, height: 500 });
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect(shadowLocator(page, '.theme-item[data-index="2054"]')).toHaveClass(/selected-light/);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await shadowLocator(page, '[data-column="themes"] .column-content').evaluate((content) => content.scrollTop)).toBeGreaterThan(1000);
+  });
+
+  test('nothing in a column is wider than the column', async ({ page }) => {
+    for (const column of ['themes', 'fonts']) {
+      const content = shadowLocator(page, `[data-column="${column}"] .column-content`);
+      expect(await content.evaluate((element) => element.scrollWidth - element.clientWidth)).toBe(0);
+    }
+  });
+
+  test('the arrow keys are the page\'s until the pointer or the focus is on the drawer', async ({ page }) => {
+    const theme = () => page.evaluate(() => document.querySelector('theme-forseen')!.state!.theme.name);
+    await page.mouse.move(100, 100);
+    await page.locator('h1').click();
+    await page.keyboard.press('ArrowDown');
+    expect(await theme()).toBe('Weather Station');
+
+    await shadowLocator(page, '.theme-item[data-index="2054"]').hover();
+    await page.keyboard.press('ArrowUp');
+    expect(await theme()).not.toBe('Weather Station');
+  });
+});
+
+test.describe('Mode On The Element', () => {
+  test.beforeEach(async ({ page }) => {
+    await startFresh(page, '/tests/fixtures/defaults');
+  });
+
+  test('the element carries the mode, and a rule the page sets on it holds in both', async ({ page }) => {
+    const element = page.locator('theme-forseen');
+    await expect(element).toHaveAttribute('mode', 'light');
+
+    await page.addStyleTag({ content: 'theme-forseen { --tf-bg: rgb(1, 2, 3); }' });
+    const drawerBackground = () =>
+      page.evaluate(() => getComputedStyle(document.querySelector('theme-forseen')!.shadowRoot!.querySelector('.drawer')!).backgroundColor);
+    expect(await drawerBackground()).toBe('rgb(1, 2, 3)');
+
+    await openDrawer(page);
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await expect(element).toHaveAttribute('mode', 'dark');
+    expect(await drawerBackground()).toBe('rgb(1, 2, 3)');
+  });
+
+  test('without a rule from the page, night has its own palette', async ({ page }) => {
+    await openDrawer(page);
+    const drawerBackground = () =>
+      page.evaluate(() => getComputedStyle(document.querySelector('theme-forseen')!.shadowRoot!.querySelector('.drawer')!).backgroundColor);
+    const day = await drawerBackground();
+    await shadowLocator(page, '.mode-btn[data-mode="dark"]').click();
+    await expect.poll(drawerBackground).not.toBe(day);
   });
 });

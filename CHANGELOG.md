@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-30
+
+### Added
+- A `docked` attribute: the drawer fills the element instead of floating over the page, with no tab and no backdrop, so a page can give it a place of its own. Closed, it slides out of the element to the right. `--tf-dock-radius` rounds its corners. Docked, the arrow keys and the `s` and `h` shortcuts work while the pointer or the focus is on the drawer, and are the page's otherwise
+- The element carries `mode="light"` or `mode="dark"`
+
+### Changed
+- **Preview on This Site is a compare key.** It used to close the drawer. Now it takes the selection off the page, which shows its own styles, and puts it back when pressed again or when anything is chosen. `state` and the change event carry `previewing`
+- The two tabs are column headers: each sits over its own column at its width, with an icon of the pane it stands for and a chevron pointing where the column goes. Put away, a column leaves a stub on its side. The list and "Aa" icons are gone
+- The Light / Dark switch is in the header beside the close button, without the sun beside it
+- **Faces are registered through the font loading API, not linked into the page as stylesheets.** A stylesheet carrying `@font-face` rules makes Chrome rebuild every face the page has declared, and for a frame the page's own text is drawn in its fallbacks: each face the drawer asked for flashed the whole page. Faces added through the API leave the page's own alone. Where a host's CSS cannot be fetched, its stylesheet is linked as before
+- The faces a moment calls for, such as a screenful of rows after a filter, are asked of Google Fonts in one request rather than one each
+- The Apply modal is a `<dialog>` and the toast a popover, both in the browser's top layer, so nothing on the host page can sit above them, whatever the drawer is docked inside. The modal closes on Escape and on a click outside it
+
+### Fixed
+- The drawer's night palette was set inside the drawer, where it beat any `--tf-*` value a page had set on the element. It is keyed on the element's `mode` now, so a page's own rules hold in both modes
+- A drawer that starts open opens on its selections, as one opened later already did
+- Bringing a row into view scrolls its column and no longer the page
+- In a narrow column the row of style pills wraps instead of pushing the column's controls past its edge
+
 ## [0.7.0] - 2026-09-30
 
 ### Changed

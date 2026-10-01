@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { clearStorage, getCSSVar, openDrawer, shadowLocator } from './helpers';
+import { clearStorage, getCSSVar, openDrawer, shadowLocator, waitUntilReady } from './helpers';
 
 // =============================================================================
 // HIGH VALUE TESTS - Core functionality that must not break
@@ -108,6 +108,7 @@ test.describe('localStorage Persistence', () => {
 
     // Reload page
     await page.reload();
+    await waitUntilReady(page);
 
     // Should still be in dark mode (check color-scheme)
     const colorScheme = await page.evaluate(() =>

@@ -44,7 +44,8 @@ export const styles = `
     -webkit-font-smoothing: antialiased;
   }
 
-  .drawer[data-mode="dark"] {
+  /* On the host, so a page's own rule for the element wins over it in both modes */
+  :host([mode="dark"]) {
     --tf-bg: #23201b;
     --tf-surface: #2f2a24;
     --tf-surface-2: #3b352d;
@@ -55,6 +56,36 @@ export const styles = `
     --tf-on-key: #1d262a;
     --tf-teal: #237d87;
     --tf-on-orange: #15140f;
+  }
+
+  /*
+   * Docked: the host is a box the page lays out, and the drawer fills it.
+   * There is no tab and no backdrop; the page provides the control. Closed,
+   * the drawer slides out of the box to the right, as into a chassis.
+   */
+  :host([docked]) {
+    position: relative;
+    top: auto;
+    right: auto;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: auto;
+  }
+
+  :host([docked]) .drawer-toggle,
+  :host([docked]) .backdrop {
+    display: none !important;
+  }
+
+  :host([docked]) .drawer {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    border-radius: var(--tf-dock-radius, 0);
+    box-shadow: none;
   }
 
   .hidden {
@@ -211,76 +242,14 @@ export const styles = `
     background: var(--tf-surface-2);
   }
 
-  /* Column tabs and the mode switch */
-  .drawer-controls {
-    display: flex;
-    align-items: stretch;
-    gap: 10px;
-    padding: 12px 14px 10px;
-  }
-
-  .column-tabs {
-    display: flex;
-    flex: 1;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .column-tab {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-width: 0;
-    height: 46px;
-    padding: 0 8px;
-    border: 0;
-    border-radius: var(--tf-radius);
-    background: var(--tf-surface);
-    box-shadow: inset 0 0 0 1px var(--tf-line);
-    font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .column-tab .icon {
-    font-size: 20px;
-  }
-
-  .column-tab .icon-aa {
-    width: 32px;
-    height: 20px;
-  }
-
-  .column-tab[aria-pressed="true"] {
-    background: var(--tf-teal);
-    color: var(--tf-on-teal);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
-  }
-
-  .column-tab[aria-pressed="false"]:hover {
-    background: var(--tf-surface-2);
-  }
-
-  .mode-toggle {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding-top: 2px;
-  }
-
-  .mode-toggle > .icon {
-    font-size: 18px;
-    margin-top: 5px;
-    color: var(--tf-muted);
-  }
-
+  /* The mode switch, in the header */
   .mode-switch {
     position: relative;
     display: flex;
+    flex: none;
     width: 72px;
+    margin-left: auto;
+    margin-right: 8px;
   }
 
   .mode-switch::before {
@@ -316,8 +285,8 @@ export const styles = `
     position: relative;
     z-index: 1;
     flex: 1;
-    height: 46px;
-    padding: 32px 0 0;
+    height: 42px;
+    padding: 31px 0 0;
     border: 0;
     background: transparent;
     font-size: 11px;
@@ -328,6 +297,85 @@ export const styles = `
 
   .mode-btn.active {
     color: var(--tf-text);
+  }
+
+  /*
+   * Column headers. Each sits over its own column, at its width, so what it
+   * belongs to is where it is; pressing one puts that column away, and what
+   * is left of it is a stub on the column's side that brings it back.
+   */
+  .column-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px 10px;
+  }
+
+  .column-tab {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    height: 42px;
+    padding: 0 8px 0 12px;
+    border: 0;
+    border-radius: var(--tf-radius);
+    background: var(--tf-teal);
+    color: var(--tf-on-teal);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .column-tab .icon {
+    display: block;
+    font-size: 19px;
+  }
+
+  .tab-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab-away {
+    opacity: 0.75;
+  }
+
+  .column-tab:hover .tab-away {
+    opacity: 1;
+  }
+
+  /* Away: a stub, with its pane hollow */
+  .column-tab[aria-pressed="false"] {
+    flex: 0 0 42px;
+    justify-content: center;
+    padding: 0;
+    background: var(--tf-surface);
+    color: var(--tf-text);
+    box-shadow: inset 0 0 0 1px var(--tf-line);
+  }
+
+  .column-tab[aria-pressed="false"]:hover {
+    background: var(--tf-surface-2);
+  }
+
+  .column-tab[aria-pressed="false"] .tab-name,
+  .column-tab[aria-pressed="false"] .tab-away {
+    display: none;
+  }
+
+  .column-tab[aria-pressed="false"] .pane {
+    fill: none;
+  }
+
+  /* The one column left cannot be put away, so it does not offer to be */
+  .column-tabs:has(.column-tab[aria-pressed="false"]) .column-tab[aria-pressed="true"] .tab-away {
+    display: none;
   }
 
   /* Columns */
@@ -357,6 +405,13 @@ export const styles = `
     scrollbar-width: thin;
     scrollbar-color: var(--tf-surface-2) transparent;
     padding-bottom: 12px;
+  }
+
+  /* Tracks take the column's width, not their content's: a row of pills must wrap rather than widen them */
+  .column-controls,
+  .filter-container,
+  .font-filters {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .column-controls {
@@ -669,19 +724,10 @@ export const styles = `
     box-shadow: inset 0 0 0 2px var(--tf-orange);
   }
 
-  .drawer[data-mode="light"] .theme-item.selected-dark .theme-name::after,
-  .drawer[data-mode="dark"] .theme-item.selected-light .theme-name::after {
-    content: attr(data-other-mode);
-    margin-left: 8px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--tf-surface-2);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--tf-muted);
-    vertical-align: 2px;
+  .drawer[data-mode="light"] .theme-item.selected-dark:not(.selected-light),
+  .drawer[data-mode="dark"] .theme-item.selected-light:not(.selected-dark) {
+    outline: 1.5px dashed var(--tf-muted);
+    outline-offset: -2px;
   }
 
   .font-sample {
@@ -706,9 +752,12 @@ export const styles = `
 
   /* A face on its own: a small chip, pressed when it is the one in use */
   .individual-font {
+    max-width: 100%;
     padding: 1px 6px;
     border-radius: 4px;
     background: var(--tf-surface-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
@@ -812,13 +861,13 @@ export const styles = `
     }
 
     .pills {
-      gap: 4px;
+      gap: 3px;
     }
 
     .pill {
       gap: 3px;
-      padding: 0 6px;
-      font-size: 11px;
+      padding: 0 5px;
+      font-size: 10.5px;
     }
 
     .preview-btn,
@@ -864,6 +913,27 @@ export const styles = `
     box-shadow: inset 0 0 0 1.5px var(--tf-key);
   }
 
+  .preview-eye,
+  .preview-eye-off {
+    display: grid;
+  }
+
+  .preview-eye-off,
+  .preview-btn[aria-pressed="false"] .preview-eye {
+    display: none;
+  }
+
+  /* The selection is off the page: the key is down and says what is showing instead */
+  .preview-btn[aria-pressed="false"] {
+    background: var(--tf-key);
+    color: var(--tf-on-key);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .preview-btn[aria-pressed="false"] .preview-eye-off {
+    display: grid;
+  }
+
   .apply-btn {
     background: var(--tf-orange);
     color: var(--tf-on-orange);
@@ -880,27 +950,26 @@ export const styles = `
     transform: translateY(1px);
   }
 
-  /* The modal, when there is no server to write to */
+  /* The modal, when there is no server to write to: a dialog, so it opens above the whole page */
   .activation-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000000;
-    display: grid;
-    place-items: center;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
-  }
-
-  .activation-modal-content {
-    display: flex;
-    flex-direction: column;
-    width: min(680px, 100%);
+    width: min(680px, calc(100vw - 40px));
     max-height: 90vh;
+    padding: 0;
+    border: 0;
     border-radius: 12px;
     background: var(--tf-bg);
     color: var(--tf-text);
     box-shadow: var(--tf-shadow);
     overflow: hidden;
+  }
+
+  .activation-modal[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .activation-modal::backdrop {
+    background: rgba(0, 0, 0, 0.5);
   }
 
   .activation-modal-header {
@@ -1037,10 +1106,12 @@ export const styles = `
   /* Toast */
   .theme-forseen-toast {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
+    inset: auto auto 20px 50%;
     z-index: 1000001;
     display: flex;
+    margin: 0;
+    border: 0;
+    overflow: visible;
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
@@ -1069,31 +1140,31 @@ export const styles = `
       --tf-width: 100vw;
     }
 
-    .column-tab {
-      height: 48px;
-      font-size: 15px;
+    /* One column at a time: the headers are tabs proper, side by side */
+    .column-tab[aria-pressed="false"] {
+      flex: 1 1 0;
+      justify-content: flex-start;
+      padding: 0 8px 0 12px;
+    }
+
+    .column-tab[aria-pressed="false"] .tab-name {
+      display: block;
+    }
+
+    .column-tab .tab-away {
+      display: none;
     }
   }
 
   /* A phone: the words alone on the tabs and the keys */
   @media (max-width: 480px) {
-    .drawer-controls {
+    .column-tabs {
       gap: 8px;
       padding: 12px 12px 10px;
     }
 
-    .column-tabs {
-      gap: 6px;
-    }
-
-    .column-tab {
-      gap: 0;
-      padding: 0 6px;
-      font-size: 14px;
-    }
-
-    .column-tab .icon {
-      display: none;
+    .drawer-header-wordmark {
+      height: 16px;
     }
 
     .drawer-content {

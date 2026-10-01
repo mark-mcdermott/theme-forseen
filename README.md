@@ -301,11 +301,11 @@ Any CSS framework that supports CSS variables will work. Just reference the vari
 1. **Open**: Click the tab on the right side of the screen
 2. **Browse themes**: Click one to apply it; the arrow keys and the mouse wheel step through the list. Search by name, color name or hex, narrow by tag, or show only what you have starred or liked
 3. **Browse fonts**: Click a pairing to apply it, or one face of it to use that face alone; the ⇄ swaps heading and body. Search by name, narrow by heading style with the pills and by body style with the menu
-4. **Light / Dark**: The switch beside the tabs. Each mode keeps its own theme
-5. **Preview on This Site**: Closes the drawer so you can look at the page with the selection applied; the tab brings it back
+4. **Light / Dark**: The switch in the header. Each mode keeps its own theme
+5. **Preview on This Site**: A key to compare with. Press it and the selection comes off the page, which shows its own look; press it again, or choose anything, and the selection is back
 6. **Apply to Project**: Writes the selection to your project when the [dev server](#dev-server) is running, and otherwise shows the two files to copy or save
 
-The two tabs put a column away or bring it back. One stays out at least, and on a phone one shows at a time.
+Each column has a header over it. Pressing a header puts its column away, leaving a stub on that side that brings it back; one column stays out at least. On a phone the headers are tabs, one column at a time.
 
 ### Skinning the drawer
 
@@ -342,7 +342,30 @@ theme-forseen {
 }
 ```
 
-The drawer's night palette applies while the dark mode is selected, so a value set on the element holds in both modes; set it under your own dark-mode selector to vary it.
+The element carries the mode it is in as an attribute, `mode="light"` or `mode="dark"`, and its night palette is keyed on that. A value a page sets on the element holds in both modes; to vary it, key your own rule on the attribute too:
+
+```css
+theme-forseen { --tf-bg: #f4f1ea; }
+theme-forseen[mode="dark"] { --tf-bg: #1c1a17; }
+```
+
+### Docking the drawer
+
+By default the drawer floats over the page from the right edge. With the `docked` attribute it fills the element instead, so the page can give it a place of its own: a sidebar, a panel, a slot in a layout. The page sizes and positions the element; the drawer takes the whole of it. There is no tab and no backdrop while docked, so the page provides the control, through `open()`, `close()`, `toggle()` or the `open` attribute. Closed, the drawer slides out of the element to the right. The arrow keys and the `s` and `h` shortcuts work while the pointer or the focus is on the drawer, and are the page's otherwise.
+
+```html
+<aside style="width: 480px; height: 80vh">
+  <theme-forseen docked open></theme-forseen>
+</aside>
+```
+
+```css
+theme-forseen[docked] {
+  --tf-dock-radius: 8px; /* the drawer's corners, when the slot has them */
+}
+```
+
+A page can dock on wide screens and float on narrow ones by toggling the attribute from a media query.
 
 ## Page API
 
@@ -359,6 +382,8 @@ The drawer adds itself to the page when you import the module. To configure it, 
 | `default-theme` | Name of the theme to apply, in both modes, when the visitor has not selected one    |
 | `default-fonts` | Name of the font pairing to apply when the visitor has not selected one             |
 | `open`          | Present while the drawer is open. Add or remove it to open or close the drawer      |
+| `docked`        | The drawer fills the element rather than floating over the page; see [Docking the drawer](#docking-the-drawer) |
+| `mode`          | Carried by the element: `light` or `dark`. Read it or style on it; the mode itself follows the drawer's switch and the page's `darkmode-change` event |
 
 Names are matched without regard to case. A name that is not in the collection logs a warning and the first entry is used. Defaults are read once, when the element starts.
 
@@ -374,7 +399,7 @@ drawer.toggle();
 
 ### State
 
-`state` is what is applied to the page right now. It is `null` until the collection has loaded.
+`state` is the selection right now. It is `null` until the collection has loaded.
 
 ```js
 drawer.state;
@@ -382,9 +407,12 @@ drawer.state;
 //   mode: "light",
 //   theme: { name: "Golden Hour", colors: { primary: "#...", background: "#...", ... } },
 //   fonts: { heading: "Inter", body: "Geist" },
-//   open: false
+//   open: false,
+//   previewing: true
 // }
 ```
+
+`previewing` is `false` while the visitor has the preview key down to compare: the selection is still the selection, but it is off the page, which shows its own styles. A page that derives anything of its own from the selection should put that aside too until `previewing` is `true` again.
 
 ### Events
 

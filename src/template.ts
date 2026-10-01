@@ -34,6 +34,18 @@ function checkOption(attribute: string, id: string, checked: boolean, label: str
     </div>`;
 }
 
+function columnTab(column: "themes" | "fonts", name: string, collapsed: boolean): string {
+  const pane = column === "themes" ? icons.leftPane : icons.rightPane;
+  const away = column === "themes" ? icons.chevronLeft : icons.chevronRight;
+
+  return `
+    <button class="column-tab" data-column-type="${column}" aria-pressed="${!collapsed}" title="${collapsed ? "Show" : "Hide"} ${name}">
+      <span class="tab-pane">${pane}</span>
+      <span class="tab-name">${name}</span>
+      <span class="tab-away">${away}</span>
+    </button>`;
+}
+
 function themesColumn(state: TemplateState): string {
   const favorites = state.showStarredOnly ? "starred" : state.showHeartedOnly ? "hearted" : "all";
   const tagLabel = state.selectedTags.size > 0 ? `${state.selectedTags.size} tag${state.selectedTags.size > 1 ? "s" : ""}` : "All tags";
@@ -139,25 +151,17 @@ export function getTemplate(state: TemplateState): string {
           ${adaptiveCloud("drawer-header-logo")}
           ${wordmarkSvg("drawer-header-wordmark")}
         </div>
+        <div class="mode-switch" role="group" aria-label="Mode">
+          <button class="mode-btn ${state.isDarkMode ? "" : "active"}" data-mode="light" aria-pressed="${!state.isDarkMode}">Light</button>
+          <button class="mode-btn ${state.isDarkMode ? "active" : ""}" data-mode="dark" aria-pressed="${state.isDarkMode}">Dark</button>
+        </div>
         <button class="close-btn" aria-label="Close">${icons.close}</button>
       </header>
 
-      <div class="drawer-controls">
-        <div class="column-tabs" role="group" aria-label="Columns">
-          <button class="column-tab" data-column-type="themes" aria-pressed="${!state.themesColumnCollapsed}">
-            ${icons.list}<span>Color Themes</span>
-          </button>
-          <button class="column-tab" data-column-type="fonts" aria-pressed="${!state.fontsColumnCollapsed}">
-            ${icons.aa}<span>Font Pairings</span>
-          </button>
-        </div>
-        <div class="mode-toggle" role="group" aria-label="Mode">
-          ${icons.sun}
-          <div class="mode-switch">
-            <button class="mode-btn ${state.isDarkMode ? "" : "active"}" data-mode="light" aria-pressed="${!state.isDarkMode}">Light</button>
-            <button class="mode-btn ${state.isDarkMode ? "active" : ""}" data-mode="dark" aria-pressed="${state.isDarkMode}">Dark</button>
-          </div>
-        </div>
+      <!-- Each column's header, over its column; pressing one puts its column away or brings it back -->
+      <div class="column-tabs" role="group" aria-label="Columns">
+        ${columnTab("themes", "Color Themes", state.themesColumnCollapsed)}
+        ${columnTab("fonts", "Font Pairings", state.fontsColumnCollapsed)}
       </div>
 
       <div class="drawer-content">
@@ -166,25 +170,26 @@ export function getTemplate(state: TemplateState): string {
       </div>
 
       <footer class="drawer-footer">
-        <button class="preview-btn">${icons.eye}<span>Preview on This Site</span></button>
+        <button class="preview-btn" aria-pressed="true" title="Your selection is on the page. Press to see the page without it">
+          <span class="preview-eye">${icons.eye}</span><span class="preview-eye-off">${icons.eyeOff}</span>
+          <span class="preview-label">Preview on This Site</span>
+        </button>
         <button class="apply-btn"><span>Apply to Project</span>${icons.arrow}</button>
       </footer>
     </div>
 
-    <div class="activation-modal hidden" role="dialog" aria-label="Apply to your project">
-      <div class="activation-modal-content">
-        <div class="activation-modal-header">
-          <h3>Apply to your project</h3>
-          <button class="activation-modal-close" aria-label="Close">${icons.close}</button>
-        </div>
-        <div class="activation-modal-body">
-          <p class="activation-instructions"></p>
-          <div class="activation-sections"></div>
-          <div class="activation-buttons">
-            <button class="activation-cancel-btn">Done</button>
-          </div>
+    <dialog class="activation-modal" aria-label="Apply to your project">
+      <div class="activation-modal-header">
+        <h3>Apply to your project</h3>
+        <button class="activation-modal-close" aria-label="Close">${icons.close}</button>
+      </div>
+      <div class="activation-modal-body">
+        <p class="activation-instructions"></p>
+        <div class="activation-sections"></div>
+        <div class="activation-buttons">
+          <button class="activation-cancel-btn">Done</button>
         </div>
       </div>
-    </div>
+    </dialog>
   `;
 }

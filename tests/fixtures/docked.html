@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThemeForseen Test Page: docked</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: var(--font-body, system-ui, sans-serif);
+      background: var(--color-bg, #fff);
+      color: var(--color-text, #333);
+    }
+    main { display: flex; gap: 24px; padding: 24px; }
+    article { flex: 1; }
+    aside { width: 474px; height: 871px; background: #333; padding: 12px; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <main>
+    <article>
+      <h1>ThemeForseen Test Page</h1>
+      <p>This page gives the drawer a slot of its own.</p>
+      <button id="toggle">Toggle the drawer</button>
+    </article>
+    <aside>
+      <theme-forseen docked open default-theme="Weather Station" default-fonts="Geist &amp; Inter"></theme-forseen>
+    </aside>
+  </main>
+
+  <script type="module">
+    import '../../dist/index.js';
+    document.getElementById('toggle').addEventListener('click', () => document.querySelector('theme-forseen').toggle());
+  </script>
+</body>
+</html>

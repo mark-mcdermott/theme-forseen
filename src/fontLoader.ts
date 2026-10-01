@@ -144,31 +144,104 @@ function isDeclaredByPage(fontName: string): boolean {
   return declared;
 }
 
+/**
+ * Faces are registered with the page through the font loading API, not by
+ * adding the hosts' stylesheets to it. A stylesheet that carries @font-face
+ * rules makes the browser rebuild every face the page has declared, and for
+ * a frame the page's own text is drawn in its fallbacks: a flash of the whole
+ * page each time a face is asked for. Faces added through the API leave the
+ * page's own alone.
+ */
+const FONT_FACE_RULE = /@font-face\s*{([^}]*)}/g;
+
+function descriptor(rule: string, name: string): string | undefined {
+  return rule.match(new RegExp(`(?:^|;)\\s*${name}\\s*:\\s*([^;]+)`))?.[1].trim();
+}
+
+function registerFaces(css: string): void {
+  for (const [, rule] of css.matchAll(FONT_FACE_RULE)) {
+    const family = descriptor(rule, "font-family")?.replace(/^["']|["']$/g, "");
+    const source = descriptor(rule, "src");
+    if (!family || !source) continue;
+
+    document.fonts.add(
+      new FontFace(family, source, {
+        style: descriptor(rule, "font-style") ?? "normal",
+        weight: descriptor(rule, "font-weight") ?? "400",
+        stretch: descriptor(rule, "font-stretch") ?? "normal",
+        unicodeRange: descriptor(rule, "unicode-range") ?? "U+0-10FFFF",
+        display: "swap",
+      })
+    );
+  }
+}
+
+// What the page did before the API: the host's stylesheet, for where its CSS cannot be fetched
+function appendStylesheet(href: string): void {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+/** Fetches a host's CSS and registers its faces. Says whether the host answered with them. */
+async function loadFaces(href: string): Promise<boolean> {
+  let response: Response;
+  try {
+    response = await fetch(href);
+  } catch {
+    // The page may not be allowed to fetch from the host, though it may link to it
+    appendStylesheet(href);
+    return true;
+  }
+
+  if (!response.ok) return false;
+  registerFaces(await response.text());
+  return true;
+}
+
+const googleFontsUrl = (families: string[]) =>
+  `https://fonts.googleapis.com/css2?${families
+    .map((family) => `family=${family.replace(/ /g, "+")}:wght@400;500;600;700`)
+    .join("&")}&display=swap`;
+
+/** Families waiting to be asked for together */
+let waiting: string[] = [];
+const FAMILIES_PER_REQUEST = 16;
+
+// The faces a moment calls for, such as a screenful of rows, are asked for in one request
+function requestWaiting(): void {
+  const families = waiting;
+  waiting = [];
+
+  for (let i = 0; i < families.length; i += FAMILIES_PER_REQUEST) {
+    const batch = families.slice(i, i + FAMILIES_PER_REQUEST);
+
+    loadFaces(googleFontsUrl(batch)).then((answered) => {
+      // One family Google does not have fails the whole request, so each is asked for on its own
+      if (!answered && batch.length > 1) batch.forEach((family) => loadFaces(googleFontsUrl([family])));
+    });
+  }
+}
+
 export function loadGoogleFont(fontName: string): void {
   if (loadedFonts.has(fontName)) {
     return;
   }
+  loadedFonts.add(fontName);
 
   if (isDeclaredByPage(fontName)) {
-    loadedFonts.add(fontName);
     return;
   }
 
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-
-  // Check if this font is on CDNFonts
+  // Fonts hosted on CDNFonts come one to a request
   if (cdnFontsMap[fontName]) {
-    link.href = `https://fonts.cdnfonts.com/css/${cdnFontsMap[fontName]}`;
-  } else {
-    // Default to Google Fonts
-    const fontNameForUrl = fontName.replace(/ /g, "+");
-    link.href = `https://fonts.googleapis.com/css2?family=${fontNameForUrl}:wght@400;500;600;700&display=swap`;
+    loadFaces(`https://fonts.cdnfonts.com/css/${cdnFontsMap[fontName]}`);
+    return;
   }
 
-  document.head.appendChild(link);
-
-  loadedFonts.add(fontName);
+  if (waiting.length === 0) queueMicrotask(requestWaiting);
+  waiting.push(fontName);
 }
 
 export function isFontLoaded(fontName: string): boolean {

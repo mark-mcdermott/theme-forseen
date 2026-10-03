@@ -222,6 +222,8 @@ export class ThemeForseen extends HTMLElement {
   private tags: string[] = [];
   private defaultFontPairing = 0;
   private isReady = false;
+  private isSetUp = false;
+  private isStarting = false;
   private lastAnnounced = "";
   private fontRowObserver: IntersectionObserver | null = null;
 
@@ -265,8 +267,9 @@ export class ThemeForseen extends HTMLElement {
   private clickOutsideHandlerAdded = false;
   private fontFilterClickOutsideHandlerAdded = false;
 
+  /** A narrow window, where the drawer is the screen. A docked drawer is the page's to size, at any width. */
   private isMobile(): boolean {
-    return window.innerWidth <= 768;
+    return !this.hasAttribute("docked") && window.innerWidth <= 768;
   }
 
   private activeThemeIndex: number | null = null;
@@ -284,14 +287,27 @@ export class ThemeForseen extends HTMLElement {
     this.attachShadow({ mode: "open" });
   }
 
+  /**
+   * A page may move the element, as between a slot of its own and the body:
+   * that is one visit, and the drawer carries on as it was.
+   */
   connectedCallback() {
-    this.loadFromLocalStorage();
-    this.incrementVisitCounter();
-    this.checkDarkMode(); // Must be before render() so isDarkMode is set correctly
+    if (!this.isSetUp) {
+      this.isSetUp = true;
+      this.loadFromLocalStorage();
+      this.incrementVisitCounter();
+      this.checkDarkMode(); // Must be before render() so isDarkMode is set correctly
+    }
 
-    this.start().catch((error) => {
-      console.error("[ThemeForseen] Could not load the collection.", error);
-    });
+    if (this.isReady || this.isStarting) return;
+    this.isStarting = true;
+    this.start()
+      .catch((error) => {
+        console.error("[ThemeForseen] Could not load the collection.", error);
+      })
+      .finally(() => {
+        this.isStarting = false;
+      });
   }
 
   attributeChangedCallback(

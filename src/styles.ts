@@ -1197,57 +1197,60 @@ export const styles = `
     color: var(--tf-on-orange);
   }
 
-  /* Narrow screens: the drawer is the screen, and one column at a time */
+  /*
+   * Narrow screens: the drawer is the screen, and one column at a time.
+   * Docked, the page sizes the drawer, so the window's width says nothing.
+   */
   @media (max-width: 768px) {
-    :host {
+    :host(:not([docked])) {
       --tf-width: 100vw;
     }
 
     /* One column at a time: the headers are tabs proper, side by side */
-    .column-tab[aria-pressed="false"] {
+    :host(:not([docked])) .column-tab[aria-pressed="false"] {
       flex: 1 1 0;
       justify-content: flex-start;
       padding: 0 8px 0 12px;
     }
 
-    .column-tab[aria-pressed="false"] .tab-name {
+    :host(:not([docked])) .column-tab[aria-pressed="false"] .tab-name {
       display: block;
     }
 
-    .column-tab .tab-away {
+    :host(:not([docked])) .column-tab .tab-away {
       display: none;
     }
   }
 
   /* A phone: the words alone on the tabs and the keys */
   @media (max-width: 480px) {
-    .column-tabs {
+    :host(:not([docked])) .column-tabs {
       gap: 8px;
       padding: 12px 12px 10px;
     }
 
-    .drawer-header-wordmark {
+    :host(:not([docked])) .drawer-header-wordmark {
       height: 16px;
     }
 
-    .drawer-content {
+    :host(:not([docked])) .drawer-content {
       padding: 0 12px;
     }
 
-    .drawer-footer {
+    :host(:not([docked])) .drawer-footer {
       gap: 8px;
       padding: 10px 12px 12px;
     }
 
-    .preview-btn,
-    .apply-btn {
+    :host(:not([docked])) .preview-btn,
+    :host(:not([docked])) .apply-btn {
       gap: 0;
       padding: 0 10px;
       font-size: 14px;
     }
 
-    .preview-btn .icon,
-    .apply-btn .icon {
+    :host(:not([docked])) .preview-btn .icon,
+    :host(:not([docked])) .apply-btn .icon {
       display: none;
     }
   }

@@ -671,6 +671,39 @@ test.describe('Docked', () => {
     }
   });
 
+  test('a narrow window still shows both columns, since the page sizes the drawer', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addStyleTag({ content: 'main { display: block; padding: 0 } aside { width: 390px }' });
+    await page.reload();
+    await waitUntilReady(page);
+
+    await expect(shadowLocator(page, '[data-column="themes"]')).not.toHaveClass(/collapsed/);
+    await expect(shadowLocator(page, '[data-column="fonts"]')).not.toHaveClass(/collapsed/);
+    const slot = await page.locator('aside').boundingBox();
+    const drawer = await shadowLocator(page, '.drawer').boundingBox();
+    expect(drawer!.width).toBe(slot!.width - 24);
+  });
+
+  test('moving the element is one visit, and the drawer carries on as it was', async ({ page }) => {
+    const visits = () => page.evaluate(() => localStorage.getItem('themeforseen-visit-count'));
+    const before = await visits();
+
+    await page.evaluate(() => {
+      const element = document.querySelector('theme-forseen')!;
+      document.body.append(element);
+      document.querySelector('aside')!.append(element);
+    });
+
+    expect(await visits()).toBe(before);
+    await expect(shadowLocator(page, '.drawer')).toHaveCount(1);
+    await expect(shadowLocator(page, '.drawer')).toHaveClass(/open/);
+
+    // One listener per row still: a second would undo the first
+    const heart = shadowLocator(page, '.theme-item[data-index="2054"] .favorite-icon.heart');
+    await heart.click();
+    await expect(heart).toHaveClass(/loved/);
+  });
+
   test("the page's control closes it, and it leaves the element", async ({ page }) => {
     await page.locator('#toggle').click();
     await expect(shadowLocator(page, '.drawer')).not.toHaveClass(/open/);

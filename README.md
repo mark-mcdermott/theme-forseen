@@ -618,6 +618,12 @@ node scripts/shoot-drawer.mjs http://localhost:3000/tests/fixtures/defaults.html
 node scripts/shoot-page.mjs http://localhost:3000/tests/fixtures/defaults.html phone.png 390 844 open
 ```
 
+To re-record the preview at the top of this file (needs `ffmpeg`):
+
+```bash
+node scripts/shoot-preview.mjs http://localhost:3000/tests/fixtures/index.html preview.gif
+```
+
 ### Running Tests
 
 ```bash

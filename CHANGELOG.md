@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-03
+
+### Changed
+- **A docked drawer keeps its layout at any width.** In a narrow window it used to switch to one column at a time and the phone's tighter spacing, though the page, not the window, sizes a docked drawer. It now shows both columns wherever it is docked, as it does in a bay on a wide page
+
+### Fixed
+- A page can move the element, as between a slot of its own and the body. Moving it counted another visit and loaded and drew the collection again; it is now one visit, and the drawer carries on as it was
+
 ## [0.9.0] - 2026-10-01
 
 ### Changed
